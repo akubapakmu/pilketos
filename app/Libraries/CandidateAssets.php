@@ -45,10 +45,16 @@ final class CandidateAssets
     private const MB = 1024 * 1024;
 
     /**
-     * Slot unggahan. column = kolom candidates; asset = kunci JSON theme_asset.
-     * edge = sisi terpanjang hasil (px); min = [lebar, tinggi] minimum sumber.
+     * Slot unggahan (urutan = urutan form admin). column = kolom candidates;
+     * asset = kunci JSON theme_asset. edge = sisi terpanjang hasil (px);
+     * min = [lebar, tinggi] minimum sumber; landscape = lebar harus lebih
+     * besar dari tinggi (diperiksa setelah orientasi EXIF diluruskan).
      *
-     * @var array<string, array{label: string, column: string|null, asset: string|null, min: array{0: int, 1: int}, edge: int, bytes: int, hint: string}>
+     * Stage 16: halaman profil paslon dibuka "Gambar pembuka profil" (banner,
+     * tampil utuh tanpa dipotong) dan ditutup "Latar penutup" (closing).
+     * Latar panggung, artwork, dan tekstur tidak dipakai lagi (dihapus).
+     *
+     * @var array<string, array{label: string, column: string|null, asset: string|null, min: array{0: int, 1: int}, edge: int, bytes: int, hint: string, landscape?: bool}>
      */
     public const SLOTS = [
         'foto_ketua' => [
@@ -69,41 +75,15 @@ final class CandidateAssets
             'bytes'  => 5 * self::MB,
             'hint'   => 'Potret tegak (rasio 4:5 ideal), wajah jelas, minimal 240 px.',
         ],
-        'hero' => [
-            'label'  => 'Foto pasangan (hero)',
-            'column' => null,
-            'asset'  => 'hero',
-            'min'    => [600, 400],
-            'edge'   => 1600,
-            'bytes'  => 5 * self::MB,
-            'hint'   => 'Foto berdua, mendatar 4:3. Menggantikan dua foto potret di panggung kandidat.',
-        ],
-        'background' => [
-            'label'  => 'Latar panggung',
-            'column' => 'theme_background',
-            'asset'  => null,
-            'min'    => [800, 450],
-            'edge'   => 2000,
-            'bytes'  => 5 * self::MB,
-            'hint'   => 'Gambar latar lebar, minimal 800 × 450 px. Dipotong otomatis (cover).',
-        ],
-        'artwork' => [
-            'label'  => 'Artwork kampanye',
-            'column' => null,
-            'asset'  => 'artwork',
-            'min'    => [300, 300],
-            'edge'   => 1200,
-            'bytes'  => 5 * self::MB,
-            'hint'   => 'Logo/ilustrasi kampanye. PNG/WebP transparan didukung.',
-        ],
-        'texture' => [
-            'label'  => 'Tekstur / pola',
-            'column' => null,
-            'asset'  => 'texture',
-            'min'    => [64, 64],
-            'edge'   => 800,
-            'bytes'  => 2 * self::MB,
-            'hint'   => 'Pola berulang (tile). Tanpa tekstur, dipakai pola bawaan sesuai layout.',
+        'banner' => [
+            'label'     => 'Gambar pembuka profil',
+            'column'    => null,
+            'asset'     => 'banner',
+            'min'       => [1200, 400],
+            'edge'      => 2000,
+            'bytes'     => 5 * self::MB,
+            'hint'      => 'Gambar mendatar (landscape) buatan paslon, tampil utuh tanpa dipotong di paling atas halaman profil, di atas tombol Lihat Visi & Misi. Disarankan 1920 × 1080 px (16:9), lebar minimal 1200 px.',
+            'landscape' => true,
         ],
         'poster' => [
             'label'  => 'Poster kampanye',
@@ -112,7 +92,25 @@ final class CandidateAssets
             'min'    => [400, 400],
             'edge'   => 1600,
             'bytes'  => 5 * self::MB,
-            'hint'   => 'Poster tegak, tampil di bawah visi-misi.',
+            'hint'   => 'Poster tegak, tampil di bagian Poster kampanye dan dapat dibuka layar penuh.',
+        ],
+        'closing' => [
+            'label'  => 'Latar penutup',
+            'column' => null,
+            'asset'  => 'closing',
+            'min'    => [1000, 500],
+            'edge'   => 2000,
+            'bytes'  => 5 * self::MB,
+            'hint'   => 'Gambar latar bagian penutup halaman profil (nomor, nama, slogan, tombol). Dipotong otomatis dan diberi lapisan gelap agar teks putih tetap terbaca. Disarankan mendatar, minimal 1000 × 500 px.',
+        ],
+        'hero' => [
+            'label'  => 'Foto pasangan (beranda & hasil)',
+            'column' => null,
+            'asset'  => 'hero',
+            'min'    => [600, 400],
+            'edge'   => 1600,
+            'bytes'  => 5 * self::MB,
+            'hint'   => 'Foto berdua, mendatar 4:3. Tampil di perolehan suara beranda dan hasil akhir; tanpa foto ini dipakai dua foto potret.',
         ],
     ];
 
@@ -247,6 +245,16 @@ final class CandidateAssets
         // GdImage dibebaskan otomatis saat tidak dipakai lagi (PHP 8+);
         // imagedestroy() sengaja tidak dipakai (deprecated sejak PHP 8.5).
         $image = $this->orient($image, $path, $mime);
+
+        if (($config['landscape'] ?? false) && imagesx($image) <= imagesy($image)) {
+            throw new CandidateAssetException(sprintf(
+                '%s harus mendatar (landscape): lebar lebih besar dari tinggi, mis. 1920 × 1080 px. File ini %d × %d px.',
+                $label,
+                imagesx($image),
+                imagesy($image),
+            ));
+        }
+
         $image = $this->downscale($image, $config['edge']);
 
         return $this->save($image, $mime, $slot, $candidateNumber);

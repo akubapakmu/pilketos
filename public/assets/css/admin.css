@@ -2468,76 +2468,6 @@ ol.asset-dots {
   color: var(--accent-text, var(--ink));
 }
 
-/* pilihan layout */
-.layout-pick {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--space-3);
-  margin-top: var(--space-2);
-}
-
-.layout-pick__item {
-  position: relative;
-  display: grid;
-  gap: var(--space-1);
-  padding: var(--space-3);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  cursor: pointer;
-}
-
-.layout-pick__item:has(input:checked) {
-  border-color: var(--ink);
-  box-shadow: inset 0 0 0 1px var(--ink);
-  background: var(--paper-dim);
-}
-
-.layout-pick__item input {
-  position: absolute;
-  opacity: 0;
-  width: 1px;
-  height: 1px;
-}
-
-.layout-pick__item input:focus-visible ~ .layout-pick__art {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
-}
-
-.layout-pick__item input:checked ~ .layout-pick__name::after {
-  content: ' \2014 dipilih';
-  font-weight: 400;
-  color: var(--gray-700);
-}
-
-.layout-pick__art {
-  display: grid;
-  gap: 4px;
-  height: 64px;
-  padding: 6px;
-  background: var(--paper);
-  border: 1px solid var(--line);
-}
-
-.layout-pick__art i { display: block; background: var(--gray-300); }
-.layout-pick__art i:first-child { background: var(--ink); }
-
-.layout-pick__art--split { grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
-.layout-pick__art--split i:first-child { grid-row: span 2; }
-
-.layout-pick__art--poster { grid-template-rows: 2fr 1fr; grid-template-columns: 1fr 1fr; }
-.layout-pick__art--poster i:first-child { grid-column: span 2; }
-
-.layout-pick__art--column { grid-template-columns: 1fr 2fr; grid-template-rows: 1fr 1fr; }
-.layout-pick__art--column i:first-child { grid-row: span 2; }
-
-.layout-pick__art--auto { grid-template-columns: repeat(3, 1fr); }
-.layout-pick__art--auto i { background: var(--gray-500); }
-.layout-pick__art--auto i:first-child { background: var(--ink); }
-
-.layout-pick__name { font-weight: 600; font-size: 0.9375rem; }
-.layout-pick__desc { font-size: 0.75rem; color: var(--gray-700); }
-
 /* slot unggahan */
 .slots {
   display: grid;
@@ -2574,6 +2504,9 @@ ol.asset-dots {
   height: 100%;
   object-fit: cover;
 }
+
+/* Stage 16: gambar pembuka profil tampil utuh di halaman, pratinjaunya juga */
+.slot--whole .slot__preview img { object-fit: contain; }
 
 .slot__new {
   position: absolute;

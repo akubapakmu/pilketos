@@ -108,8 +108,7 @@ $accents = array_values(array_unique(array_merge(
 
       <?php if ($state === FinalResult::WINNER): ?>
         <?php $t = $theme($winner); ?>
-        <section class="victor victor--<?= esc($t['layout'] ?? 'split', 'attr') ?>" style="<?= esc($t['style'] ?? '', 'attr') ?>" aria-labelledby="victor-title">
-          <span class="victor__pattern victor__pattern--<?= esc($t['pattern'] ?? 'grid', 'attr') ?>" aria-hidden="true"></span>
+        <section class="victor" style="<?= esc($t['style'] ?? '', 'attr') ?>" aria-labelledby="victor-title">
           <p class="victor__label"><?= icon('award') ?> Pasangan terpilih</p>
           <p class="victor__no" aria-hidden="true"><?= esc($winner['label']) ?></p>
           <div class="victor__people">

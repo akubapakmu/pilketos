@@ -197,7 +197,9 @@ final class StageTwelveRefinementTest extends CIUnitTestCase
         $this->assertSame(1, substr_count($html, '<div><dt>Status</dt><dd><span class="pill pill--muted">Nonaktif</span></dd></div>'));
 
         $this->assertSame(3, substr_count($html, '<ol class="asset-dots" aria-label="Kelengkapan asset">'));
-        $this->assertSame(21, substr_count($html, '<span class="asset-dots__node" aria-hidden="true"></span>'));
+        // Stage 16: 6 slot per pasangan (gambar pembuka & latar penutup menggantikan latar panggung, artwork, tekstur).
+        $this->assertSame(3 * count(\App\Libraries\CandidateAssets::SLOTS), substr_count($html, '<span class="asset-dots__node" aria-hidden="true"></span>'));
+        $this->assertSame(18, 3 * count(\App\Libraries\CandidateAssets::SLOTS));
         $this->assertStringContainsString('<span class="asset-dots__label">Foto calon ketua<span class="visually-hidden">: belum ada</span></span>', $html);
 
         $css = $this->asset('assets/css/admin.css');

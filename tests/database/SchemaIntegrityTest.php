@@ -169,11 +169,11 @@ final class SchemaIntegrityTest extends CIUnitTestCase
     public function testCandidateThemeAssetIsStoredAsJson(): void
     {
         $model = model(CandidateModel::class);
-        $model->update(1, ['theme_asset' => ['texture' => 'tex-01.webp']]);
+        $model->update(1, ['theme_asset' => ['banner' => 'banner-01.webp']]);
 
-        $this->assertSame(['texture' => 'tex-01.webp'], $model->find(1)['theme_asset']);
+        $this->assertSame(['banner' => 'banner-01.webp'], $model->find(1)['theme_asset']);
         $this->assertNull($model->find(2)['theme_asset']);
-        $this->assertStringEndsWith('uploads/candidates/tex-01.webp', CandidateModel::assetUrl('tex-01.webp'));
+        $this->assertStringEndsWith('uploads/candidates/banner-01.webp', CandidateModel::assetUrl('banner-01.webp'));
         $this->assertStringEndsWith('uploads/candidates/evil.php', CandidateModel::assetUrl('../../evil.php'));
     }
 

@@ -4,6 +4,8 @@
 <?php
 /**
  * Form tambah/ubah pasangan calon + tema + unggah asset.
+ * Stage 16: satu tampilan untuk semua pasangan (tanpa pilihan layout); slot
+ * gambar mengikuti CandidateAssets::SLOTS (gambar pembuka, latar penutup, ...).
  *
  * @var array|null            $candidate Baris kandidat (null = baru)
  * @var array                 $values    Nilai form (baris / input lama)
@@ -25,7 +27,6 @@ $error  = static fn (string $key): string => isset($errors[$key]) ? '<p class="f
 $invalid = static fn (string $key): string => isset($errors[$key]) ? ' aria-invalid="true" aria-describedby="err-' . esc($key, 'attr') . '"' : '';
 $action = $candidate === null ? site_url('admin/paslon') : site_url('admin/paslon/' . $candidate['id']);
 $accent = CandidateTheme::accent($values['theme_accent'] ?? null);
-$layout = (string) ($values['theme_layout'] ?? '');
 $active = (string) ($values['status_aktif'] ?? '1') === '1';
 // Stage 15: ID YouTube tersimpan ditampilkan kembali sebagai tautan pendek.
 $video  = (string) ($values['video_youtube'] ?? '');
@@ -33,12 +34,6 @@ $video  = preg_match('/^[A-Za-z0-9_-]{11}$/', $video) === 1 ? 'https://youtu.be/
 $locked = ($resultsLocked ?? false) && $candidate !== null; // Stage 4: hasil akhir final
 // Stage 15: batas pasangan aktif penuh (pasangan yang sudah aktif tetap boleh diubah).
 $full   = ! $locked && $activeOthers >= $batas && ! ($candidate !== null && (int) $candidate['status_aktif'] === 1);
-$layouts = [
-    ''       => ['Otomatis', 'Mengikuti nomor urut: 01 split, 02 poster, 03 kolom.'],
-    'split'  => ['Split', 'Panggung & teks berdampingan, pola grid.'],
-    'poster' => ['Poster', 'Blok warna penuh ala poster, pola arsir.'],
-    'column' => ['Kolom', 'Potret bertumpuk tegak, pola titik.'],
-];
 ?>
 <div class="admin-page">
   <header class="admin-head">
@@ -192,7 +187,7 @@ $layouts = [
             <input type="color" value="<?= esc($accent, 'attr') ?>" aria-label="Pilih warna aksen" data-accent-picker>
             <input type="text" id="theme_accent" name="theme_accent" maxlength="7" value="<?= $value('theme_accent') ?>" placeholder="#C4432B" autocomplete="off" spellcheck="false" data-accent-input<?= $invalid('theme_accent') ?>>
           </div>
-          <p class="field-hint">Format #RRGGBB. Tanpa gradient; warna teks di atas aksen dipilih otomatis agar kontras.</p>
+          <p class="field-hint">Format #RRGGBB. Tanpa gradient; warna teks di atas aksen dipilih otomatis agar kontras. Di halaman profil dipakai ikon, nomor, dan tombol utama; bagian penutup memakai gambar latar, bukan warna aksen.</p>
           <?= $error('theme_accent') ?>
         </div>
       </div>
@@ -203,21 +198,6 @@ $layouts = [
           <strong><?= esc((string) ($values['nama_ketua'] ?? 'Nama ketua')) ?></strong>
           <span>Contoh warna aksen pada kertas</span>
         </span>
-      </div>
-
-      <div class="field">
-        <span class="field__label" id="layout-label">Layout halaman kandidat</span>
-        <div class="layout-pick" role="radiogroup" aria-labelledby="layout-label">
-          <?php foreach ($layouts as $key => [$name, $desc]): ?>
-            <label class="layout-pick__item">
-              <input type="radio" name="theme_layout" value="<?= esc($key, 'attr') ?>"<?= $layout === $key ? ' checked' : '' ?>>
-              <span class="layout-pick__art layout-pick__art--<?= esc($key === '' ? 'auto' : $key, 'attr') ?>" aria-hidden="true"><i></i><i></i><i></i></span>
-              <span class="layout-pick__name"><?= esc($name) ?></span>
-              <span class="layout-pick__desc"><?= esc($desc) ?></span>
-            </label>
-          <?php endforeach; ?>
-        </div>
-        <?= $error('theme_layout') ?>
       </div>
     </fieldset>
 
@@ -236,7 +216,7 @@ $layouts = [
             $current = $files[$slot] ?? null;
             $max     = CandidateAssets::maxBytes($slot);
           ?>
-          <div class="slot<?= isset($errors[$field]) ? ' slot--error' : '' ?>" data-slot>
+          <div class="slot<?= ($config['landscape'] ?? false) ? ' slot--whole' : '' ?><?= isset($errors[$field]) ? ' slot--error' : '' ?>" data-slot>
             <div class="slot__preview">
               <?php if ($current !== null): ?>
                 <img src="<?= esc(CandidateModel::assetUrl($current), 'attr') ?>" alt="<?= esc($config['label'] . ' saat ini', 'attr') ?>" loading="lazy" data-slot-current>

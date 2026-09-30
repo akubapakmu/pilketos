@@ -17,10 +17,13 @@ use CodeIgniter\I18n\Time;
  * Kelola pasangan calon + tema visual (Stage 3).
  *
  * Tema yang diisi di sini dipakai langsung oleh halaman kandidat Stage 2
- * lewat App\Libraries\CandidateTheme: theme_accent (#RRGGBB), theme_layout
- * (split|poster|column|otomatis), theme_background, foto_ketua, foto_wakil,
- * dan theme_asset JSON {hero, texture, artwork, poster}. Kolom hanya berisi
- * nama file acak di public/uploads/candidates (CandidateAssets).
+ * lewat App\Libraries\CandidateTheme: theme_accent (#RRGGBB), foto_ketua,
+ * foto_wakil, dan theme_asset JSON {hero, banner, poster, closing}. Kolom
+ * hanya berisi nama file acak di public/uploads/candidates (CandidateAssets).
+ *
+ * Stage 16: satu tampilan untuk semua pasangan. Pilihan layout, latar
+ * panggung, artwork, dan tekstur dihapus; profil paslon dibuka "Gambar
+ * pembuka profil" (banner, landscape) dan ditutup "Latar penutup" (closing).
  *
  * Kandidat yang sudah punya baris suara tidak dapat dihapus (FK RESTRICT):
  * gunakan status nonaktif.
@@ -56,7 +59,6 @@ class CandidateController extends AdminController
         'video_youtube'  => 'video',
         'theme_name'     => 'nama tema',
         'theme_accent'   => 'warna aksen',
-        'theme_layout'   => 'layout',
         'status_aktif'   => 'status aktif',
     ];
 
@@ -246,7 +248,7 @@ class CandidateController extends AdminController
         $theme = CandidateTheme::present($candidate);
 
         if ($theme['video'] !== null) {
-            CandidateTheme::allowVideoFrame($this->response);
+            CandidateTheme::allowVideo($this->response);
         }
 
         return view('admin/candidates/preview', [
@@ -394,7 +396,6 @@ class CandidateController extends AdminController
         }
 
         $number = $post('nomor_urut');
-        $layout = $post('theme_layout');
         // Satu baris (spasi & baris baru dirapatkan); kosong = null.
         $line = static fn (string $value): ?string => ($value = trim((string) preg_replace('/\s+/u', ' ', $value))) === '' ? null : $value;
         // Kata karakter: baris baru juga dianggap pemisah.
@@ -420,7 +421,6 @@ class CandidateController extends AdminController
             'video_youtube'  => $video === '' ? null : (CandidateTheme::youtubeId($video) ?? mb_substr($video, 0, 200)),
             'theme_name'     => $post('theme_name') === '' ? null : $post('theme_name'),
             'theme_accent'   => $accent === '' ? null : $accent,
-            'theme_layout'   => $layout === '' ? null : $layout,
             'status_aktif'   => $post('status_aktif') === '1' ? 1 : 0,
         ];
     }

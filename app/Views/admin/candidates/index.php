@@ -18,7 +18,6 @@
 use App\Libraries\CandidateAssets;
 use App\Models\ElectionModel;
 
-$layoutNames = ['split' => 'Split', 'poster' => 'Poster', 'column' => 'Kolom'];
 ?>
 <div class="admin-page">
   <header class="admin-head">
@@ -27,7 +26,7 @@ $layoutNames = ['split' => 'Split', 'poster' => 'Poster', 'column' => 'Kolom'];
         <h1 class="admin-head__title">Pasangan calon</h1>
         <?= view('admin/partials/head_hint') ?>
       </div>
-      <p class="admin-head__lede" id="admin-head-lede" data-lede>Identitas, visi-misi, dan tema visual yang tampil di halaman kandidat pemilih. Setiap pasangan punya warna aksen solid, layout, dan asset sendiri.</p>
+      <p class="admin-head__lede" id="admin-head-lede" data-lede>Identitas, visi-misi, dan tema visual yang tampil di halaman kandidat pemilih. Setiap pasangan punya warna aksen solid dan gambar sendiri; tampilan halamannya sama untuk semua pasangan.</p>
     </div>
     <?php if (! ($resultsLocked ?? false)): ?>
       <div class="admin-head__actions">
@@ -111,7 +110,6 @@ $layoutNames = ['split' => 'Split', 'poster' => 'Poster', 'column' => 'Kolom'];
           <dl class="cand-card__meta">
             <div><dt>Tema</dt><dd><?= esc($t['theme_name']) ?></dd></div>
             <div><dt>Aksen</dt><dd><span class="swatch" aria-hidden="true"></span><span class="mono"><?= esc($t['accent']) ?></span></dd></div>
-            <div><dt>Layout</dt><dd><?= esc($layoutNames[$t['layout']]) ?><?= $row['raw']['theme_layout'] === null ? ' (otomatis)' : '' ?></dd></div>
             <div><dt>Suara sah</dt><dd><?= angka($row['votes']) ?></dd></div>
             <div><dt>Asset</dt><dd><?= $filled ?> / <?= count(CandidateAssets::SLOTS) ?></dd></div>
             <?php if (! $active): ?><div><dt>Status</dt><dd><span class="pill pill--muted">Nonaktif</span></dd></div><?php endif; ?>

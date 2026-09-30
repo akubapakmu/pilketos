@@ -26,7 +26,6 @@ $pairPeople = [
       <?php else: ?>
         <span class="pair__mono" role="img"
               aria-label="<?= esc($person['name'], 'attr') ?>, calon <?= esc($person['role'], 'attr') ?> pasangan <?= esc($pair['label'], 'attr') ?> (foto belum tersedia)">
-          <span class="pair__pattern pair__pattern--<?= esc($pair['pattern'], 'attr') ?>" aria-hidden="true"></span>
           <span class="pair__initials" aria-hidden="true"><?= esc($person['initials']) ?></span>
         </span>
       <?php endif; ?>

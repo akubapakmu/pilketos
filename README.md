@@ -108,7 +108,7 @@ NO_ACTIVE_VOTE --coblos--> LOCKED --unlock admin (alasan)--> NO_ACTIVE_VOTE (bar
 Struktur folder utama:
 
 ```
-docs/                spesifikasi (00–05), desain (06–10), catatan-tahap (STAGE1–13)
+docs/                spesifikasi (00–05), desain (06–10), catatan-tahap (STAGE1–16)
 app/Commands/        admin:create, admin:password, osis:check
 app/Config/          Routes.php, Filters.php, ContentSecurityPolicy.php, App.php, Homepage.php, ...
 app/Controllers/     Home, VotingController, Student/*, Teacher/*, Admin/*
@@ -216,14 +216,14 @@ komputer server harus benar.
 
 ## 6. Database
 
-`php spark migrate` membuat 9 tabel dan menjalankan 14 migration:
+`php spark migrate` membuat 9 tabel dan menjalankan 15 migration:
 
 | Tabel | Isi |
 |---|---|
 | `admins` | admin panel (sandi `password_hash`) |
 | `students` | NISN (unik, teks), nama, jenis kelamin L/P, kelas, nomor absen, kode unik, `status_aktif` |
 | `teachers` | NIP (unik, teks), nama, kode unik, `status_aktif` |
-| `candidates` | nomor urut (unik), ketua, wakil, visi, misi, foto, tema (aksen, layout, latar, asset JSON), profil & kampanye (slogan, bio, karakter, program, pesan, ID video YouTube; Stage 15), `status_aktif` |
+| `candidates` | nomor urut (unik), ketua, wakil, visi, misi, foto, tema (nama, aksen, asset JSON: foto berdua, gambar pembuka, poster, latar penutup; Stage 16 tanpa layout & latar panggung), profil & kampanye (slogan, bio, karakter, program, pesan, ID video YouTube; Stage 15), `status_aktif` |
 | `elections` | nama, tahun, `start_at`, `end_at`, status, `batas_pasangan` (2–10, bawaan 3; Stage 15) |
 | `student_votes`, `teacher_votes` | election, pemilih, pasangan, `status` LOCKED/UNLOCKED, waktu, perangkat, browser |
 | `vote_unlock_logs` | unlock: suara yang dibuka, admin, alasan, waktu |
@@ -550,18 +550,29 @@ Admin > **Pasangan calon** > Tambah / Ubah:
 
 - nomor urut (1-99, unik), nama ketua & wakil, visi, misi (satu poin per
   baris), nama tema, warna aksen `#RRGGBB` (kontras teks dihitung otomatis),
-  layout (otomatis / split / poster / column), status aktif;
+  status aktif. Stage 16: tidak ada lagi pilihan layout; semua pasangan
+  memakai satu tampilan yang sama;
 - **Profil & kampanye** (Stage 15, semua opsional): slogan, bio ketua/wakil,
   kata karakter (dipisah koma, tampil maks. 3), program unggulan (satu per
   baris: `Judul — penjelasan`), pesan ketua/wakil, tautan video YouTube
   (disimpan sebagai ID, diputar lewat youtube-nocookie setelah diklik).
   Bagian yang kosong tidak tampil di halaman profil paslon;
-- 7 slot gambar: foto ketua, foto wakil, hero (berdua), latar panggung,
-  artwork, tekstur, poster. Hanya `jpg/jpeg/png/webp` sampai 5 MB (tekstur
-  2 MB); isi file diperiksa, gambar di-encode ulang server (WebP bila tersedia),
-  metadata EXIF/GPS dibuang, nama file acak;
+- 6 slot gambar (Stage 16): foto ketua, foto wakil, **gambar pembuka profil**
+  (landscape buatan paslon, tampil utuh di paling atas profil; disarankan
+  1920 × 1080, lebar minimal 1200 px, gambar tegak/persegi ditolak), poster,
+  **latar penutup** (latar bagian penutup profil, diberi lapisan gelap), dan
+  foto pasangan (berdua, untuk perolehan suara beranda & hasil akhir). Hanya
+  `jpg/jpeg/png/webp` sampai 5 MB; isi file diperiksa, gambar di-encode ulang
+  server (WebP bila tersedia), metadata EXIF/GPS dibuang, nama file acak;
 - **Pratinjau** menampilkan halaman profil paslon persis seperti yang dilihat
   pemilih.
+
+Memperbarui dari Stage 15 ke Stage 16: jalankan `php spark migrate`. Migration
+`SimplifyCandidateTheme` menghapus pilihan layout, latar panggung, artwork, dan
+tekstur **beserta file gambarnya** di `public/uploads/candidates/` (tidak dapat
+dikembalikan; cadangkan folder itu dulu bila file lama ingin disimpan); foto,
+foto berdua, dan poster tetap. Unggah gambar pembuka & latar penutup baru lewat
+form pasangan.
 
 **Batas pasangan aktif** (Stage 15): panel di atas daftar pasangan, 2–10
 pasangan (bawaan 3), tersimpan per pemilihan dan tercatat di audit log. Batas
@@ -614,14 +625,19 @@ Siswa > Impor atau Guru > Impor:
   halaman profil paslon, **Pilih 0X** langsung ke kotak pasangan itu di surat suara
   (kotak disorot dan tombol Coblos-nya difokuskan). Jumlah kolom mengikuti
   jumlah pasangan (Stage 15, mis. 5 pasangan = 3 + 2).
-- Profil paslon (`/siswa/paslon/0X`, `/guru/paslon/0X`, Stage 15): Ketua ×
-  Wakil sebagai satu tim — pembuka dengan nomor urut raksasa, duo potret (atau
-  foto berdua), nama & slogan; Kenali pasangan; Visi kami (menyala mengikuti
-  scroll); Misi kami; Program unggulan; Poster (layar penuh) & video; Pesan
-  dari kami + penutup **Pilih Paslon 0X** / kembali ke daftar, dan deret nomor
-  semua paslon. Navigasi bagian: bar menempel di HP/tablet, rel vertikal di
-  desktop. Warna, pola, dan layout (split/poster/column) tetap per pasangan.
-  Rincian: [`STAGE15-NOTES.md`](docs/catatan-tahap/STAGE15-NOTES.md).
+- Profil paslon (`/siswa/paslon/0X`, `/guru/paslon/0X`, Stage 15, redesain
+  Stage 16): satu tampilan untuk semua pasangan. Pembuka = satu **gambar
+  landscape buatan paslon** (tampil utuh) dengan tombol **Lihat Visi & Misi**
+  di bawahnya (tanpa gambar: judul sederhana); lalu Kenali pasangan (kartu
+  foto, nama, peran, bio, pill karakter), Visi kami, Misi kami, Program
+  unggulan, Poster kampanye (layar penuh), Pesan dari kami, Video kampanye
+  (thumbnail asli YouTube + tombol putar), dan penutup berlatar gambar khusus
+  (tanpa warna aksen) dengan **Pilih Paslon 0X** / kembali ke daftar dan deret
+  nomor semua paslon. Kepala bagian berikon; tanpa pola, tekstur, dan garis.
+  Navigasi bagian: bar menempel di HP/tablet, kolom kanan dengan semua label
+  di desktop (≥ 1024 px). Rincian:
+  [`STAGE16-NOTES.md`](docs/catatan-tahap/STAGE16-NOTES.md) (awal:
+  [`STAGE15-NOTES.md`](docs/catatan-tahap/STAGE15-NOTES.md)).
 - Surat suara: tekan **Coblos** di kotak pasangan, atau tekan-tahan paku,
   geser ke kotak pasangan, lepas untuk mencoblos; lalu **Konfirmasi pilihan**.
   Di HP kotak pasangan + paku muat satu layar (3 pasangan). Setelah dicoblos, kertas bolong
@@ -771,8 +787,8 @@ composer install
 composer test                 (atau vendor\bin\phpunit --no-coverage)
 ```
 
-Hasil terakhir (Stage 15): **444 test, 4.084 assertion, lulus** pada PHP
-8.4.19 dengan MariaDB 10.11.14 (Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
+Hasil terakhir (Stage 16): **454 test, 4.312 assertion, lulus** pada PHP
+8.4.19 dengan MariaDB 10.11.14 (Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
 8.0.46; Stage 5 dan 6 tidak mengubah schema maupun query. Test paralel (race
 condition) memakai `pcntl_fork` sehingga di-skip di Windows. Rincian dan uji
 browser: [`STAGE4-NOTES.md`](docs/catatan-tahap/STAGE4-NOTES.md) bagian 9,
@@ -788,7 +804,7 @@ beserta ringkasan tiap dokumen: [`docs/README.md`](docs/README.md).
 |---|---|
 | [`docs/spesifikasi/`](docs/spesifikasi) | `00-MASTER-PROJECT.md` (spesifikasi utama, source of truth) dan brief Stage 1–5 (`01`–`05`) |
 | [`docs/desain/`](docs/desain) | Identitas visual SMP 1 DAWE, Stage 6 (`06`–`10`): arah visual, tipografi, spesifikasi aset, prompt gambar, sistem gerak |
-| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE13-NOTES.md`) |
+| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE16-NOTES.md`) |
 
 ## 21. Beranda imersif & aset visual
 

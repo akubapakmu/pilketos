@@ -8,7 +8,7 @@ Dokumentasi pendukung aplikasi Pemilihan Ketua & Wakil Ketua OSIS SMP 1 DAWE
 docs/
 ├── spesifikasi/     brief & spesifikasi per tahap (00–05)
 ├── desain/          identitas visual, tipografi, aset, gerak (06–10)
-└── catatan-tahap/   catatan implementasi & handoff tiap tahap (STAGE1–14)
+└── catatan-tahap/   catatan implementasi & handoff tiap tahap (STAGE1–16)
 ```
 
 Dokumen di `spesifikasi/` dan `desain/` adalah **rencana** (apa yang harus
@@ -58,6 +58,7 @@ catatan tahap.
 | [`STAGE13-NOTES.md`](catatan-tahap/STAGE13-NOTES.md) | Stage 13: hasil akhir (PDF dompdf, cetak browser dengan logo & catatan kaki per halaman, tombol ikon di HP), sidebar Title Case + Halaman Utama/Keluar di bawah, Akun Admin (ganti nama pengguna & kata sandi), login admin layar terbelah + lihat kata sandi, istilah analitik Total/Pemilih/Jenis Kelamin |
 | [`STAGE14-NOTES.md`](catatan-tahap/STAGE14-NOTES.md) | Stage 14: gambar layar pembuka tidak telat (preload di `<head>`, tampil tanpa menunggu skrip, diurai sebelum dihitung), aksi kartu paslon rata tengah di HP, halaman impor siswa & guru berbahasa ramah + contoh baru, tombol unduh template selebar layar di HP, tab saring pratinjau impor rata tengah / bergulir mendatar di HP dan dimuat tanpa muat ulang |
 | [`STAGE15-NOTES.md`](catatan-tahap/STAGE15-NOTES.md) | Stage 15: batas pasangan calon aktif diatur admin (2–10, bawaan 3) + grid bilik suara & surat suara untuk berapa pun pasangan, halaman profil paslon editorial (`/siswa/paslon/0X`, `/guru/paslon/0X`: Ketua × Wakil satu tim, visi-misi, program, poster & video YouTube, pesan, navigasi bagian), field profil & kampanye baru, bab visi-misi keluar dari bilik suara |
+| [`STAGE16-NOTES.md`](catatan-tahap/STAGE16-NOTES.md) | Stage 16: redesain halaman profil paslon mengikuti gambar referensi — satu gambar pembuka landscape buatan paslon + tombol Lihat Visi & Misi di bawahnya, navigasi bagian di kolom kanan dengan semua label (desktop), kepala bagian berikon, kartu & pill, Pesan terpisah dari penutup, video dengan thumbnail asli YouTube, penutup berlatar gambar khusus tanpa warna aksen; satu tampilan untuk semua pasangan (layout, latar panggung, artwork, tekstur/pola, dan garis dihapus; data & file lama dibersihkan migration) |
 
 Catatan tahap adalah arsip: isinya menggambarkan kondisi proyek saat tahap itu
 selesai, termasuk letak file saat itu (sebelum dokumen dipindah ke `docs/`).

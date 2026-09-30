@@ -1,23 +1,22 @@
 /**
- * Profil paslon (Stage 15): siswa|guru/paslon/0X + pratinjau admin.
- * Markup: app/Views/paslon/partials/profile.php, gaya: paslon.css.
+ * Profil paslon (Stage 15, redesain Stage 16): siswa|guru/paslon/0X +
+ * pratinjau admin. Markup: app/Views/paslon/partials/profile.php, gaya: paslon.css.
  *
  * Semua fitur progressive enhancement: tanpa JavaScript seluruh isi tampil
  * utuh, navigasi bagian berupa tautan anchor biasa, poster terbuka sebagai
- * file gambar, dan video tersedia lewat tautan "Buka di YouTube".
+ * file gambar, dan thumbnail video membuka YouTube.
  *
- * - [data-px-nav]      : bagian aktif (aria-current) + rel progres; bar HP
- *                        menggeser tautan aktif ke area terlihat; rel desktop
- *                        muncul setelah pembuka terlewati.
- * - [data-px-reveal]   : muncul bertahap saat masuk layar (sekali).
- * - [data-px-parallax] : nomor raksasa & artwork bergerak halus (pembuka saja).
- * - [data-px-words]    : visi menyala kata demi kata mengikuti scroll.
- * - [data-px-zoom]     : poster dibuka di <dialog> (fokus & Escape bawaan).
- * - [data-px-video]    : iframe youtube-nocookie baru dibuat setelah tombol
- *                        putar ditekan (tanpa permintaan ke YouTube sebelumnya).
+ * - [data-px-nav]    : bagian aktif (aria-current; bawaan bagian pertama);
+ *                      bar HP menggeser tautan aktif ke area terlihat. Di
+ *                      desktop navigasi berupa kolom kanan yang selalu tampil.
+ * - [data-px-reveal] : muncul bertahap saat masuk layar (sekali).
+ * - [data-px-zoom]   : poster dibuka di <dialog> (fokus & Escape bawaan).
+ * - [data-px-video]  : thumbnail asli YouTube (i.ytimg.com) + tombol putar;
+ *                      iframe youtube-nocookie baru dibuat setelah diklik.
+ *                      Thumbnail dinaikkan ke maxresdefault bila tersedia.
  *
- * prefers-reduced-motion: reveal, parallax, dan kata menyala tidak aktif
- * (konten langsung tampil); navigasi, lightbox, dan video tetap berfungsi.
+ * prefers-reduced-motion: reveal tidak aktif (konten langsung tampil);
+ * navigasi, lightbox, dan video tetap berfungsi.
  * Teks dari server hanya dipakai lewat textContent / setAttribute.
  */
 (function () {
@@ -28,14 +27,13 @@
 
   /* ---------- navigasi bagian ---------- */
 
-  function initNav(root, hero) {
+  function initNav(root) {
     var nav = root.querySelector('[data-px-nav]');
     if (!nav) {
       return;
     }
 
     var links = Array.prototype.slice.call(nav.querySelectorAll('[data-px-nav-link]'));
-    var fill = nav.querySelector('[data-px-nav-fill]');
     var list = nav.querySelector('.px-nav__list');
     var sections = [];
 
@@ -67,7 +65,7 @@
       });
 
       // Bar HP: tautan aktif digeser ke area terlihat tanpa menggulir halaman.
-      if (index >= 0 && list && list.scrollWidth > list.clientWidth) {
+      if (list && list.scrollWidth > list.clientWidth) {
         var link = sections[index].link;
         var left = link.offsetLeft - (list.clientWidth - link.offsetWidth) / 2;
         list.scrollTo({ left: Math.max(0, left), behavior: reduced ? 'auto' : 'smooth' });
@@ -78,8 +76,10 @@
 
     function update() {
       ticking = false;
-      var line = window.innerHeight * 0.4;
-      var index = -1;
+      // Garis baca di sepertiga atas layar (maks. 260 px): bagian pendek yang
+      // dituju lewat navigasi tetap menjadi bagian aktif, bukan bagian sesudahnya.
+      var line = Math.min(window.innerHeight * 0.3, 260);
+      var index = 0;
 
       for (var i = 0; i < sections.length; i++) {
         if (sections[i].el.getBoundingClientRect().top <= line) {
@@ -94,15 +94,6 @@
       }
 
       setActive(index);
-
-      if (fill) {
-        var first = sections[0].el.getBoundingClientRect().top + window.pageYOffset;
-        var lastEl = sections[sections.length - 1].el;
-        var last = lastEl.getBoundingClientRect().top + window.pageYOffset;
-        var span = Math.max(1, last - first);
-        var progress = (window.pageYOffset + line - first) / span;
-        nav.style.setProperty('--px-progress', Math.max(0, Math.min(1, progress)).toFixed(3));
-      }
     }
 
     function request() {
@@ -115,15 +106,6 @@
     window.addEventListener('scroll', request, { passive: true });
     window.addEventListener('resize', request);
     request();
-
-    // Rel desktop muncul setelah pembuka terlewati.
-    if (hero && hasIO) {
-      new IntersectionObserver(function (entries) {
-        nav.classList.toggle('is-visible', !entries[entries.length - 1].isIntersecting);
-      }, { rootMargin: '-35% 0px 0px 0px' }).observe(hero);
-    } else {
-      nav.classList.add('is-visible');
-    }
   }
 
   /* ---------- muncul bertahap ---------- */
@@ -142,100 +124,6 @@
     for (var i = 0; i < items.length; i++) {
       observer.observe(items[i]);
     }
-  }
-
-  /* ---------- visi: kata demi kata ---------- */
-
-  function splitWords(block) {
-    var p = block.querySelector('p') || block;
-    var words = p.textContent.trim().split(/\s+/);
-    p.textContent = '';
-
-    words.forEach(function (word, index) {
-      var span = document.createElement('span');
-      span.className = 'w';
-      span.textContent = word;
-      p.appendChild(span);
-      if (index < words.length - 1) {
-        p.appendChild(document.createTextNode(' '));
-      }
-    });
-
-    return p.querySelectorAll('.w');
-  }
-
-  function initWords(blocks) {
-    var items = blocks.map(function (block) {
-      return { block: block, words: splitWords(block), lit: -1 };
-    });
-
-    return function (viewportHeight) {
-      items.forEach(function (item) {
-        var rect = item.block.getBoundingClientRect();
-        if (rect.bottom < 0 || rect.top > viewportHeight) {
-          return;
-        }
-
-        // 0 saat blok masuk dari bawah (88% layar), 1 saat mencapai 40% layar.
-        var startY = viewportHeight * 0.88;
-        var endY = viewportHeight * 0.4;
-        var progress = Math.min(1, Math.max(0, (startY - rect.top) / (startY - endY)));
-        var lit = Math.round(progress * item.words.length) - 1;
-
-        if (lit === item.lit) {
-          return;
-        }
-        item.lit = lit;
-
-        for (var i = 0; i < item.words.length; i++) {
-          item.words[i].classList.toggle('is-lit', i <= lit);
-        }
-      });
-    };
-  }
-
-  /* ---------- parallax pembuka + kata visi (satu rAF per frame) ---------- */
-
-  function initScroll(hero, updateWords) {
-    var layers = hero ? hero.querySelectorAll('[data-px-parallax]') : [];
-    var heroVisible = true;
-    var ticking = false;
-
-    function frame() {
-      ticking = false;
-      var vh = window.innerHeight;
-
-      if (heroVisible && layers.length) {
-        var y = window.pageYOffset;
-        for (var i = 0; i < layers.length; i++) {
-          var speed = parseFloat(layers[i].getAttribute('data-px-parallax')) || 0;
-          var shift = Math.max(-120, Math.min(120, y * speed));
-          layers[i].style.setProperty('--px-shift', shift.toFixed(1));
-        }
-      }
-
-      if (updateWords) {
-        updateWords(vh);
-      }
-    }
-
-    function request() {
-      if (!ticking) {
-        ticking = true;
-        window.requestAnimationFrame(frame);
-      }
-    }
-
-    if (hero) {
-      new IntersectionObserver(function (entries) {
-        heroVisible = entries[entries.length - 1].isIntersecting;
-        request();
-      }).observe(hero);
-    }
-
-    window.addEventListener('scroll', request, { passive: true });
-    window.addEventListener('resize', request);
-    request();
   }
 
   /* ---------- lightbox poster ---------- */
@@ -277,22 +165,53 @@
     });
   }
 
-  /* ---------- video: facade -> iframe setelah diklik ---------- */
+  /* ---------- video: thumbnail asli -> iframe setelah diklik ---------- */
+
+  function upgradeThumb(img) {
+    var hd = img.getAttribute('data-hd') || '';
+    if (hd.indexOf('https://i.ytimg.com/vi/') !== 0) {
+      return;
+    }
+
+    // maxresdefault tidak selalu ada: YouTube membalas gambar 120x90.
+    var probe = new Image();
+    probe.onload = function () {
+      if (probe.naturalWidth > 120) {
+        img.src = hd;
+      }
+    };
+    probe.src = hd;
+  }
 
   function initVideo(root) {
     root.querySelectorAll('[data-px-video]').forEach(function (box) {
       var play = box.querySelector('[data-px-play]');
       var frame = box.querySelector('[data-px-video-frame]');
+      var thumb = box.querySelector('.px-video__thumb');
       var src = box.getAttribute('data-embed') || '';
 
-      // Hanya URL embed mode privasi yang dibuat server.
+      if (thumb) {
+        if (thumb.complete && thumb.naturalWidth > 0) {
+          upgradeThumb(thumb);
+        } else {
+          thumb.addEventListener('load', function onLoad() {
+            thumb.removeEventListener('load', onLoad);
+            upgradeThumb(thumb);
+          });
+        }
+      }
+
+      // Hanya URL embed mode privasi yang dibuat server; selain itu thumbnail
+      // tetap berupa tautan ke YouTube.
       if (!play || !frame || src.indexOf('https://www.youtube-nocookie.com/embed/') !== 0) {
         return;
       }
 
-      play.hidden = false;
+      play.setAttribute('role', 'button');
 
-      play.addEventListener('click', function () {
+      function start(event) {
+        event.preventDefault();
+
         var iframe = document.createElement('iframe');
         iframe.setAttribute('src', src);
         iframe.setAttribute('title', box.getAttribute('data-title') || 'Video kampanye');
@@ -307,6 +226,14 @@
         frame.textContent = '';
         frame.appendChild(iframe);
         iframe.focus();
+      }
+
+      play.addEventListener('click', start);
+      // role="button": Spasi juga memutar (Enter sudah memicu click).
+      play.addEventListener('keydown', function (event) {
+        if (event.key === ' ' || event.key === 'Spacebar') {
+          start(event);
+        }
       });
     });
   }
@@ -317,9 +244,7 @@
       return;
     }
 
-    var hero = root.querySelector('[data-px-hero]');
-
-    initNav(root, hero);
+    initNav(root);
     initLightbox(root);
     initVideo(root);
 
@@ -330,7 +255,6 @@
     // Gaya "belum muncul" hanya aktif setelah efek siap.
     root.classList.add('px-motion');
     initReveal(root);
-    initScroll(hero, initWords(Array.prototype.slice.call(root.querySelectorAll('[data-px-words]'))));
   }
 
   if (document.readyState === 'loading') {

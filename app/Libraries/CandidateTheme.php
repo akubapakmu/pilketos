@@ -10,46 +10,54 @@ use CodeIgniter\HTTP\ResponseInterface;
  * per pasangan (MASTER section 6, Stage 2 "candidate-specific theme").
  *
  * Sumber tema (semua diisi admin di Stage 3):
- * - theme_accent     : warna solid #RRGGBB (tanpa gradient);
- * - theme_background : gambar latar panggung kandidat;
- * - theme_asset      : JSON {hero, texture, artwork, poster} berisi nama file;
- * - theme_layout     : art direction halaman (split | poster | column);
+ * - theme_accent : warna solid #RRGGBB (tanpa gradient);
+ * - theme_asset  : JSON {hero, banner, poster, closing} berisi nama file;
  * - foto_ketua / foto_wakil.
  * Stage 15 (halaman profil paslon): slogan, bio, karakter (maks. 3 kata),
  * program unggulan {title, text}, pesan ketua/wakil, dan video YouTube
  * (hanya ID; URL embed selalu youtube-nocookie.com).
+ * Stage 16: satu tampilan untuk semua pasangan. Layout per pasangan, latar
+ * panggung, tekstur/pola, dan artwork dihapus; profil dibuka gambar khusus
+ * (banner) dan ditutup gambar latar (closing). Video memakai thumbnail asli
+ * YouTube (i.ytimg.com).
  * Asset yang belum diunggah tidak membuat halaman rusak: foto diganti monogram
- * inisial, texture diganti pola SVG solid sesuai layout.
+ * inisial, gambar pembuka diganti judul sederhana.
  *
  * Semua URL dibuat lewat CandidateModel::assetUrl() (basename + rawurlencode),
  * dan warna aksen divalidasi ketat sehingga aman dipakai di atribut style.
  */
 final class CandidateTheme
 {
-    public const LAYOUTS = ['split', 'poster', 'column'];
-
     /**
-     * Pola bawaan per layout bila admin belum mengunggah texture.
+     * Kunci theme_asset (Stage 16): hero = foto berdua (beranda & hasil akhir),
+     * banner = gambar pembuka profil, poster, closing = latar penutup profil.
      */
-    public const PATTERNS = [
-        'split'  => 'grid',
-        'poster' => 'hatch',
-        'column' => 'dots',
-    ];
-
-    public const ASSET_KEYS = ['hero', 'texture', 'artwork', 'poster'];
+    public const ASSET_KEYS = ['hero', 'banner', 'poster', 'closing'];
 
     /**
      * Stage 15: embed YouTube mode privasi (cookie baru dipasang saat diputar).
      * Satu-satunya asal frame yang diizinkan CSP, dan hanya di halaman yang
-     * memuat video (lihat allowVideoFrame()).
+     * memuat video (lihat allowVideo()).
      */
     public const VIDEO_ORIGIN = 'https://www.youtube-nocookie.com';
+
+    /**
+     * Stage 16: thumbnail asli video YouTube, dimuat sebelum tombol putar
+     * ditekan. Hanya halaman yang memuat video yang mengizinkan asal ini di
+     * img-src (lihat allowVideo()).
+     */
+    public const THUMB_ORIGIN = 'https://i.ytimg.com';
 
     /**
      * Kata karakter yang ditampilkan per orang.
      */
     public const MAX_TAGS = 3;
+
+    /**
+     * Porsi warna aksen pada --accent-soft (sisanya putih): tint solid untuk
+     * panel, kartu, dan pill di halaman profil.
+     */
+    public const SOFT_MIX = 0.12;
 
     private const INK      = '#15141A';
     private const PAPER    = '#FAF9F6';
@@ -64,7 +72,6 @@ final class CandidateTheme
         $number = (int) ($candidate['nomor_urut'] ?? 0);
         $accent = self::accent($candidate['theme_accent'] ?? null);
         $assets = is_array($candidate['theme_asset'] ?? null) ? $candidate['theme_asset'] : [];
-        $layout = self::layout($candidate['theme_layout'] ?? null, $number);
         $ketua  = trim((string) ($candidate['nama_ketua'] ?? ''));
         $wakil  = trim((string) ($candidate['nama_wakil'] ?? ''));
 
@@ -82,11 +89,9 @@ final class CandidateTheme
             'accent'         => $accent,
             'accent_ink'     => self::inkOn($accent),
             'accent_text'    => self::textOnPaper($accent),
-            'layout'         => $layout,
-            'pattern'        => self::PATTERNS[$layout],
+            'accent_soft'    => self::soft($accent),
             'photo_ketua'    => self::url($candidate['foto_ketua'] ?? null),
             'photo_wakil'    => self::url($candidate['foto_wakil'] ?? null),
-            'background'     => self::url($candidate['theme_background'] ?? null),
             'slogan'         => self::text($candidate['slogan'] ?? null),
             'bio_ketua'      => self::text($candidate['bio_ketua'] ?? null),
             'bio_wakil'      => self::text($candidate['bio_wakil'] ?? null),
@@ -100,6 +105,10 @@ final class CandidateTheme
 
         $theme['video_url']   = $theme['video'] === null ? null : 'https://www.youtube.com/watch?v=' . $theme['video'];
         $theme['video_embed'] = $theme['video'] === null ? null : self::VIDEO_ORIGIN . '/embed/' . $theme['video'] . '?autoplay=1&rel=0';
+        // Stage 16: hqdefault selalu tersedia (480x360); maxresdefault (1280x720)
+        // hanya untuk video beresolusi tinggi, dicoba paslon.js setelah halaman dimuat.
+        $theme['video_thumb']    = $theme['video'] === null ? null : self::THUMB_ORIGIN . '/vi/' . $theme['video'] . '/hqdefault.jpg';
+        $theme['video_thumb_hd'] = $theme['video'] === null ? null : self::THUMB_ORIGIN . '/vi/' . $theme['video'] . '/maxresdefault.jpg';
 
         // Stage 8: nama tema kosong jatuh ke "Pasangan 0X"; tampilan pemilih
         // tidak menulisnya dua kali di samping label "Pasangan 0X".
@@ -108,6 +117,10 @@ final class CandidateTheme
         foreach (self::ASSET_KEYS as $key) {
             $theme[$key] = self::url($assets[$key] ?? null);
         }
+
+        // Ukuran asli gambar pembuka untuk atribut width/height (tampil utuh,
+        // tanpa dipotong): ruang disiapkan sebelum gambar selesai dimuat.
+        $theme['banner_size'] = $theme['banner'] === null ? null : self::imageSize($assets['banner']);
 
         $theme['style'] = self::style($theme);
 
@@ -125,29 +138,48 @@ final class CandidateTheme
     }
 
     /**
-     * Stage 15: izinkan iframe YouTube (mode privasi) HANYA untuk respons
-     * halaman yang memuat video paslon. Halaman lain tetap frame-src 'none'
+     * Izinkan video paslon HANYA untuk respons halaman yang memuatnya:
+     * - Stage 15: iframe YouTube mode privasi (frame-src youtube-nocookie.com);
+     * - Stage 16: thumbnail asli video (img-src i.ytimg.com).
+     * Halaman lain tetap frame-src 'none' dan img-src tanpa asal luar
      * (Config\ContentSecurityPolicy).
      */
-    public static function allowVideoFrame(ResponseInterface $response): void
+    public static function allowVideo(ResponseInterface $response): void
     {
         $csp = $response->getCSP();
         $csp->clearDirective('frame-src');
         $csp->addFrameSrc(self::VIDEO_ORIGIN);
+        $csp->addImageSrc(self::THUMB_ORIGIN);
     }
 
     /**
      * Custom property CSS untuk elemen bertema kandidat. Nilai sudah tervalidasi
-     * (#RRGGBB), sehingga aman ditaruh di atribut style.
+     * (#RRGGBB), sehingga aman ditaruh di atribut style. --accent-soft (Stage 16)
+     * dihitung dari aksen: tint solid untuk panel, kartu, dan pill.
      */
     public static function style(array $theme): string
     {
         return sprintf(
-            '--accent: %s; --accent-ink: %s; --accent-text: %s;',
+            '--accent: %s; --accent-ink: %s; --accent-text: %s; --accent-soft: %s;',
             $theme['accent'],
             $theme['accent_ink'],
             $theme['accent_text'],
+            self::soft($theme['accent']),
         );
+    }
+
+    /**
+     * Tint solid aksen di atas putih (SOFT_MIX aksen), format #RRGGBB.
+     */
+    public static function soft(string $accent): string
+    {
+        $channels = [];
+
+        foreach ([1, 3, 5] as $offset) {
+            $channels[] = (int) round(hexdec(substr($accent, $offset, 2)) * self::SOFT_MIX + 255 * (1 - self::SOFT_MIX));
+        }
+
+        return vsprintf('#%02X%02X%02X', $channels);
     }
 
     /**
@@ -256,16 +288,6 @@ final class CandidateTheme
             ($dLp / $sl) ** 2 + ($dCp / $sc) ** 2 + ($dHp / $sh) ** 2
             + $rt * ($dCp / $sc) * ($dHp / $sh),
         );
-    }
-
-    public static function layout(mixed $value, int $number): string
-    {
-        if (is_string($value) && in_array($value, self::LAYOUTS, true)) {
-            return $value;
-        }
-
-        // Otomatis berbeda per nomor urut agar pasangan berurutan tidak identik.
-        return self::LAYOUTS[max(0, $number - 1) % count(self::LAYOUTS)];
     }
 
     /**
@@ -453,6 +475,24 @@ final class CandidateTheme
     private static function url(mixed $filename): ?string
     {
         return is_string($filename) ? CandidateModel::assetUrl($filename) : null;
+    }
+
+    /**
+     * [lebar, tinggi] file gambar di folder upload kandidat, atau null bila
+     * file tidak ada / tidak terbaca. Nama file selalu lewat basename().
+     *
+     * @return array{0: int, 1: int}|null
+     */
+    private static function imageSize(mixed $filename): ?array
+    {
+        if (! is_string($filename) || basename($filename) === '') {
+            return null;
+        }
+
+        $file = service('candidateAssets')->directory() . DIRECTORY_SEPARATOR . basename($filename);
+        $info = is_file($file) ? @getimagesize($file) : false;
+
+        return $info === false || $info[0] <= 0 || $info[1] <= 0 ? null : [(int) $info[0], (int) $info[1]];
     }
 
     private static function luminance(string $hex): float

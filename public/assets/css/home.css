@@ -1044,32 +1044,7 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   color: var(--accent-ink);
 }
 
-.pair__pattern {
-  position: absolute;
-  inset: 0;
-  background-color: var(--accent-ink);
-  opacity: 0.16;
-  -webkit-mask-image: url('../img/patterns/grid.svg');
-  mask-image: url('../img/patterns/grid.svg');
-  -webkit-mask-size: 24px 24px;
-  mask-size: 24px 24px;
-}
-
-.pair__pattern--hatch {
-  -webkit-mask-image: url('../img/patterns/hatch.svg');
-  mask-image: url('../img/patterns/hatch.svg');
-  -webkit-mask-size: 12px 12px;
-  mask-size: 12px 12px;
-}
-
-.pair__pattern--dots {
-  -webkit-mask-image: url('../img/patterns/dots.svg');
-  mask-image: url('../img/patterns/dots.svg');
-  -webkit-mask-size: 14px 14px;
-  mask-size: 14px 14px;
-}
-
-/* minimal 24px: tetap "teks besar" WCAG (>= 3:1) di atas aksen + pola, juga di HP */
+/* minimal 24px: tetap "teks besar" WCAG (>= 3:1) di atas aksen, juga di HP */
 .pair__initials {
   position: relative;
   font-family: var(--font-display);
