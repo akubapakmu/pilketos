@@ -461,7 +461,7 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
 }
 
 /* ==========================================================================
-   01 LERENG (hero): visual dulu, teks singkat di sepertiga bawah-kiri
+   01 LERENG (hero): gambar saja + tombol di sepertiga bawah-kiri (Stage 18)
    ========================================================================== */
 
 /* -- lapisan visual (belakang -> depan), paralaks berlapis lewat --mx/--my -- */
@@ -474,7 +474,6 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
 }
 
 .hero-bg__photo,
-.hero-bg__contour,
 .hero-bg__fore {
   position: absolute;
   will-change: transform;
@@ -507,30 +506,8 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   background: rgba(16, 19, 18, 0.22);
 }
 
-/* 3. kontur S01: garis punggungan Muria, warna dari CSS (mask), 8 px */
-.hero-bg__contour {
-  inset: 0;
-  background-color: var(--on-night);
-  opacity: 0.09;
-  -webkit-mask: url('../img/home/hero-contour.svg') center / cover no-repeat;
-  mask: url('../img/home/hero-contour.svg') center / cover no-repeat;
-  /* sebingkai dengan latar (object-fit: cover + skala diam yang sama) */
-  transform: translate3d(calc(var(--mx, 0) * -8px), calc(var(--my, 0) * -8px), 0) scale(var(--bg-rest));
-  transition: opacity 600ms var(--ease-out);
-}
-
-@media (orientation: portrait) {
-  .hero-bg__contour {
-    -webkit-mask-image: url('../img/home/hero-contour-mobile.svg');
-    mask-image: url('../img/home/hero-contour-mobile.svg');
-  }
-}
-
-.js .scene--hero:not(.is-shown) .hero-bg__contour { opacity: 0; }
-
-.js .scene--hero.is-shown .hero-bg__contour { transition-delay: 240ms; }
-
-/* 4. lapisan depan A05 (opsional): pojok kanan bawah, keluar bingkai, 14 px */
+/* 3. lapisan depan A05 (opsional): pojok kanan bawah, keluar bingkai, 14 px
+   (Stage 18: kontur punggungan S01 dihapus) */
 .hero-bg__fore {
   right: -4vw;
   bottom: calc(var(--dock-h) - 6vh);
@@ -553,7 +530,7 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
 
 .js .scene--hero.is-shown .hero-bg__fore-img { transition-delay: 120ms; }
 
-/* 5. canvas "embun / lubang coblos": hanya di sekitar pointer & ketukan */
+/* 4. canvas "embun / lubang coblos": hanya di sekitar pointer & ketukan */
 .field {
   position: absolute;
   inset: 0;
@@ -564,7 +541,8 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   pointer-events: none;
 }
 
-/* 6. teks + CTA: sepertiga bawah-kiri, paralaks 3 px */
+/* 5. CTA saja (Stage 18: tanpa kicker, judul terlihat, baris pendukung, dan
+   perforasi): sepertiga bawah-kiri, paralaks 3 px */
 .scene--hero .scene__inner { justify-content: flex-end; }
 
 .hero {
@@ -576,83 +554,8 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   transform: translate3d(calc(var(--mx, 0) * -3px), calc(var(--my, 0) * -3px), 0);
 }
 
-.hero__kicker {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: clamp(10px, 1.8vh, 16px);
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  line-height: 1.4;
-  letter-spacing: 0.18em;
-  color: var(--on-night-2);
-}
-
-/* registration mark S03 (detail kecil surat suara, sekali saja) */
-.hero__reg {
-  flex: 0 0 auto;
-  width: 18px;
-  height: 18px;
-  background-color: currentColor;
-  opacity: 0.7;
-  -webkit-mask: url('../img/home/hero-registration.svg') center / contain no-repeat;
-  mask: url('../img/home/hero-registration.svg') center / contain no-repeat;
-}
-
-/* judul "SMP 1 DAWE": sans semibold kapital, tracking positif (07 §4, §7) */
-.hero__title {
-  font-family: var(--font-ui);
-  font-size: clamp(2.5rem, 4.5vw, 4.5rem);
-  font-weight: 600;
-  line-height: 1.04;
-  letter-spacing: 0.03em;
-}
-
-/* baris judul = "jendela": kata naik dari bawah garis */
-.hero__line {
-  display: block;
-  overflow: hidden;
-  padding-block: 0.06em;
-  margin-block: -0.06em;
-}
-
-.hero__word { display: inline-block; }
-
-.js .hero__word[data-reveal] { transform: translate3d(0, 108%, 0); }
-
-.hero__support {
-  margin-top: clamp(10px, 1.6vh, 14px);
-  font-size: clamp(1rem, 1.2vw, 1.125rem);
-  line-height: 1.5;
-  color: var(--on-night-2);
-  white-space: nowrap;
-}
-
-/* garis sobek S02 di atas CTA: penghubung ke konsep surat suara */
-.hero__perf {
-  display: block;
-  width: min(360px, 100%);
-  height: 4px;
-  margin-block: clamp(18px, 3vh, 28px) clamp(16px, 2.6vh, 24px);
-  background-color: rgba(242, 241, 236, 0.42);
-  -webkit-mask: url('../img/home/hero-perforation.svg') left center / 240px 4px repeat-x;
-  mask: url('../img/home/hero-perforation.svg') left center / 240px 4px repeat-x;
-}
-
-/* urutan reveal hero (10-MOTION §4): latar 0 -> depan 120 -> kontur 240 ->
-   kicker 360 -> judul 440 -> baris pendukung 500 -> CTA + perforasi 560 */
-.js.is-ready .scene--hero.is-shown .hero__kicker { transition-delay: 360ms; }
-
-.js.is-ready .scene--hero.is-shown .hero__word[data-reveal] {
-  transition: opacity 400ms var(--ease-out), transform 650ms var(--ease-editorial);
-  transition-delay: 440ms;
-}
-
-.js.is-ready .scene--hero.is-shown .hero__support { transition-delay: 500ms; }
-
-.js.is-ready .scene--hero.is-shown .hero__perf,
-.js.is-ready .scene--hero.is-shown .hero__actions { transition-delay: 560ms; }
+/* urutan reveal hero (10-MOTION §4): latar 0 -> depan 120 -> CTA 240 */
+.js.is-ready .scene--hero.is-shown .hero__actions { transition-delay: 240ms; }
 
 .hero__actions {
   display: flex;
@@ -1291,24 +1194,22 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   border-top: 1px solid var(--night-line);
 }
 
+/* Stage 18: panah saja (nama "Kembali ke awal" lewat aria-label) */
 .scene-top {
   grid-column: 3;
   grid-row: 1;
   justify-self: end;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  min-width: 40px;
   min-height: 40px;
-  padding: 0 4px 0 12px;
+  padding: 0;
   color: var(--on-night-2);
-  font-family: var(--font-mono);
-  font-size: 0.6875rem;
-  letter-spacing: 0.18em;
   text-decoration: none;
-  text-transform: uppercase;
 }
 
-.scene-top .icon { width: 16px; height: 16px; }
+.scene-top .icon { width: 18px; height: 18px; }
 .scene-top:hover { color: var(--on-night); }
 
 .site-footer--scene {
@@ -1570,11 +1471,7 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   .site-nav--immersive .site-nav__row { min-height: 56px; }
   .site-nav--immersive .brandmark { --brand-h: 28px; }
 
-  /* judul HP tegak 32-48 px; blok teks + CTA selebar layar tepat di atas dock */
-  .hero__title { font-size: clamp(2rem, 10vw, 3rem); }
-  .hero__support { white-space: normal; }
-  .hero__perf { width: 100%; }
-
+  /* CTA selebar layar tepat di atas dock */
   .hero__actions {
     display: grid;
     width: 100%;
@@ -1725,13 +1622,9 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   .site-nav--immersive .site-nav__row { min-height: 48px; }
   .site-nav--immersive .brandmark { --brand-h: 24px; }
 
-  /* hanya kicker, judul, dan CTA */
+  /* CTA sebaris, tanpa tombol "lanjut" antar-scene */
   .hero { max-width: min(560px, 60vw); }
-  .hero__title { font-size: clamp(1.75rem, 7vh, 2.5rem); }
-  .hero__kicker { margin-bottom: 6px; }
-  .hero__support,
   .scene-next { display: none; }
-  .hero__perf { margin-block: 12px 10px; }
   .hero__actions { display: flex; width: auto; }
   .hbtn { width: auto; min-height: 44px; }
 
@@ -1780,7 +1673,6 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   .hero,
   .hero-bg__photo,
   .hero-bg__img,
-  .hero-bg__contour,
   .hero-bg__fore,
   .hero-bg__fore-img,
   .splash__img,
@@ -1788,13 +1680,11 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
 
   .has-scenes .scene:not(.is-active) { opacity: 0; }
 
-  .js [data-reveal],
-  .js .hero__word[data-reveal] {
+  .js [data-reveal] {
     opacity: 1;
     transform: none;
   }
 
-  .js .scene--hero:not(.is-shown) .hero-bg__contour { opacity: 0.09; }
   .js .scene--hero:not(.is-shown) .hero-bg__fore-img { opacity: 1; }
 
   .field { display: none; }

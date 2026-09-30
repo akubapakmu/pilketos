@@ -34,8 +34,9 @@ $firstScreen = [
  * DAWE (Stage 6, STAGE6-NOTES.md; dokumen 06-10).
  *
  * Tiga scene layar penuh yang berpindah satu per satu (home.js): LERENG
- * (hero berlapis: latar lereng Muria, kontur, lapisan depan opsional, teks
- * singkat), PEMILIH (pintu masuk Siswa/Guru), dan SUARA (perolehan suara /
+ * (hero berlapis: latar lereng Muria, lapisan depan opsional, tombol masuk &
+ * perolehan suara; Stage 18: tanpa teks terlihat, kontur, dan perforasi),
+ * PEMILIH (pintu masuk Siswa/Guru), dan SUARA (perolehan suara /
  * pasangan calon; hanya palet netral + aksen pasangan). Panel status
  * bergaya terminal menempel di bawah layar. Tanpa JavaScript, scene tampil
  * sebagai halaman bergulir biasa dengan scroll-snap.
@@ -69,15 +70,14 @@ $entries = [
   <?php /* ---------------------------------------------------- 01 LERENG (hero) */ ?>
   <section class="scene scene--hero is-active" id="beranda" data-scene aria-labelledby="hero-title" tabindex="-1">
     <?php /* Lapisan visual (belakang -> depan): latar lereng Muria (A03/A04),
-             lapisan gelap solid, kontur punggungan (S01), lapisan depan
-             parijoto (A05, opsional). Tanpa warna/nomor/foto pasangan. */ ?>
+             lapisan gelap solid, lapisan depan parijoto (A05, opsional).
+             Stage 18: tanpa kontur punggungan. Tanpa warna/nomor/foto pasangan. */ ?>
     <div class="hero-bg" aria-hidden="true" data-hero-bg>
       <picture class="hero-bg__photo">
         <source media="(orientation: portrait)" srcset="<?= esc(asset_url($home->heroMobile), 'attr') ?>">
         <img class="hero-bg__img" src="<?= esc(asset_url($home->heroDesktop), 'attr') ?>" alt="" fetchpriority="high" decoding="async" data-hero-img>
       </picture>
       <span class="hero-bg__shade"></span>
-      <span class="hero-bg__contour"></span>
       <?php if (($home->heroForeground ?? '') !== ''): ?>
         <span class="hero-bg__fore">
           <img class="hero-bg__fore-img" src="<?= esc(asset_url($home->heroForeground), 'attr') ?>" alt="" decoding="async">
@@ -87,14 +87,9 @@ $entries = [
     <canvas class="field" data-field aria-hidden="true"></canvas>
     <div class="scene__inner" data-scene-scroll>
       <div class="hero">
-        <p class="hero__kicker" aria-hidden="true" data-reveal><span class="hero__reg"></span>PILKETOS 2026</p>
-        <h1 class="hero__title" id="hero-title">
-          <span class="visually-hidden">Pemilihan Ketua &amp; Wakil Ketua OSIS </span>
-          <span class="hero__line"><span class="hero__word" data-reveal>SMP 1 DAWE</span></span>
-          <span class="visually-hidden"> 2026</span>
-        </h1>
-        <p class="hero__support" data-reveal>Satu pemilih, satu suara.</p>
-        <span class="hero__perf" aria-hidden="true" data-reveal></span>
+        <?php /* Stage 18: tanpa teks terlihat di atas gambar; judul tetap ada
+                 untuk pembaca layar (nama scene & satu-satunya <h1>). */ ?>
+        <h1 class="visually-hidden" id="hero-title">Pemilihan Ketua &amp; Wakil Ketua OSIS SMP 1 DAWE 2026</h1>
         <div class="hero__actions" data-reveal>
           <a class="hbtn hbtn--primary" href="#masuk" data-scene-link>Masuk untuk memilih <?= icon('arrow-right') ?></a>
           <a class="hlink" href="#<?= esc($liveId, 'attr') ?>" data-scene-link><?= esc($live !== null ? 'Lihat perolehan suara' : 'Kenali pasangan calon') ?></a>
@@ -200,7 +195,7 @@ $entries = [
       </div>
 
       <div class="scene__end">
-        <a class="scene-top" href="#beranda" data-scene-link><?= icon('arrow-up') ?><span>Kembali ke awal</span></a>
+        <a class="scene-top" href="#beranda" data-scene-link aria-label="Kembali ke awal"><?= icon('arrow-up') ?></a>
         <?= view('partials/footer', ['footerInScene' => true]) ?>
       </div>
     </div>

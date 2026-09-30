@@ -109,30 +109,27 @@ final class VisualIdentityTest extends CIUnitTestCase
         return substr($html, $start, strpos($html, '<header', $start) - $start);
     }
 
-    public function testHeroIsLayeredVisualFirstWithShortText(): void
+    public function testHeroIsLayeredVisualWithCallsToActionOnly(): void
     {
         $html = $this->home();
         $hero = $this->scene($html, 'beranda', 'masuk');
 
         // Lapisan: latar lanskap/potret (dipilih <picture>, dimuat segera),
-        // lapisan gelap, kontur; lapisan depan hanya bila dipasang.
+        // lapisan gelap; lapisan depan hanya bila dipasang. Stage 18: tanpa kontur.
         $this->assertStringContainsString('media="(orientation: portrait)" srcset="' . base_url('assets/img/home/hero-mobile.svg'), $hero);
         $this->assertMatchesRegularExpression('#<img class="hero-bg__img" src="' . preg_quote(base_url('assets/img/home/hero-desktop.svg'), '#') . '[^"]*" alt="" fetchpriority="high"#', $hero);
         $this->assertStringContainsString('hero-bg__shade', $hero);
-        $this->assertStringContainsString('hero-bg__contour', $hero);
         $this->assertStringNotContainsString('hero-bg__fore', $hero);
         $this->assertStringContainsString('data-field', $hero);
 
-        // Teks hanya kicker, judul, (satu baris pendukung), CTA.
-        $this->assertStringContainsString('PILKETOS 2026', $hero);
-        $this->assertMatchesRegularExpression('#<h1 class="hero__title" id="hero-title">\s*<span class="visually-hidden">Pemilihan Ketua & Wakil Ketua OSIS </span>\s*<span class="hero__line"><span class="hero__word" data-reveal>SMP 1 DAWE</span></span>\s*<span class="visually-hidden"> 2026</span>\s*</h1>#', $hero);
+        // Stage 18: tanpa teks terlihat, hanya CTA; judul untuk pembaca layar.
+        $this->assertStringContainsString('<h1 class="visually-hidden" id="hero-title">Pemilihan Ketua & Wakil Ketua OSIS SMP 1 DAWE 2026</h1>', $hero);
         $this->assertStringContainsString('Masuk untuk memilih', $hero);
         $this->assertStringContainsString('Lihat perolehan suara', $hero);
-        $this->assertStringContainsString('hero__perf', $hero);
-        $this->assertLessThanOrEqual(60, mb_strlen('Satu pemilih, satu suara.'));
 
         // Dihapus dari Stage 5: pita nomor pasangan, lede, tahun bergaris tepi.
-        foreach (['hero__bands', 'hero__band', 'hero__lede', 'hero__line--year', 'Kenali pasangan calon, lalu coblos'] as $gone) {
+        // Dihapus di Stage 18: kontur, kicker, judul terlihat, baris pendukung, perforasi.
+        foreach (['hero__bands', 'hero__band', 'hero__lede', 'hero__line--year', 'Kenali pasangan calon, lalu coblos', 'hero-bg__contour', 'hero__kicker', 'hero__title', 'hero__support', 'hero__perf', 'PILKETOS 2026', 'Satu pemilih'] as $gone) {
             $this->assertStringNotContainsString($gone, $hero, $gone);
         }
 
@@ -256,10 +253,6 @@ final class VisualIdentityTest extends CIUnitTestCase
         }
 
         $code = [
-            'assets/img/home/hero-contour.svg',
-            'assets/img/home/hero-contour-mobile.svg',
-            'assets/img/home/hero-perforation.svg',
-            'assets/img/home/hero-registration.svg',
             'assets/img/results/result-mark.svg',
         ];
 
@@ -279,18 +272,19 @@ final class VisualIdentityTest extends CIUnitTestCase
                 $this->assertStringNotContainsString($banned, $svg, $file . ' ' . $banned);
             }
         }
-
-        // Kontur sebingkai dengan latar hero.
-        $this->assertSame($this->viewBox('assets/img/home/hero-desktop.svg'), $this->viewBox('assets/img/home/hero-contour.svg'));
-        $this->assertSame($this->viewBox('assets/img/home/hero-mobile.svg'), $this->viewBox('assets/img/home/hero-contour-mobile.svg'));
     }
 
     public function testHomepageStylesUsePagiMuriaAndCalmerType(): void
     {
         $css = (string) file_get_contents(FCPATH . 'assets/css/home.css');
 
-        foreach (['--night:       #101312', '--on-night:    #F2F1EC', '--motion-scene:  800ms', 'clamp(2.5rem, 4.5vw, 4.5rem)', 'clamp(2rem, 10vw, 3rem)', 'clamp(1.75rem, 7vh, 2.5rem)'] as $token) {
+        foreach (['--night:       #101312', '--on-night:    #F2F1EC', '--motion-scene:  800ms'] as $token) {
             $this->assertStringContainsString($token, $css, $token);
+        }
+
+        // Stage 18: hero tanpa teks, kontur, dan perforasi.
+        foreach (['.hero__title', '.hero__kicker', '.hero__perf', 'hero-contour', 'hero-perforation', 'hero-registration'] as $gone) {
+            $this->assertStringNotContainsString($gone, $css, $gone);
         }
 
         // Tanpa gradient, tanpa teks bergaris tepi, tanpa tracking ekstrem.
