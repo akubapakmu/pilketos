@@ -108,7 +108,7 @@ NO_ACTIVE_VOTE --coblos--> LOCKED --unlock admin (alasan)--> NO_ACTIVE_VOTE (bar
 Struktur folder utama:
 
 ```
-docs/                spesifikasi (00–05), desain (06–10), catatan-tahap (STAGE1–16)
+docs/                spesifikasi (00–05), desain (06–10), catatan-tahap (STAGE1–18)
 app/Commands/        admin:create, admin:password, osis:check
 app/Config/          Routes.php, Filters.php, ContentSecurityPolicy.php, App.php, Homepage.php, ...
 app/Controllers/     Home, VotingController, Student/*, Teacher/*, Admin/*
@@ -797,8 +797,8 @@ composer install
 composer test                 (atau vendor\bin\phpunit --no-coverage)
 ```
 
-Hasil terakhir (Stage 17): **465 test, 4.421 assertion, lulus** pada PHP
-8.4.19 dengan MariaDB 10.11.14 (Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
+Hasil terakhir (Stage 18): **468 test, 4.420 assertion, lulus** pada PHP
+8.4.19 dengan MariaDB 10.11.14 (Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
 8.0.46; Stage 5 dan 6 tidak mengubah schema maupun query. Test paralel (race
 condition) memakai `pcntl_fork` sehingga di-skip di Windows. Rincian dan uji
 browser: [`STAGE4-NOTES.md`](docs/catatan-tahap/STAGE4-NOTES.md) bagian 9,
@@ -814,7 +814,7 @@ beserta ringkasan tiap dokumen: [`docs/README.md`](docs/README.md).
 |---|---|
 | [`docs/spesifikasi/`](docs/spesifikasi) | `00-MASTER-PROJECT.md` (spesifikasi utama, source of truth) dan brief Stage 1–5 (`01`–`05`) |
 | [`docs/desain/`](docs/desain) | Identitas visual SMP 1 DAWE, Stage 6 (`06`–`10`): arah visual, tipografi, spesifikasi aset, prompt gambar, sistem gerak |
-| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE17-NOTES.md`) |
+| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE18-NOTES.md`) |
 
 ## 21. Beranda imersif & aset visual
 
@@ -826,9 +826,9 @@ interaksi. Palet netral "Pagi Muria" + warna aksen masing-masing pasangan.
 
 | Scene | Isi |
 |---|---|
-| 01 Lereng | latar lereng Muria + atap sekolah, garis kontur, lapisan depan opsional; teks singkat "PILKETOS 2026 / SMP 1 DAWE", tombol **Masuk untuk memilih** dan **Lihat perolehan suara**; titik "embun" di sekitar pointer. Tanpa warna/nomor/foto pasangan |
+| 01 Lereng | hanya gambar hero (lereng Muria + atap sekolah; lanskap di desktop, potret di HP), lapisan depan opsional, tombol **Masuk untuk memilih** dan **Lihat perolehan suara**; titik "embun" di sekitar pointer. Stage 18: tanpa teks di atas gambar, tanpa garis kontur & perforasi. Tanpa warna/nomor/foto pasangan |
 | 02 Masuk | "Masuk sebagai": portal **SISWA** (`/siswa/masuk`) dan **GURU** (`/guru/masuk`) bergambar |
-| 03 Perolehan suara | judul & pasangan rata tengah (Stage 10: tanpa label status di samping judul); foto pasangan, persentase tepat di bawah foto; baris penutup "Suara masuk" (persentase partisipasi, jumlah pemilih, "Diperbarui [tanggal] [jam]", meter); footer |
+| 03 Perolehan suara | judul & pasangan rata tengah (Stage 10: tanpa label status di samping judul); foto pasangan, persentase tepat di bawah foto; baris penutup "Suara masuk" (persentase partisipasi, jumlah pemilih, "Diperbarui [tanggal] [jam]", meter); footer + panah ke atas (kembali ke scene 01) |
 
 - Berpindah scene: roda mouse/trackpad (satu gestur = satu scene), geser
   sentuh, panah/PageUp/PageDown/spasi/Home/End, garis navigasi di kanan
@@ -874,15 +874,11 @@ homepage.logoOnLight  = 'assets/img/brand/logo-dark.svg'
 |---|---|---|
 | Lambang resmi sekolah | SVG, atau PNG >= 1024 px transparan | tidak digambar ulang/diwarnai ulang; tampil setinggi lockup (24–40 px di navigasi) |
 | Lockup acara | SVG (bawaan: tanda gugus parijoto + "PILKETOS 2026 / SMP 1 DAWE") | ukuran asli dibaca otomatis; tampil setinggi 24–40 px di navigasi |
-| Latar hero | lanskap 1920×1080 (≤ 300 KB), potret 1080×1920 (≤ 250 KB), WebP | area kiri bawah (teks) gelap & tenang; fokus (punggungan, atap sekolah) di kanan tengah |
+| Latar hero | lanskap 1920×1080 (≤ 300 KB), potret 1080×1920 (≤ 250 KB), WebP | area kiri bawah (tombol) gelap & tenang; fokus (punggungan, atap sekolah) di kanan tengah |
 | Latar layar pembuka | sama dengan latar hero, berkabut pekat (≤ 250/200 KB) | **bingkai harus identik** dengan latar hero; pusat layar rata untuk lockup |
 | Lapisan depan | 1400×1400 WebP ber-alpha (≤ 150 KB) | pojok kanan bawah; disembunyikan di HP tegak |
 | Portal Siswa/Guru | 1600×1600 (1:1) + 1200×800 (3:2) untuk HP | subjek di tengah, sepertiga bawah tenang (label di bawah-kiri); orang kecil/dari belakang |
 | Foto pasangan | dari menu **Pasangan calon** (foto ketua, foto wakil, hero/foto berdua) | scene perolehan suara memakai foto berdua bila ada; tanpa foto tampil monogram inisial |
-
-Garis kontur (`hero-contour*.svg`) menjiplak punggungan latar hero bawaan;
-bila latar hero diganti foto asli, gambar ulang konturnya ([dokumen 09](docs/desain/09-IMAGE-GENERATION-PROMPTS-PILKETOS.md) §8)
-atau biarkan sebagai tekstur halus.
 
 Warna identitas sekolah (parijoto, `homepage.identityAccent`) hanya dipakai
 pada bilah muat layar pembuka, dan otomatis diganti warna netral bila mirip
@@ -890,8 +886,9 @@ pada bilah muat layar pembuka, dan otomatis diganti warna netral bila mirip
 
 Perolehan suara publik dapat dimatikan: `homepage.publicLiveCount = false`
 (scene ketiga menjadi "Pasangan calon" tanpa angka). Rincian teknis:
-[`STAGE5-NOTES.md`](docs/catatan-tahap/STAGE5-NOTES.md) dan
-[`STAGE6-NOTES.md`](docs/catatan-tahap/STAGE6-NOTES.md).
+[`STAGE5-NOTES.md`](docs/catatan-tahap/STAGE5-NOTES.md),
+[`STAGE6-NOTES.md`](docs/catatan-tahap/STAGE6-NOTES.md), dan
+[`STAGE18-NOTES.md`](docs/catatan-tahap/STAGE18-NOTES.md) (hero tanpa teks).
 
 ## Lisensi
 

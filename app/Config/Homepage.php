@@ -55,7 +55,7 @@ class Homepage extends BaseConfig
     /**
      * Latar hero (scene 01) untuk layar lanskap (A03, master): lereng Muria
      * pagi + atap sekolah. Disarankan 1920x1080 WebP <= 300 KB; area kiri
-     * bawah gelap & tenang untuk teks.
+     * bawah gelap & tenang untuk tombol.
      */
     public string $heroDesktop = 'assets/img/home/hero-desktop.svg';
 

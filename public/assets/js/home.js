@@ -20,8 +20,8 @@
  * 3. Live count publik: GET hitung-suara sesuai irama dari server (30 detik),
  *    dijeda saat tab tidak aktif, angka bergulir halus saat berubah, muat
  *    ulang bila status pemilihan berubah (server merender keadaan baru).
- * 4. Hero berlapis: paralaks pointer berlapis (latar 6 px, kontur 8 px,
- *    lapisan depan 14 px, teks 3 px; desktop saja), canvas "embun / lubang
+ * 4. Hero berlapis: paralaks pointer berlapis (latar 6 px, lapisan depan
+ *    14 px, tombol 3 px; desktop saja), canvas "embun / lubang
  *    coblos" yang hanya terlihat di sekitar pointer dan saat diketuk; portal
  *    Siswa/Guru yang mengikuti pointer.
  *
@@ -1376,8 +1376,8 @@
   };
 
   /* ==========================================================================
-     Paralaks berlapis hero (10-MOTION §5): latar 6 px, kontur 8 px, lapisan
-     depan 14 px, teks 3 px (nilai di home.css lewat --mx/--my). Pointer
+     Paralaks berlapis hero (10-MOTION §5): latar 6 px, lapisan depan 14 px,
+     tombol 3 px (nilai di home.css lewat --mx/--my). Pointer
      halus saja; lerp 0,08 per frame; berhenti saat hero tidak aktif atau tab
      tersembunyi. HP/tablet: tanpa paralaks, tanpa sensor orientasi.
      ========================================================================== */
