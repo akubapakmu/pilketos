@@ -745,11 +745,13 @@ summary:focus-visible {
   line-height: var(--h);
 }
 
+/* Stage 17: tanpa garis; keping angka lebih lega (latar tinta tidak lagi
+   mepet ke angka), jarak antarunit & nama unit dilebarkan. Dipakai Beranda
+   admin (desktop) dan hasil akhir yang belum terbuka. */
 .countdown--compact {
-  padding: var(--space-4);
-  border: 1px solid var(--line);
+  padding: var(--space-4) var(--space-5);
   border-radius: var(--radius-lg);
-  background: var(--paper);
+  background: var(--paper-dim);
 }
 
 .countdown--compact .countdown__label { color: var(--gray-700); }
@@ -757,18 +759,33 @@ summary:focus-visible {
 .countdown--compact .countdown__units {
   grid-template-columns: repeat(4, auto);
   justify-content: start;
-  gap: var(--space-4);
+  gap: var(--space-5);
 }
 
-.countdown--compact .countdown__digits { font-size: 1.9rem; }
+.countdown--compact .countdown__unit { gap: var(--space-2); }
+
+.countdown--compact .countdown__digits {
+  gap: 0.14em;
+  font-size: 1.9rem;
+}
 
 .countdown--compact .odo {
+  --h: 1.55em;
+  width: 1.05em;
   background: var(--ink);
   color: var(--paper);
-  border-radius: 3px;
+  border-radius: 6px;
 }
 
 .countdown--compact .countdown__name { color: var(--gray-700); font-size: 0.625rem; }
+
+/* HP sempit: keping tetap lega, angka & jarak sedikit dikecilkan agar
+   empat unit muat tanpa gulir mendatar */
+@media (max-width: 479px) {
+  .countdown--compact { padding: var(--space-4); }
+  .countdown--compact .countdown__units { gap: var(--space-3); }
+  .countdown--compact .countdown__digits { font-size: 1.5rem; }
+}
 
 /* -- varian "terminal" (Stage 8): 03:12:45 ala konsol, odometer halus.
    Ukuran angka lewat --term-size; bingkai diatur pemakainya: panel terminal

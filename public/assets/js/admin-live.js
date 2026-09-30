@@ -132,15 +132,37 @@
     });
   }
 
+  // Stage 17: struktur sama dengan admin/partials/pair_thumb.php (foto ketua |
+  // wakil dalam satu kotak persegi, inisial bila foto belum ada, nomor di atas).
+  function buildThumb(c) {
+    var thumb = make('span', 'pair-thumb result__thumb');
+    thumb.setAttribute('aria-hidden', 'true');
+    [['ketua', c.photo_ketua, c.ketua_initials], ['wakil', c.photo_wakil, c.wakil_initials]].forEach(function (part) {
+      var half = make('span', 'pair-thumb__half pair-thumb__half--' + part[0]);
+      if (part[1]) {
+        var img = make('img');
+        img.src = part[1];
+        img.alt = '';
+        img.width = 120;
+        img.height = 240;
+        img.decoding = 'async';
+        half.appendChild(img);
+      } else {
+        half.appendChild(make('span', 'pair-thumb__mono', part[2] || '?'));
+      }
+      thumb.appendChild(half);
+    });
+    thumb.appendChild(make('span', 'pair-thumb__no', c.label));
+    return thumb;
+  }
+
   function buildResult(c) {
     var li = make('li', 'result');
     li.setAttribute('data-live-candidate', String(c.id));
     li.style.setProperty('--accent', c.accent);
     li.style.setProperty('--accent-ink', c.accent_ink);
 
-    var no = make('span', 'result__no', c.label);
-    no.setAttribute('aria-hidden', 'true');
-    li.appendChild(no);
+    li.appendChild(buildThumb(c));
 
     var body = make('div', 'result__body');
     var names = make('p', 'result__names');
@@ -392,12 +414,7 @@
     var election = data.election;
     var next = election ? election.status : '';
 
-    document.querySelectorAll('[data-live-badge-class]').forEach(function (badge) {
-      badge.className = 'badge badge--' + (next || 'none').toLowerCase();
-    });
-    document.querySelectorAll('[data-live-badge-label]').forEach(function (label) {
-      label.textContent = election ? election.label : 'Belum Dijadwalkan';
-    });
+    // Stage 17: badge status di topbar dihapus; status tampil di indikator live.
     root.querySelectorAll('[data-live-results-title]').forEach(function (title) {
       title.textContent = next === 'FINISHED' ? 'Hasil akhir' : (next === 'ONGOING' ? 'Hasil sementara' : 'Perolehan suara');
     });

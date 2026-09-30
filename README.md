@@ -515,6 +515,16 @@ berikon siaran bertuliskan **Live** saat pemilihan berlangsung; di HP ikon,
 status, waktu "diperbarui", dan tombol **Perbarui** menjadi satu bar di bawah
 layar.
 
+Stage 17 (tampilan panel): topbar tanpa badge status pemilihan (status
+terbaca di indikator live & countdown); di HP tombol menu berupa ikon saja
+dan header menampilkan logo khusus **PILKETOS Panel Admin**; ikon "i" kecil
+di pojok kanan atas setelah judul; tanpa garis atas/bawah pemisah; hasil per
+pasangan (Beranda & Analitik) dan kartu Pasangan calon menampilkan **dua foto
+pasangan dalam satu kotak persegi** (nomor pasangan muncul semi transparan
+saat diarahkan kursor, di HP nomor kecil di pojok); countdown lebih lega tanpa
+garis; tabel bergaya lembar kerja (Excel). Rincian:
+[`STAGE17-NOTES.md`](docs/catatan-tahap/STAGE17-NOTES.md).
+
 Admin **tidak dapat memilih** atas nama pemilih dan tidak dapat mengubah
 pilihan siapa pun. Setelah pemilihan selesai, tindakan yang dapat mengubah
 hasil dikunci: tambah/ubah/ubah status/hapus pemilih, impor, tambah/hapus pasangan, nomor
@@ -787,8 +797,8 @@ composer install
 composer test                 (atau vendor\bin\phpunit --no-coverage)
 ```
 
-Hasil terakhir (Stage 16): **454 test, 4.312 assertion, lulus** pada PHP
-8.4.19 dengan MariaDB 10.11.14 (Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
+Hasil terakhir (Stage 17): **465 test, 4.421 assertion, lulus** pada PHP
+8.4.19 dengan MariaDB 10.11.14 (Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
 8.0.46; Stage 5 dan 6 tidak mengubah schema maupun query. Test paralel (race
 condition) memakai `pcntl_fork` sehingga di-skip di Windows. Rincian dan uji
 browser: [`STAGE4-NOTES.md`](docs/catatan-tahap/STAGE4-NOTES.md) bagian 9,
@@ -804,7 +814,7 @@ beserta ringkasan tiap dokumen: [`docs/README.md`](docs/README.md).
 |---|---|
 | [`docs/spesifikasi/`](docs/spesifikasi) | `00-MASTER-PROJECT.md` (spesifikasi utama, source of truth) dan brief Stage 1–5 (`01`–`05`) |
 | [`docs/desain/`](docs/desain) | Identitas visual SMP 1 DAWE, Stage 6 (`06`–`10`): arah visual, tipografi, spesifikasi aset, prompt gambar, sistem gerak |
-| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE16-NOTES.md`) |
+| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE17-NOTES.md`) |
 
 ## 21. Beranda imersif & aset visual
 

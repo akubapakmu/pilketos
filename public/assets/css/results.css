@@ -16,15 +16,16 @@
    (Stage 12: semua kepala halaman admin sudah tanpa garis bawah) */
 .final-page > .admin-head { margin-bottom: var(--space-5); }
 
-/* -- keadaan terkunci (belum selesai) ------------------------------------- */
+/* -- keadaan terkunci (belum selesai) -------------------------------------
+   Stage 17: satu kolom rata tengah (segel, judul, teks, countdown, tombol),
+   tanpa garis atas/bawah. -- */
 .final-locked {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
   gap: var(--space-5);
-  align-items: start;
   padding: var(--space-6) 0;
-  border-top: 2px solid var(--ink);
-  border-bottom: 1px solid var(--line);
+  text-align: center;
 }
 
 .final-locked__seal {
@@ -38,17 +39,25 @@
 
 .final-locked__seal .icon { width: 30px; height: 30px; }
 
-.final-locked__body { display: grid; gap: var(--space-4); max-width: 62ch; }
+.final-locked__body {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-4);
+  max-width: 62ch;
+}
+
+.final-locked__body p { margin-inline: auto; text-wrap: pretty; }
 
 .final-locked__title {
   font-size: clamp(1.6rem, 3.4vw, 2.3rem);
   font-weight: 500;
   letter-spacing: -0.02em;
+  text-wrap: balance;
 }
 
-@media (max-width: 479px) {
-  .final-locked { grid-template-columns: minmax(0, 1fr); }
-}
+.final-locked .countdown__units { justify-content: center; }
+
+.final-locked .countdown__unit { align-items: center; }
 
 /* -- lembar hasil --------------------------------------------------------- */
 .final {
@@ -60,8 +69,6 @@
   position: relative;
   display: grid;
   gap: var(--space-4);
-  padding-top: var(--space-5);
-  border-top: 6px double var(--ink);
 }
 
 /* Stage 13: stempel geometris hasil akhir dihapus; kicker & judul rata
@@ -93,8 +100,6 @@
 .final__stamp {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  border-top: 1px solid var(--ink);
-  border-bottom: 1px solid var(--line);
 }
 
 .final__stamp > div {
@@ -134,7 +139,6 @@
   .final__stamp > div + div {
     padding-left: 0;
     border-left: 0;
-    border-top: 1px solid var(--line);
   }
 
   .final__stamp > div:nth-child(3) {
@@ -144,9 +148,7 @@
 }
 
 .final__section {
-  padding-bottom: var(--space-3);
   margin-bottom: var(--space-4);
-  border-bottom: 1px solid var(--line);
   font-size: clamp(1.35rem, 2.6vw, 1.7rem);
 }
 
@@ -266,8 +268,6 @@
 
 .victor__tally {
   grid-area: tally;
-  padding-top: var(--space-3);
-  border-top: 1px solid currentColor;
   font-size: 1rem;
 }
 
@@ -313,15 +313,12 @@
 .final-note--tie { border-left-style: double; }
 
 /* -- klasemen ------------------------------------------------------------- */
-.standings { border-top: 2px solid var(--ink); }
-
 .standing {
   display: grid;
   grid-template-columns: 2.2rem 56px minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-2) var(--space-4);
   padding-block: var(--space-4);
-  border-bottom: 1px solid var(--line);
 }
 
 .standing__rank {
@@ -424,12 +421,10 @@
 .turnout {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  border-top: 2px solid var(--ink);
 }
 
 .turnout__item {
   padding: var(--space-4) var(--space-4) var(--space-4) 0;
-  border-bottom: 1px solid var(--line);
 }
 
 .turnout__item dt {
@@ -461,8 +456,6 @@
 /* Stage 13: rata tengah selebar lembar (tanpa batas lebar baris) */
 .final__foot {
   width: 100%;
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--ink);
   font-size: 0.8125rem;
   color: var(--gray-700);
   text-align: center;
@@ -547,13 +540,12 @@
 
   .final { gap: var(--space-4); }
 
-  .final__masthead { gap: var(--space-3); padding-top: var(--space-4); }
+  .final__masthead { gap: var(--space-3); }
 
   .final__stamp { grid-template-columns: 1.5fr 1fr 1fr; }
 
   .final__section {
     margin-bottom: var(--space-3);
-    padding-bottom: var(--space-2);
     break-after: avoid;
   }
 

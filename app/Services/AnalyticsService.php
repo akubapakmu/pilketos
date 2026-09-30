@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Libraries\CandidateTheme;
 use App\Libraries\Grade;
+use App\Models\CandidateModel;
 use CodeIgniter\Database\BaseBuilder;
 use CodeIgniter\Database\BaseConnection;
 use CodeIgniter\I18n\Time;
@@ -239,7 +240,7 @@ final class AnalyticsService
     private function candidateRows(): array
     {
         return $this->db->table('candidates')
-            ->select('id, nomor_urut, nama_ketua, nama_wakil, theme_accent, status_aktif')
+            ->select('id, nomor_urut, nama_ketua, nama_wakil, theme_accent, foto_ketua, foto_wakil, status_aktif')
             ->orderBy('nomor_urut', 'ASC')
             ->get()
             ->getResultArray();
@@ -523,18 +524,24 @@ final class AnalyticsService
 
             $accent    = CandidateTheme::accent($candidate['theme_accent']);
             $results[] = [
-                'id'            => $id,
-                'number'        => (int) $candidate['nomor_urut'],
-                'label'         => sprintf('%02d', (int) $candidate['nomor_urut']),
-                'ketua'         => $candidate['nama_ketua'],
-                'wakil'         => $candidate['nama_wakil'],
-                'accent'        => $accent,
-                'accent_ink'    => CandidateTheme::inkOn($accent),
-                'active'        => $active,
-                'votes'         => $votes,
-                'percent'       => $all['shares'][$id] ?? 0.0,
-                'student_votes' => $students['votes'][$id] ?? 0,
-                'teacher_votes' => $teachers['votes'][$id] ?? 0,
+                'id'             => $id,
+                'number'         => (int) $candidate['nomor_urut'],
+                'label'          => sprintf('%02d', (int) $candidate['nomor_urut']),
+                'ketua'          => $candidate['nama_ketua'],
+                'wakil'          => $candidate['nama_wakil'],
+                'accent'         => $accent,
+                'accent_ink'     => CandidateTheme::inkOn($accent),
+                // Stage 17: dua foto pasangan dalam satu kotak (admin/partials/pair_thumb);
+                // foto kosong diganti inisial.
+                'photo_ketua'    => CandidateModel::assetUrl($candidate['foto_ketua'] ?? null),
+                'photo_wakil'    => CandidateModel::assetUrl($candidate['foto_wakil'] ?? null),
+                'ketua_initials' => CandidateTheme::initials((string) $candidate['nama_ketua']),
+                'wakil_initials' => CandidateTheme::initials((string) $candidate['nama_wakil']),
+                'active'         => $active,
+                'votes'          => $votes,
+                'percent'        => $all['shares'][$id] ?? 0.0,
+                'student_votes'  => $students['votes'][$id] ?? 0,
+                'teacher_votes'  => $teachers['votes'][$id] ?? 0,
             ];
         }
 
