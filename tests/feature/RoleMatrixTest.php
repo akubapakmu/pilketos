@@ -205,6 +205,7 @@ final class RoleMatrixTest extends CIUnitTestCase
         $actions = [
             ['admin/paslon', ['nomor_urut' => '4', 'nama_ketua' => 'X', 'nama_wakil' => 'Y']],
             ['admin/paslon/1/hapus', []],
+            ['admin/paslon/batas', ['batas_pasangan' => '9']],
             ['admin/siswa/1/status', ['status_aktif' => '0']],
             ['admin/guru/1/hapus', []],
             ['admin/siswa/impor/simpan', ['token' => str_repeat('a', 32)]],
@@ -223,6 +224,7 @@ final class RoleMatrixTest extends CIUnitTestCase
         $this->seeInDatabase('students', ['id' => 1, 'status_aktif' => 1]);
         $this->assertSame(0, $this->db->table('audit_logs')->countAllResults());
         $this->assertSame(0, $this->db->table('candidates')->where('nomor_urut', 4)->countAllResults());
+        $this->seeInDatabase('elections', ['id' => 1, 'batas_pasangan' => 3]);
     }
 
     public function testVoteCapabilitiesPerRole(): void

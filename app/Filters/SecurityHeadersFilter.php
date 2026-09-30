@@ -14,7 +14,9 @@ use CodeIgniter\HTTP\ResponseInterface;
  * X-Content-Type-Options nosniff, Referrer-Policy same-origin, ...) dan
  * Content-Security-Policy (Config\ContentSecurityPolicy):
  * - Permissions-Policy: kamera, mikrofon, lokasi, pembayaran, USB dimatikan;
- *   layar penuh hanya untuk situs ini (halaman hasil akhir di proyektor);
+ *   layar penuh hanya untuk situs ini (halaman hasil akhir di proyektor) dan
+ *   pemutar video kampanye youtube-nocookie.com (Stage 15; iframe itu hanya
+ *   ada di profil paslon yang punya video, lihat CandidateTheme::allowVideoFrame());
  * - Cross-Origin-Opener-Policy / Cross-Origin-Resource-Policy same-origin;
  * - Cache-Control no-store untuk setiap respons yang belum mengaturnya
  *   (komputer lab dipakai bergantian: halaman pilihan siswa sebelumnya tidak
@@ -27,7 +29,7 @@ use CodeIgniter\HTTP\ResponseInterface;
  */
 class SecurityHeadersFilter implements FilterInterface
 {
-    public const PERMISSIONS_POLICY = 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), fullscreen=(self)';
+    public const PERMISSIONS_POLICY = 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), fullscreen=(self "https://www.youtube-nocookie.com")';
 
     public function before(RequestInterface $request, $arguments = null)
     {

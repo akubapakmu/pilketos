@@ -1924,6 +1924,88 @@ ol.steps {
   font-variant-numeric: tabular-nums;
 }
 
+/* -- batas pasangan aktif (Stage 15) -------------------------------------
+   Status "X dari N" + deret kotak (terisi = aktif), form batas di kanan pada
+   layar lebar. Kotak di atas batas (data lama) bergaris putus-putus. */
+.quota {
+  display: grid;
+  gap: var(--space-4) var(--space-6);
+  margin-bottom: var(--space-6);
+  padding: var(--space-5);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.quota__title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gray-700);
+}
+
+.quota__count {
+  margin-top: var(--space-2);
+  font-size: 1.0625rem;
+}
+
+.quota__count strong {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: lining-nums;
+}
+
+ol.quota__slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--space-3);
+}
+
+.quota__slot {
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--ink);
+  border-radius: 2px;
+}
+
+.quota__slot.is-filled { background: var(--ink); }
+.quota__slot.is-over { border-style: dashed; border-color: var(--danger); background: transparent; }
+.quota__slot.is-over.is-filled { background: var(--danger); }
+
+.quota__hint {
+  margin-top: var(--space-3);
+  font-size: 0.875rem;
+  color: var(--gray-700);
+}
+
+.quota__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.quota__row input { width: 6.5rem; }
+
+.quota__note {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  font-size: 0.875rem;
+  color: var(--gray-700);
+}
+
+@media (min-width: 960px) {
+  .quota {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+    align-items: center;
+  }
+}
+
 /* -- kartu pasangan (daftar kandidat) ------------------------------------
    Stage 12: tanpa garis atas daftar & garis bawah kartu; kartu dipisah jarak
    dan permukaan lembut. */
@@ -2180,6 +2262,9 @@ ol.asset-dots {
   .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .form-grid--wide { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Stage 15: field selebar formulir di dalam grid dua kolom */
+.form-grid__full { grid-column: 1 / -1; }
 
 /* dua kolom hanya bila wadahnya cukup lebar (mis. input datetime-local
    yang tidak boleh terpotong di kolom formulir yang sempit) */
@@ -2792,9 +2877,10 @@ ul.check-list {
 }
 
 /* -- pratinjau kandidat (layout pemilih) ------------------------------------ */
+/* Stage 15: bilah pratinjau tidak menempel, karena profil paslon punya
+   navigasi bagian yang menempel di atas layar (paslon.css .px-nav). */
 .preview-bar {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 35;
   padding-block: var(--space-2);
   background: var(--ink);
@@ -2840,6 +2926,16 @@ ul.check-list {
 .preview-bar__nav a[aria-current="page"] {
   background: var(--paper);
   color: var(--ink);
+}
+
+/* warna aksen tiap pasangan di tombol pratinjau (Stage 15: pindah dari
+   .chapter-nav__swatch voting.css yang sudah dihapus) */
+.preview-bar__swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--paper);
 }
 
 /* -- akun admin (Stage 13) ------------------------------------------------ */

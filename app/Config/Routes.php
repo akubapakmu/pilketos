@@ -41,6 +41,8 @@ $routes->group('siswa', ['filter' => 'studentauth'], static function (RouteColle
     $routes->get('coblos', 'Student\VoteController::index');
     $routes->post('coblos', 'Student\VoteController::submit');
     $routes->get('coblos/yakin/(:num)', 'Student\VoteController::confirm/$1');
+    // Stage 15: profil lengkap paslon aktif (nomor urut, contoh siswa/paslon/01)
+    $routes->get('paslon/(:num)', 'Student\VoteController::candidate/$1');
     $routes->get('pilihanku', 'Student\VoteController::myVote');
     $routes->post('keluar', 'Student\AuthController::logout');
 });
@@ -54,6 +56,8 @@ $routes->group('guru', ['filter' => 'teacherauth'], static function (RouteCollec
     $routes->get('coblos', 'Teacher\VoteController::index');
     $routes->post('coblos', 'Teacher\VoteController::submit');
     $routes->get('coblos/yakin/(:num)', 'Teacher\VoteController::confirm/$1');
+    // Stage 15: profil lengkap paslon aktif (nomor urut, contoh guru/paslon/01)
+    $routes->get('paslon/(:num)', 'Teacher\VoteController::candidate/$1');
     $routes->get('pilihanku', 'Teacher\VoteController::myVote');
     $routes->post('keluar', 'Teacher\AuthController::logout');
 });
@@ -83,6 +87,8 @@ $routes->group('admin', ['filter' => 'adminauth'], static function (RouteCollect
     $routes->get('paslon', 'Admin\CandidateController::index');
     $routes->get('paslon/tambah', 'Admin\CandidateController::new');
     $routes->post('paslon', 'Admin\CandidateController::create');
+    // Stage 15: batas jumlah pasangan aktif (per pemilihan)
+    $routes->post('paslon/batas', 'Admin\CandidateController::limit');
     $routes->get('paslon/(:num)/ubah', 'Admin\CandidateController::edit/$1');
     $routes->get('paslon/(:num)/intip', 'Admin\CandidateController::preview/$1');
     $routes->post('paslon/(:num)', 'Admin\CandidateController::update/$1');

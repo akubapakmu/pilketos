@@ -13,6 +13,8 @@
  * @var int                   $postMax   post_max_size (byte)
  * @var array|null            $election
  * @var bool                  $resultsLocked Stage 4: pemilihan selesai
+ * @var int                   $batas         Stage 15: batas pasangan aktif
+ * @var int                   $activeOthers  Stage 15: pasangan aktif selain pasangan ini
  */
 use App\Libraries\CandidateAssets;
 use App\Libraries\CandidateTheme;
@@ -25,7 +27,12 @@ $action = $candidate === null ? site_url('admin/paslon') : site_url('admin/paslo
 $accent = CandidateTheme::accent($values['theme_accent'] ?? null);
 $layout = (string) ($values['theme_layout'] ?? '');
 $active = (string) ($values['status_aktif'] ?? '1') === '1';
+// Stage 15: ID YouTube tersimpan ditampilkan kembali sebagai tautan pendek.
+$video  = (string) ($values['video_youtube'] ?? '');
+$video  = preg_match('/^[A-Za-z0-9_-]{11}$/', $video) === 1 ? 'https://youtu.be/' . $video : $video;
 $locked = ($resultsLocked ?? false) && $candidate !== null; // Stage 4: hasil akhir final
+// Stage 15: batas pasangan aktif penuh (pasangan yang sudah aktif tetap boleh diubah).
+$full   = ! $locked && $activeOthers >= $batas && ! ($candidate !== null && (int) $candidate['status_aktif'] === 1);
 $layouts = [
     ''       => ['Otomatis', 'Mengikuti nomor urut: 01 split, 02 poster, 03 kolom.'],
     'split'  => ['Split', 'Panggung & teks berdampingan, pola grid.'],
@@ -74,6 +81,10 @@ $layouts = [
           <p class="field-hint" id="locked-hint"><?= $locked
               ? 'Dikunci setelah pemilihan selesai: nomor urut dan status aktif tidak dapat diubah.'
               : 'Pasangan nonaktif tidak tampil dan tidak dapat dipilih. Suara yang sudah masuk tetap tersimpan.' ?></p>
+          <?php if ($full): ?>
+            <p class="field-hint"><?= icon('info') ?> Batas <?= $batas ?> pasangan aktif sudah penuh. Simpan sebagai nonaktif, atau naikkan batas di halaman <a href="<?= site_url('admin/paslon') ?>">Pasangan calon</a>.</p>
+          <?php endif; ?>
+          <?= $error('status_aktif') ?>
         </div>
         <div class="field">
           <label for="nama_ketua">Nama calon ketua</label>
@@ -107,7 +118,68 @@ $layouts = [
     </fieldset>
 
     <fieldset class="form-x__part">
-      <legend><span class="form-x__no">03</span> Tema visual</legend>
+      <legend><span class="form-x__no">03</span> Profil &amp; kampanye</legend>
+      <p class="form-x__intro">Tampil di halaman profil paslon. Semua opsional: bagian yang kosong tidak ditampilkan ke pemilih.</p>
+      <div class="form-grid">
+        <div class="field form-grid__full">
+          <label for="slogan">Slogan pasangan</label>
+          <input type="text" id="slogan" name="slogan" maxlength="160" value="<?= $value('slogan') ?>" placeholder="mis. Bersama berkarya, bersama berprestasi"<?= $invalid('slogan') ?>>
+          <p class="field-hint">Satu kalimat pendek, tampil besar di pembuka dan penutup halaman profil.</p>
+          <?= $error('slogan') ?>
+        </div>
+        <div class="field">
+          <label for="bio_ketua">Bio calon ketua</label>
+          <textarea id="bio_ketua" name="bio_ketua" rows="4" maxlength="600"<?= $invalid('bio_ketua') ?>><?= esc((string) ($values['bio_ketua'] ?? '')) ?></textarea>
+          <p class="field-hint">2&ndash;4 kalimat perkenalan.</p>
+          <?= $error('bio_ketua') ?>
+        </div>
+        <div class="field">
+          <label for="bio_wakil">Bio calon wakil</label>
+          <textarea id="bio_wakil" name="bio_wakil" rows="4" maxlength="600"<?= $invalid('bio_wakil') ?>><?= esc((string) ($values['bio_wakil'] ?? '')) ?></textarea>
+          <p class="field-hint">2&ndash;4 kalimat perkenalan.</p>
+          <?= $error('bio_wakil') ?>
+        </div>
+        <div class="field">
+          <label for="karakter_ketua">Kata karakter calon ketua</label>
+          <input type="text" id="karakter_ketua" name="karakter_ketua" maxlength="120" value="<?= $value('karakter_ketua') ?>" placeholder="mis. Kreatif, Aktif, Bertanggung jawab"<?= $invalid('karakter_ketua') ?>>
+          <p class="field-hint">Pisahkan dengan koma; yang tampil maksimal 3 kata.</p>
+          <?= $error('karakter_ketua') ?>
+        </div>
+        <div class="field">
+          <label for="karakter_wakil">Kata karakter calon wakil</label>
+          <input type="text" id="karakter_wakil" name="karakter_wakil" maxlength="120" value="<?= $value('karakter_wakil') ?>" placeholder="mis. Teliti, Ramah, Peduli"<?= $invalid('karakter_wakil') ?>>
+          <p class="field-hint">Pisahkan dengan koma; yang tampil maksimal 3 kata.</p>
+          <?= $error('karakter_wakil') ?>
+        </div>
+        <div class="field form-grid__full">
+          <label for="program">Program unggulan</label>
+          <textarea id="program" name="program" rows="5" maxlength="3000" placeholder="Student Voice — Wadah siswa menyampaikan aspirasi dan ide."<?= $invalid('program') ?>><?= esc((string) ($values['program'] ?? '')) ?></textarea>
+          <p class="field-hint">Satu program per baris: judul, tanda &ldquo;&mdash;&rdquo; atau &ldquo;:&rdquo;, lalu penjelasan singkat. Penomoran dibuang otomatis.</p>
+          <?= $error('program') ?>
+        </div>
+        <div class="field">
+          <label for="pesan_ketua">Pesan calon ketua</label>
+          <textarea id="pesan_ketua" name="pesan_ketua" rows="3" maxlength="300"<?= $invalid('pesan_ketua') ?>><?= esc((string) ($values['pesan_ketua'] ?? '')) ?></textarea>
+          <p class="field-hint">Kutipan singkat untuk pemilih, maksimal 300 karakter.</p>
+          <?= $error('pesan_ketua') ?>
+        </div>
+        <div class="field">
+          <label for="pesan_wakil">Pesan calon wakil</label>
+          <textarea id="pesan_wakil" name="pesan_wakil" rows="3" maxlength="300"<?= $invalid('pesan_wakil') ?>><?= esc((string) ($values['pesan_wakil'] ?? '')) ?></textarea>
+          <p class="field-hint">Kutipan singkat untuk pemilih, maksimal 300 karakter.</p>
+          <?= $error('pesan_wakil') ?>
+        </div>
+        <div class="field form-grid__full">
+          <label for="video_youtube">Video kampanye (YouTube)</label>
+          <input type="url" id="video_youtube" name="video_youtube" maxlength="200" value="<?= esc($video, 'attr') ?>" placeholder="https://youtu.be/..." autocomplete="off" spellcheck="false"<?= $invalid('video_youtube') ?>>
+          <p class="field-hint">Tempel tautan video YouTube (youtube.com/watch, youtu.be, atau shorts). Video baru dimuat setelah pemilih menekan tombol putar.</p>
+          <?= $error('video_youtube') ?>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset class="form-x__part">
+      <legend><span class="form-x__no">04</span> Tema visual</legend>
       <div class="form-grid">
         <div class="field">
           <label for="theme_name">Nama tema</label>
@@ -150,7 +222,7 @@ $layouts = [
     </fieldset>
 
     <fieldset class="form-x__part">
-      <legend><span class="form-x__no">04</span> Foto &amp; asset tema</legend>
+      <legend><span class="form-x__no">05</span> Foto &amp; asset tema</legend>
       <p class="form-x__intro">
         JPG, PNG, atau WebP. Setiap gambar diperiksa (tipe isi file, ukuran, dimensi) lalu diolah ulang oleh server:
         metadata foto (termasuk lokasi) dibuang, orientasi diluruskan, dan resolusi disesuaikan agar ringan di HP.

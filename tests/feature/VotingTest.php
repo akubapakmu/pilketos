@@ -147,6 +147,8 @@ final class VotingTest extends CIUnitTestCase
 
     // ------------------------------------------------------------------
     // 3-5. kandidat, tema per pasangan, markup visi-misi interaktif
+    // Stage 15: visi-misi lengkap & tema per layout ada di halaman profil
+    // paslon (siswa/paslon/0X); bilik suara = pembuka, Sekilas paslon, surat suara.
     // ------------------------------------------------------------------
 
     public function testBallotPageRendersAllActiveCandidatesWithVisiMisi(): void
@@ -158,17 +160,21 @@ final class VotingTest extends CIUnitTestCase
             $result->assertSee($name);
         }
         $result->assertSee('Mewujudkan OSIS yang aktif, terbuka, dan dekat dengan seluruh siswa.');
-        // Penomoran manual "1." dibuang, diganti nomor editorial.
-        $result->assertSee('Menghidupkan kembali kegiatan ekstrakurikuler.');
-        $result->assertDontSee('1. Menghidupkan');
         $result->assertSee('Coblos Pasangan 01');
         $result->assertSee('Coblos Pasangan 03');
         $result->assertSee('href="' . site_url('siswa/coblos/yakin/2') . '"');
+
+        // Misi lengkap di profil: penomoran manual "1." dibuang, diganti nomor editorial.
+        $profile = $this->withSession($this->student())->get('siswa/paslon/01');
+        $profile->assertStatus(200);
+        $profile->assertSee('Menghidupkan kembali kegiatan ekstrakurikuler.');
+        $profile->assertDontSee('1. Menghidupkan');
     }
 
     /**
-     * Stage 7: "Sekilas paslon" membandingkan ketiga pasangan di atas bab
-     * panjang; tombol "Pilih 0X" & CTA akhir bab menuju kotak surat suara.
+     * Stage 7: "Sekilas paslon" membandingkan semua pasangan; tombol "Pilih 0X"
+     * menuju kotak surat suara. Stage 15: "Profil lengkap" menuju halaman
+     * profil paslon, tanpa bab panjang di bilik suara.
      */
     public function testLineupComparesPairsAndLinksStraightToBallotBox(): void
     {
@@ -179,15 +185,16 @@ final class VotingTest extends CIUnitTestCase
         // Stage 8: pembuka tanpa sapaan "Halo, {nama} · Bilik suara siswa".
         $result->assertDontSee('Halo, Ahmad Fauzan');
         foreach (['01', '02', '03'] as $label) {
-            $result->assertSee('href="#pasangan-' . $label . '"');
+            $result->assertSee('href="' . site_url('siswa/paslon/' . $label) . '"');
             $result->assertSee('id="coblos-' . $label . '"');
             $result->assertSee('href="#coblos-' . $label . '" data-pick');
         }
-        $result->assertSee('Pilih pasangan 02');
         $this->assertSame(3, substr_count($html, 'class="pair-card"'));
-        // Kartu tampil sebelum bab pertama dan surat suara.
-        $this->assertLessThan(strpos($html, 'id="pasangan-01"'), strpos($html, 'class="lineup"'));
-        $this->assertLessThan(strpos($html, 'id="surat-suara"'), strpos($html, 'id="pasangan-03"'));
+        // Stage 15: tidak ada lagi bab pasangan & navigasi bab di bilik suara.
+        $result->assertDontSee('id="pasangan-01"');
+        $result->assertDontSee('data-chapter');
+        // Kartu tampil sebelum surat suara.
+        $this->assertLessThan(strpos($html, 'id="surat-suara"'), strpos($html, 'class="lineup"'));
     }
 
     public function testLineupHasNoPickLinksWhenVotingIsClosed(): void
@@ -197,10 +204,10 @@ final class VotingTest extends CIUnitTestCase
 
             $result = $this->withSession($this->student())->get('siswa/coblos');
             $result->assertSee('Sekilas paslon');
-            $result->assertSee('href="#pasangan-01"');
+            $result->assertSee('href="' . site_url('siswa/paslon/01') . '"');
             $result->assertDontSee('data-pick');
             $result->assertDontSee('href="#coblos-');
-            $result->assertSee('Lihat surat suara');
+            $result->assertSee('href="#surat-suara"');
         }
     }
 
@@ -211,14 +218,15 @@ final class VotingTest extends CIUnitTestCase
         $result->assertSee('--accent: #C4432B;');
         $result->assertSee('--accent: #2F5D50;');
         $result->assertSee('--accent: #1B3A6B;');
-        $result->assertSee('chapter chapter--split');
-        $result->assertSee('chapter chapter--poster');
-        $result->assertSee('chapter chapter--column');
-        $result->assertSee('chapter__pattern--grid');
-        $result->assertSee('chapter__pattern--hatch');
-        $result->assertSee('chapter__pattern--dots');
         // Tanpa foto: monogram inisial yang tetap punya nama untuk pembaca layar.
         $result->assertSee('aria-label="Arka Wibisana, calon ketua pasangan 01 (foto belum tersedia)"');
+
+        // Profil paslon: varian pembuka + pola mengikuti theme_layout.
+        foreach (['01' => ['split', 'grid'], '02' => ['poster', 'hatch'], '03' => ['column', 'dots']] as $label => [$layout, $pattern]) {
+            $profile = $this->withSession($this->student())->get('siswa/paslon/' . $label);
+            $profile->assertSee('class="paslon paslon--' . $layout . '"');
+            $profile->assertSee('px-hero__pattern--' . $pattern);
+        }
     }
 
     public function testUploadedThemeAssetsAreUsedByTheCandidatePage(): void
@@ -232,7 +240,7 @@ final class VotingTest extends CIUnitTestCase
             'theme_accent'     => '#f2d14b',
         ]);
 
-        $result = $this->withSession($this->student())->get('siswa/coblos');
+        $result = $this->withSession($this->student())->get('siswa/paslon/01');
 
         foreach (['ketua-01.webp', 'wakil-01.webp', 'bg-01.webp', 'hero-01.webp', 'tex-01.webp', 'art-01.webp', 'poster-01.webp'] as $file) {
             $result->assertSee(base_url('uploads/candidates/' . $file));
@@ -241,7 +249,12 @@ final class VotingTest extends CIUnitTestCase
         $result->assertSee('Poster kampanye pasangan 01');
         // Aksen terang: teks di atas aksen memakai ink, teks aksen di atas kertas jatuh ke ink.
         $result->assertSee('--accent: #F2D14B; --accent-ink: #15141A; --accent-text: #15141A;');
-        $this->assertSame(2, substr_count($result->getBody(), 'chapter chapter--poster'));
+        $result->assertSee('class="paslon paslon--poster"');
+
+        // Sekilas paslon di bilik suara memakai potret yang sama.
+        $booth = $this->withSession($this->student())->get('siswa/coblos');
+        $booth->assertSee(base_url('uploads/candidates/ketua-01.webp'));
+        $booth->assertSee(base_url('uploads/candidates/wakil-01.webp'));
     }
 
     public function testCandidateTextIsEscaped(): void
@@ -262,17 +275,20 @@ final class VotingTest extends CIUnitTestCase
 
     public function testVisiMisiInteractionHooksAreRendered(): void
     {
-        $result = $this->withSession($this->student())->get('siswa/coblos');
+        $result = $this->withSession($this->student())->get('siswa/paslon/01');
         $body   = $result->getBody();
 
-        $this->assertSame(3, substr_count($body, 'data-reveal-words'));
-        $this->assertSame(3, substr_count($body, 'data-misi-toggle hidden'));
-        $this->assertSame(9, substr_count($body, 'class="misi__item"'));
-        $result->assertSee('aria-controls="misi-list-1"');
-        $result->assertSee('data-parallax');
-        $result->assertSee('data-tilt');
-        $result->assertSee('assets/js/candidates.js');
+        $this->assertSame(1, substr_count($body, 'data-px-words'));
+        $this->assertSame(3, substr_count($body, 'class="px-list__item"'));
+        $result->assertSee('data-px-parallax');
+        $result->assertSee('data-px-nav');
+        $result->assertSee('data-px-reveal');
+        $result->assertSee('assets/js/paslon.js');
+        $result->assertSee('assets/css/paslon.css');
         $result->assertSee('assets/css/voting.css');
+
+        // Bilik suara tetap memuat skrip langkah memilih & Sekilas paslon.
+        $this->withSession($this->student())->get('siswa/coblos')->assertSee('assets/js/candidates.js');
     }
 
     // ------------------------------------------------------------------

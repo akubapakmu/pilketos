@@ -140,4 +140,98 @@ final class CandidateThemeTest extends CIUnitTestCase
         // Ungu yang hampir sama: terlalu mirip.
         $this->assertLessThan(20, CandidateTheme::deltaE('#A8628F', '#9C5A86'));
     }
+
+    // ------------------------------------------------------------------
+    // Stage 15: profil & kampanye
+    // ------------------------------------------------------------------
+
+    public function testProfileFieldsArePresentedAndEmptyOnesAreBlank(): void
+    {
+        $theme = CandidateTheme::present($this->candidate([
+            'slogan'         => "  Satu tim.\r\n",
+            'karakter_ketua' => 'Kreatif, aktif · Jujur, kreatif, Ramah',
+            'program'        => "1. Student Voice — Aspirasi siswa.\n- Creative Day",
+            'video_youtube'  => 'dQw4w9WgXcQ',
+        ]));
+
+        $this->assertSame('Satu tim.', $theme['slogan']);
+        $this->assertSame('', $theme['bio_ketua']);
+        $this->assertSame('', $theme['pesan_wakil']);
+        $this->assertSame(['Kreatif', 'aktif', 'Jujur'], $theme['karakter_ketua']);
+        $this->assertSame([], $theme['karakter_wakil']);
+        $this->assertSame([['title' => 'Student Voice', 'text' => 'Aspirasi siswa.'], ['title' => 'Creative Day', 'text' => '']], $theme['program']);
+        $this->assertSame('dQw4w9WgXcQ', $theme['video']);
+        $this->assertSame('https://www.youtube.com/watch?v=dQw4w9WgXcQ', $theme['video_url']);
+        $this->assertSame('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0', $theme['video_embed']);
+
+        $none = CandidateTheme::present($this->candidate());
+        $this->assertNull($none['video']);
+        $this->assertNull($none['video_embed']);
+        $this->assertSame([], $none['program']);
+    }
+
+    public function testProgramItemsSplitTitleAndDescription(): void
+    {
+        $items = CandidateTheme::programItems("Student Voice — Wadah aspirasi\nCreative Day: Ruang karya\nTalent Space | Dukung bakat\nGreen School - Gerakan bersih\nGo-Green\nJam 07:00 apel\nKlub—Hobi");
+
+        $this->assertSame([
+            ['title' => 'Student Voice', 'text' => 'Wadah aspirasi'],
+            ['title' => 'Creative Day', 'text' => 'Ruang karya'],
+            ['title' => 'Talent Space', 'text' => 'Dukung bakat'],
+            ['title' => 'Green School', 'text' => 'Gerakan bersih'],
+            ['title' => 'Go-Green', 'text' => ''],
+            ['title' => 'Jam 07:00 apel', 'text' => ''],
+            ['title' => 'Klub', 'text' => 'Hobi'],
+        ], $items);
+        $this->assertSame([], CandidateTheme::programItems(null));
+    }
+
+    public function testTagsAreDedupedAndCappedAtThree(): void
+    {
+        $this->assertSame(['Kreatif', 'Aktif', 'Bertanggung jawab'], CandidateTheme::tags("Kreatif;  Aktif\nkreatif, Bertanggung   jawab, Ramah"));
+        $this->assertSame([], CandidateTheme::tags(' , ; '));
+        $this->assertSame([], CandidateTheme::tags(null));
+    }
+
+    public function testYoutubeIdOnlyAcceptsYoutubeLinks(): void
+    {
+        foreach ([
+            'dQw4w9WgXcQ',
+            'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=1',
+            'youtube.com/watch?v=dQw4w9WgXcQ',
+            'https://m.youtube.com/watch?v=dQw4w9WgXcQ',
+            'https://youtu.be/dQw4w9WgXcQ?si=abc',
+            'https://www.youtube.com/shorts/dQw4w9WgXcQ',
+            'https://www.youtube.com/embed/dQw4w9WgXcQ',
+            'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ',
+        ] as $link) {
+            $this->assertSame('dQw4w9WgXcQ', CandidateTheme::youtubeId($link), $link);
+        }
+
+        foreach ([
+            '',
+            'https://vimeo.com/123456',
+            'https://evil.test/watch?v=dQw4w9WgXcQ',
+            'https://youtube.com.evil.test/watch?v=dQw4w9WgXcQ',
+            'javascript:alert(1)//youtu.be/dQw4w9WgXcQ',
+            'https://www.youtube.com/playlist?list=PL123',
+            'https://www.youtube.com/watch?v=short',
+            'dQw4w9WgXc"',
+        ] as $link) {
+            $this->assertNull(CandidateTheme::youtubeId($link), $link);
+        }
+    }
+
+    public function testColumnsBalanceRowsForAnyNumberOfPairs(): void
+    {
+        $expected = [1 => 1, 2 => 2, 3 => 3, 4 => 4, 5 => 3, 6 => 3, 7 => 4, 8 => 4, 9 => 3, 10 => 4];
+
+        foreach ($expected as $count => $columns) {
+            $this->assertSame($columns, CandidateTheme::columns($count), (string) $count);
+        }
+
+        $this->assertSame(2, CandidateTheme::columns(4, 3));
+        $this->assertSame('--cols: 3; --cols-md: 3;', CandidateTheme::gridStyle(5));
+        $this->assertSame('--cols: 4; --cols-md: 2;', CandidateTheme::gridStyle(4));
+    }
 }

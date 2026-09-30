@@ -26,6 +26,7 @@ class AuditLogModel extends Model
     public const CANDIDATE_CREATE = 'CANDIDATE_CREATE';
     public const CANDIDATE_UPDATE = 'CANDIDATE_UPDATE';
     public const CANDIDATE_DELETE = 'CANDIDATE_DELETE';
+    public const CANDIDATE_LIMIT  = 'CANDIDATE_LIMIT';
     public const IMPORT_STUDENT   = 'IMPORT_STUDENT';
     public const IMPORT_TEACHER   = 'IMPORT_TEACHER';
     public const STUDENT_STATUS   = 'STUDENT_STATUS';
@@ -49,6 +50,7 @@ class AuditLogModel extends Model
         self::CANDIDATE_CREATE => 'Tambah pasangan calon',
         self::CANDIDATE_UPDATE => 'Ubah pasangan calon',
         self::CANDIDATE_DELETE => 'Hapus pasangan calon',
+        self::CANDIDATE_LIMIT  => 'Ubah batas pasangan calon',
         self::IMPORT_STUDENT   => 'Impor data siswa',
         self::IMPORT_TEACHER   => 'Impor data guru',
         self::STUDENT_CREATE   => 'Tambah data siswa',

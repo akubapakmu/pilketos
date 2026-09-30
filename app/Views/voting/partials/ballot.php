@@ -1,6 +1,9 @@
 <?php
 /**
- * Surat suara: tiga kotak pasangan sebagai "papan" sasaran paku coblos.
+ * Surat suara: satu kotak per pasangan aktif sebagai "papan" sasaran paku
+ * coblos. Stage 15: jumlah pasangan mengikuti batas admin (2-10); kolom
+ * seimbang lewat CandidateTheme::gridStyle(), baris terakhir rata tengah
+ * dengan ukuran kotak yang sama.
  *
  * - Dengan JavaScript: ballot.js menangani paku (tekan-tahan-geser-lepas),
  *   animasi tusuk, dampak pada kotak, lalu modal konfirmasi + POST JSON.
@@ -47,7 +50,7 @@ $status = $election['status'] ?? null;
       <?php if ($candidates === []): ?>
         <p class="ballot__empty">Belum ada pasangan calon aktif.</p>
       <?php else: ?>
-        <ol class="ballot__grid" aria-label="Pasangan calon pada surat suara">
+        <ol class="ballot__grid" aria-label="Pasangan calon pada surat suara" style="<?= esc(\App\Libraries\CandidateTheme::gridStyle(count($candidates)), 'attr') ?>">
           <?php foreach ($candidates as $c): ?>
             <li class="ballot-cell" id="coblos-<?= esc($c['label'], 'attr') ?>" style="<?= esc($c['style'], 'attr') ?>" data-cell
                 data-candidate-id="<?= esc((string) $c['id'], 'attr') ?>"

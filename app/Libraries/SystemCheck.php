@@ -2,6 +2,7 @@
 
 namespace App\Libraries;
 
+use App\Models\ElectionModel;
 use CodeIgniter\Database\BaseConnection;
 use Config\Database;
 use Throwable;
@@ -255,8 +256,14 @@ final class SystemCheck
             $election === null ? 'Belum ada: atur di panel admin > Jadwal pemilihan' : $election['nama'] . ' ' . $election['tahun'] . ': ' . $election['start_at'] . ' s.d. ' . $election['end_at'] . ' WIB',
         );
 
+        // Stage 15: batas pasangan aktif diatur admin (elections.batas_pasangan).
         $candidates = $db->table('candidates')->where('status_aktif', 1)->countAllResults();
-        $this->add($candidates === 3 ? self::OK : self::WARN, 'Pasangan calon aktif', $candidates . ' pasangan (dirancang untuk 3)');
+        $batas      = ElectionModel::batasPasangan($election);
+        $this->add(
+            $candidates >= 2 && $candidates <= $batas ? self::OK : self::WARN,
+            'Pasangan calon aktif',
+            $candidates . ' pasangan (batas ' . $batas . ($candidates < 2 ? '; minimal 2 agar ada pilihan' : '') . ')',
+        );
 
         $students = $db->table('students')->where('status_aktif', 1)->countAllResults();
         $teachers = $db->table('teachers')->where('status_aktif', 1)->countAllResults();

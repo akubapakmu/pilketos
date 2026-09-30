@@ -11,6 +11,8 @@ use CodeIgniter\Model;
  * menyimpan NAMA FILE di public/uploads/candidates/ (bukan URL penuh).
  * theme_asset = JSON object, contoh: {"hero":"x.webp","texture":"y.webp","artwork":"z.webp","poster":"p.webp"}.
  * theme_layout = art direction halaman kandidat (split | poster | column, NULL = otomatis).
+ * Stage 15: slogan, bio, karakter, program, pesan, dan video_youtube (hanya ID
+ * video) untuk halaman profil paslon; semuanya opsional.
  * Data tampilan (URL, warna, layout) dibentuk oleh App\Libraries\CandidateTheme.
  *
  * File diunggah admin lewat App\Libraries\CandidateAssets (Stage 3): nama
@@ -31,6 +33,15 @@ class CandidateModel extends Model
         'foto_wakil',
         'visi',
         'misi',
+        'slogan',
+        'bio_ketua',
+        'bio_wakil',
+        'karakter_ketua',
+        'karakter_wakil',
+        'program',
+        'pesan_ketua',
+        'pesan_wakil',
+        'video_youtube',
         'theme_name',
         'theme_background',
         'theme_accent',
@@ -53,16 +64,25 @@ class CandidateModel extends Model
      */
     protected $validationRules = [
         // Wajib ada untuk placeholder {id} di is_unique (CodeIgniter 4.7).
-        'id'           => 'permit_empty|is_natural_no_zero',
-        'nomor_urut'   => 'required|is_natural_no_zero|less_than_equal_to[99]|is_unique[candidates.nomor_urut,id,{id}]',
-        'nama_ketua'   => 'required|max_length[150]',
-        'nama_wakil'   => 'required|max_length[150]',
-        'visi'         => 'permit_empty|max_length[2000]',
-        'misi'         => 'permit_empty|max_length[5000]',
-        'theme_name'   => 'permit_empty|max_length[100]',
-        'theme_accent' => 'permit_empty|regex_match[/^#[0-9A-Fa-f]{6}$/]',
-        'theme_layout' => 'permit_empty|in_list[split,poster,column]',
-        'status_aktif' => 'permit_empty|in_list[0,1]',
+        'id'             => 'permit_empty|is_natural_no_zero',
+        'nomor_urut'     => 'required|is_natural_no_zero|less_than_equal_to[99]|is_unique[candidates.nomor_urut,id,{id}]',
+        'nama_ketua'     => 'required|max_length[150]',
+        'nama_wakil'     => 'required|max_length[150]',
+        'visi'           => 'permit_empty|max_length[2000]',
+        'misi'           => 'permit_empty|max_length[5000]',
+        'slogan'         => 'permit_empty|max_length[160]',
+        'bio_ketua'      => 'permit_empty|max_length[600]',
+        'bio_wakil'      => 'permit_empty|max_length[600]',
+        'karakter_ketua' => 'permit_empty|max_length[120]',
+        'karakter_wakil' => 'permit_empty|max_length[120]',
+        'program'        => 'permit_empty|max_length[3000]',
+        'pesan_ketua'    => 'permit_empty|max_length[300]',
+        'pesan_wakil'    => 'permit_empty|max_length[300]',
+        'video_youtube'  => 'permit_empty|regex_match[/^[A-Za-z0-9_-]{11}$/]',
+        'theme_name'     => 'permit_empty|max_length[100]',
+        'theme_accent'   => 'permit_empty|regex_match[/^#[0-9A-Fa-f]{6}$/]',
+        'theme_layout'   => 'permit_empty|in_list[split,poster,column]',
+        'status_aktif'   => 'permit_empty|in_list[0,1]',
     ];
 
     protected $validationMessages = [
@@ -85,6 +105,33 @@ class CandidateModel extends Model
         ],
         'misi' => [
             'max_length' => 'Misi maksimal 5.000 karakter.',
+        ],
+        'slogan' => [
+            'max_length' => 'Slogan maksimal 160 karakter.',
+        ],
+        'bio_ketua' => [
+            'max_length' => 'Bio calon ketua maksimal 600 karakter.',
+        ],
+        'bio_wakil' => [
+            'max_length' => 'Bio calon wakil maksimal 600 karakter.',
+        ],
+        'karakter_ketua' => [
+            'max_length' => 'Kata karakter calon ketua maksimal 120 karakter.',
+        ],
+        'karakter_wakil' => [
+            'max_length' => 'Kata karakter calon wakil maksimal 120 karakter.',
+        ],
+        'program' => [
+            'max_length' => 'Program unggulan maksimal 3.000 karakter.',
+        ],
+        'pesan_ketua' => [
+            'max_length' => 'Pesan calon ketua maksimal 300 karakter.',
+        ],
+        'pesan_wakil' => [
+            'max_length' => 'Pesan calon wakil maksimal 300 karakter.',
+        ],
+        'video_youtube' => [
+            'regex_match' => 'Tautan YouTube tidak dikenali. Tempel tautan video, contoh https://youtu.be/xxxxxxxxxxx.',
         ],
         'theme_name' => [
             'max_length' => 'Nama tema maksimal 100 karakter.',

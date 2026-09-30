@@ -183,8 +183,8 @@ seperti `/student/login` sudah tidak ada dan menjawab 404):
 
 | Untuk | Alamat |
 |---|---|
-| Siswa | `/siswa/masuk`, `/siswa` (dasbor), `/siswa/coblos` (bilik suara), `/siswa/pilihanku` |
-| Guru | `/guru/masuk`, `/guru`, `/guru/coblos`, `/guru/pilihanku` |
+| Siswa | `/siswa/masuk`, `/siswa` (dasbor), `/siswa/coblos` (bilik suara), `/siswa/paslon/01` (profil paslon), `/siswa/pilihanku` |
+| Guru | `/guru/masuk`, `/guru`, `/guru/coblos`, `/guru/paslon/01`, `/guru/pilihanku` |
 | Admin | `/admin/masuk`, `/admin` (dasbor), `/admin/analitik` (+ `/jenis-pemilih`, `/jenis-kelamin`, `/kelas`, `/rombel`), `/admin/analitik/suara`, `/admin/hasil`, `/admin/paslon`, `/admin/siswa`, `/admin/siswa/tambah`, `/admin/guru`, `/admin/guru/tambah`, `/admin/siswa/impor`, `/admin/guru/impor`, `/admin/jadwal`, `/admin/buka-kunci`, `/admin/riwayat` |
 | JSON (dipakai halaman) | `/jam-server` (countdown), `/hitung-suara` (beranda), `/admin/hitung-suara` (dasbor admin) |
 
@@ -216,15 +216,15 @@ komputer server harus benar.
 
 ## 6. Database
 
-`php spark migrate` membuat 9 tabel dan menjalankan 12 migration:
+`php spark migrate` membuat 9 tabel dan menjalankan 14 migration:
 
 | Tabel | Isi |
 |---|---|
 | `admins` | admin panel (sandi `password_hash`) |
 | `students` | NISN (unik, teks), nama, jenis kelamin L/P, kelas, nomor absen, kode unik, `status_aktif` |
 | `teachers` | NIP (unik, teks), nama, kode unik, `status_aktif` |
-| `candidates` | nomor urut (unik), ketua, wakil, visi, misi, foto, tema (aksen, layout, latar, asset JSON), `status_aktif` |
-| `elections` | nama, tahun, `start_at`, `end_at`, status |
+| `candidates` | nomor urut (unik), ketua, wakil, visi, misi, foto, tema (aksen, layout, latar, asset JSON), profil & kampanye (slogan, bio, karakter, program, pesan, ID video YouTube; Stage 15), `status_aktif` |
+| `elections` | nama, tahun, `start_at`, `end_at`, status, `batas_pasangan` (2–10, bawaan 3; Stage 15) |
 | `student_votes`, `teacher_votes` | election, pemilih, pasangan, `status` LOCKED/UNLOCKED, waktu, perangkat, browser |
 | `vote_unlock_logs` | unlock: suara yang dibuka, admin, alasan, waktu |
 | `audit_logs` | tindakan admin (unlock, jadwal, pasangan, impor, tambah/ubah/status/hapus pemilih) |
@@ -290,7 +290,7 @@ php spark admin:create --username panitia --name "Panitia Pemilihan OSIS"
 php spark osis:check
 ```
 
-- `migrate` membuat tabel + trigger (12 migration).
+- `migrate` membuat tabel + trigger (14 migration).
 - `admin:create` membuat admin production dan **menampilkan kata sandi acak
   satu kali**; simpan di tempat aman. Ganti/lupa: `php spark admin:password panitia`.
 - **Jangan** menjalankan `php spark db:seed DatabaseSeeder` di database hari
@@ -551,11 +551,23 @@ Admin > **Pasangan calon** > Tambah / Ubah:
 - nomor urut (1-99, unik), nama ketua & wakil, visi, misi (satu poin per
   baris), nama tema, warna aksen `#RRGGBB` (kontras teks dihitung otomatis),
   layout (otomatis / split / poster / column), status aktif;
+- **Profil & kampanye** (Stage 15, semua opsional): slogan, bio ketua/wakil,
+  kata karakter (dipisah koma, tampil maks. 3), program unggulan (satu per
+  baris: `Judul — penjelasan`), pesan ketua/wakil, tautan video YouTube
+  (disimpan sebagai ID, diputar lewat youtube-nocookie setelah diklik).
+  Bagian yang kosong tidak tampil di halaman profil paslon;
 - 7 slot gambar: foto ketua, foto wakil, hero (berdua), latar panggung,
   artwork, tekstur, poster. Hanya `jpg/jpeg/png/webp` sampai 5 MB (tekstur
   2 MB); isi file diperiksa, gambar di-encode ulang server (WebP bila tersedia),
   metadata EXIF/GPS dibuang, nama file acak;
-- **Pratinjau** menampilkan halaman persis seperti yang dilihat pemilih.
+- **Pratinjau** menampilkan halaman profil paslon persis seperti yang dilihat
+  pemilih.
+
+**Batas pasangan aktif** (Stage 15): panel di atas daftar pasangan, 2–10
+pasangan (bawaan 3), tersimpan per pemilihan dan tercatat di audit log. Batas
+tidak dapat diturunkan di bawah jumlah pasangan aktif; pasangan baru di atas
+batas hanya dapat disimpan nonaktif. Pasangan nonaktif tidak dihitung. Setelah
+pemilihan selesai batas dikunci.
 
 Pasangan yang sudah menerima suara tidak dapat dihapus (gunakan nonaktif).
 Setelah pemilihan selesai hanya teks & gambar yang dapat dirapikan.
@@ -594,19 +606,25 @@ Siswa > Impor atau Guru > Impor:
   tengah "Kenali, lalu coblos." dengan journey timeline tiga langkah (Kenali
   paslon, Coblos satu, Konfirmasi & kunci) dan countdown bergaya terminal
   (Stage 9: tanpa teks bilah judul/perintah, angka satu baris di HP); di HP
-  pembuka + Sekilas paslon berbagi layar pertama, bab & surat suara setinggi
-  satu layar. Lalu **Sekilas paslon** (tiga kartu untuk membandingkan: nomor, foto, nama,
+  pembuka + Sekilas paslon berbagi layar pertama, surat suara setinggi
+  satu layar. Lalu **Sekilas paslon** (satu kartu per pasangan untuk membandingkan: nomor, foto, nama,
   tema, kutipan visi, jumlah misi; digeser di HP, Stage 10: bergeser sendiri
   tiap 2 detik 01 -> terakhir -> 01, berhenti saat disentuh; panah halus di
-  bawahnya menuju navigasi bab). **Baca visi & misi** menuju
-  bab pasangan, **Pilih 0X** langsung ke kotak pasangan itu di surat suara
-  (kotak disorot dan tombol Coblos-nya difokuskan).
-- Bab pasangan: tiap pasangan punya warna, pola, layout, dan gambar sendiri;
-  visi menyala mengikuti scroll, misi dapat dibuka-tutup; di akhir bab
-  **Pilih pasangan 0X**.
+  bawahnya menuju surat suara). **Profil lengkap** menuju
+  halaman profil paslon, **Pilih 0X** langsung ke kotak pasangan itu di surat suara
+  (kotak disorot dan tombol Coblos-nya difokuskan). Jumlah kolom mengikuti
+  jumlah pasangan (Stage 15, mis. 5 pasangan = 3 + 2).
+- Profil paslon (`/siswa/paslon/0X`, `/guru/paslon/0X`, Stage 15): Ketua ×
+  Wakil sebagai satu tim — pembuka dengan nomor urut raksasa, duo potret (atau
+  foto berdua), nama & slogan; Kenali pasangan; Visi kami (menyala mengikuti
+  scroll); Misi kami; Program unggulan; Poster (layar penuh) & video; Pesan
+  dari kami + penutup **Pilih Paslon 0X** / kembali ke daftar, dan deret nomor
+  semua paslon. Navigasi bagian: bar menempel di HP/tablet, rel vertikal di
+  desktop. Warna, pola, dan layout (split/poster/column) tetap per pasangan.
+  Rincian: [`STAGE15-NOTES.md`](docs/catatan-tahap/STAGE15-NOTES.md).
 - Surat suara: tekan **Coblos** di kotak pasangan, atau tekan-tahan paku,
   geser ke kotak pasangan, lepas untuk mencoblos; lalu **Konfirmasi pilihan**.
-  Di HP ketiga kotak + paku muat satu layar. Setelah dicoblos, kertas bolong
+  Di HP kotak pasangan + paku muat satu layar (3 pasangan). Setelah dicoblos, kertas bolong
   terlihat 3 detik sebelum modal konfirmasi (latar diburamkan) muncul. Paku
   3D (WebGL, dimuat malas) selalu nyala tanpa tombol pengalih; paku 2D hanya
   cadangan bila WebGL tidak tersedia/gagal atau frame terlalu lambat;
@@ -753,8 +771,8 @@ composer install
 composer test                 (atau vendor\bin\phpunit --no-coverage)
 ```
 
-Hasil terakhir (Stage 13): **403 test, 3.725 assertion, lulus** pada PHP
-8.4.19 dengan MariaDB 10.11.14 (Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
+Hasil terakhir (Stage 15): **444 test, 4.084 assertion, lulus** pada PHP
+8.4.19 dengan MariaDB 10.11.14 (Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
 8.0.46; Stage 5 dan 6 tidak mengubah schema maupun query. Test paralel (race
 condition) memakai `pcntl_fork` sehingga di-skip di Windows. Rincian dan uji
 browser: [`STAGE4-NOTES.md`](docs/catatan-tahap/STAGE4-NOTES.md) bagian 9,

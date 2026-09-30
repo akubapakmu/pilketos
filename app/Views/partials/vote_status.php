@@ -29,11 +29,11 @@ $status = $election['status'] ?? null;
     <a class="btn btn--outline" href="<?= base_url($type->path('pilihanku')) ?>">Lihat pilihan saya</a>
   <?php elseif ($canVote): ?>
     <h2 class="vote-card__title" id="vote-card-title">Belum memilih</h2>
-    <p class="vote-card__text">Surat suara sudah dibuka. Baca visi dan misi ketiga pasangan, lalu coblos satu pasangan. Setelah dikonfirmasi, pilihan dikunci.</p>
+    <p class="vote-card__text">Surat suara sudah dibuka. Kenali semua pasangan calon, lalu coblos satu pasangan. Setelah dikonfirmasi, pilihan dikunci.</p>
     <a class="btn btn--lg" href="<?= base_url($type->path('coblos')) ?>">Lihat kandidat &amp; coblos <?= icon('arrow-right') ?></a>
   <?php elseif ($status === 'UPCOMING'): ?>
     <h2 class="vote-card__title" id="vote-card-title">Belum memilih</h2>
-    <p class="vote-card__text">Pencoblosan dibuka pada <strong><?= esc(format_waktu($election['start_at'])) ?></strong>. Sambil menunggu, kenali ketiga pasangan calon.</p>
+    <p class="vote-card__text">Pencoblosan dibuka pada <strong><?= esc(format_waktu($election['start_at'])) ?></strong>. Sambil menunggu, kenali semua pasangan calon.</p>
     <a class="btn btn--outline" href="<?= base_url($type->path('coblos')) ?>">Lihat kandidat</a>
   <?php elseif ($status === 'FINISHED'): ?>
     <h2 class="vote-card__title" id="vote-card-title">Tidak memberikan suara</h2>
