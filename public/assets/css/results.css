@@ -4,7 +4,8 @@
 
    Arah visual: "lembar berita acara" yang lebih seremonial daripada dasbor,
    tetap hitam/putih/abu-abu editorial. Satu-satunya warna besar adalah aksen
-   SOLID pasangan terpilih, lengkap dengan pola & susunan (layout) miliknya.
+   SOLID pasangan terpilih (Stage 16: satu susunan untuk semua pasangan,
+   tanpa pola).
    Tanpa gradient, tanpa emoji, status selalu tertulis (tidak hanya warna).
    Confetti (confetti.js) di kanvas terpisah, tidak menangkap pointer.
    ========================================================================== */
@@ -169,32 +170,6 @@
   animation: victor-in 0.7s var(--ease) both;
 }
 
-.victor__pattern {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background-color: var(--accent-ink);
-  opacity: 0.14;
-  -webkit-mask-image: url('../img/patterns/grid.svg');
-  mask-image: url('../img/patterns/grid.svg');
-  -webkit-mask-size: 28px 28px;
-  mask-size: 28px 28px;
-}
-
-.victor__pattern--hatch {
-  -webkit-mask-image: url('../img/patterns/hatch.svg');
-  mask-image: url('../img/patterns/hatch.svg');
-  -webkit-mask-size: 14px 14px;
-  mask-size: 14px 14px;
-}
-
-.victor__pattern--dots {
-  -webkit-mask-image: url('../img/patterns/dots.svg');
-  mask-image: url('../img/patterns/dots.svg');
-  -webkit-mask-size: 16px 16px;
-  mask-size: 16px 16px;
-}
-
 .victor__label {
   grid-area: label;
   display: inline-flex;
@@ -303,7 +278,7 @@
 }
 
 @media (min-width: 900px) {
-  /* split (bawaan): nomor besar di kiri, foto di tengah, nama di kanan */
+  /* nomor besar di kiri, foto di tengah, nama di kanan */
   .victor {
     grid-template-columns: auto minmax(0, 0.9fr) minmax(0, 1.1fr);
     grid-template-areas:
@@ -314,31 +289,6 @@
     column-gap: var(--space-6);
     padding: var(--space-7) var(--space-7) var(--space-6);
   }
-
-  /* poster: nomor raksasa di atas, foto dan nama sejajar di bawah */
-  .victor--poster {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas:
-      "label label"
-      "no no"
-      "people names"
-      "people tally";
-  }
-
-  .victor--poster .victor__no { font-size: clamp(9rem, 20vw, 17rem); }
-
-  /* column: satu kolom tegas dengan garis, nomor di kanan atas */
-  .victor--column {
-    grid-template-columns: minmax(0, 1.2fr) auto;
-    grid-template-areas:
-      "label no"
-      "names no"
-      "people people"
-      "tally tally";
-    align-items: start;
-  }
-
-  .victor--column .victor__no { text-align: right; }
 }
 
 @keyframes victor-in {
@@ -608,9 +558,7 @@
   }
 
   /* pasangan terpilih: satu baris ringkas (nomor, foto, nama) */
-  .victor,
-  .victor--poster,
-  .victor--column {
+  .victor {
     grid-template-columns: auto auto minmax(0, 1fr);
     grid-template-areas:
       "label label label"
@@ -626,10 +574,7 @@
     break-inside: avoid;
   }
 
-  .victor__pattern { display: none; }
-
-  .victor__no,
-  .victor--poster .victor__no {
+  .victor__no {
     font-size: 64pt;
     text-align: left;
   }

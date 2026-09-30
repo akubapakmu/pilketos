@@ -1,7 +1,8 @@
 <?php
 /**
- * Avatar kecil satu orang (Stage 15): foto dipotong bulat, atau monogram
- * inisial di atas warna aksen. Dekoratif: nama selalu ditulis di sebelahnya.
+ * Avatar kecil satu orang (Stage 15; Stage 16: kotak bersudut membulat, di
+ * kartu "Pesan dari kami"): foto dipotong, atau monogram inisial di atas
+ * warna aksen. Dekoratif: nama selalu ditulis di sebelahnya.
  *
  * @var array  $c    Hasil CandidateTheme::present()
  * @var string $role 'ketua' | 'wakil'

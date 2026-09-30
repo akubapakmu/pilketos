@@ -1,10 +1,15 @@
 <?php
 
+use App\Libraries\CandidateAssets;
 use App\Libraries\CandidateTheme;
 use CodeIgniter\Test\CIUnitTestCase;
+use Config\Services;
 
 /**
- * Stage 2: tema visual per pasangan calon (warna, layout, asset, teks).
+ * Stage 2: tema visual per pasangan calon (warna, asset, teks).
+ * Stage 16: satu tampilan untuk semua pasangan (tanpa layout/pola/latar
+ * panggung/tekstur/artwork), gambar pembuka & latar penutup, --accent-soft,
+ * thumbnail asli YouTube.
  *
  * @internal
  */
@@ -22,10 +27,8 @@ final class CandidateThemeTest extends CIUnitTestCase
             'visi'             => ' Visi pasangan. ',
             'misi'             => "1. Satu\n2) Dua\n- Tiga\n\n  \n* Empat",
             'theme_name'       => 'Deep Forest',
-            'theme_background' => null,
             'theme_accent'     => '#2f5d50',
             'theme_asset'      => null,
-            'theme_layout'     => null,
             'status_aktif'     => 1,
         ];
     }
@@ -48,7 +51,8 @@ final class CandidateThemeTest extends CIUnitTestCase
         $this->assertSame('#2F5D50', $dark['accent']);
         $this->assertSame('#FFFFFF', $dark['accent_ink']);
         $this->assertSame('#2F5D50', $dark['accent_text']);
-        $this->assertSame('--accent: #2F5D50; --accent-ink: #FFFFFF; --accent-text: #2F5D50;', $dark['style']);
+        $this->assertSame('#E6ECEA', $dark['accent_soft']);
+        $this->assertSame('--accent: #2F5D50; --accent-ink: #FFFFFF; --accent-text: #2F5D50; --accent-soft: #E6ECEA;', $dark['style']);
 
         // Kuning terang: teks di atasnya gelap, dan tidak dipakai sebagai warna teks di kertas.
         $light = CandidateTheme::present($this->candidate(['theme_accent' => '#F2D14B']));
@@ -67,35 +71,68 @@ final class CandidateThemeTest extends CIUnitTestCase
         $this->assertEqualsWithDelta(1.0, CandidateTheme::contrast('#777777', '#777777'), 0.001);
     }
 
-    public function testLayoutDiffersPerCandidateAndCanBeChosen(): void
+    public function testEveryPairSharesOneLayoutWithoutPatternsOrStageAssets(): void
     {
-        $this->assertSame('split', CandidateTheme::present($this->candidate(['nomor_urut' => 1]))['layout']);
-        $this->assertSame('poster', CandidateTheme::present($this->candidate(['nomor_urut' => 2]))['layout']);
-        $this->assertSame('column', CandidateTheme::present($this->candidate(['nomor_urut' => 3]))['layout']);
-        $this->assertSame('split', CandidateTheme::present($this->candidate(['nomor_urut' => 4]))['layout']);
+        foreach ([1, 2, 3, 4] as $number) {
+            $theme = CandidateTheme::present($this->candidate([
+                'nomor_urut'       => $number,
+                'theme_layout'     => 'poster',
+                'theme_background' => 'bg.webp',
+                'theme_asset'      => ['texture' => 'tex.webp', 'artwork' => 'art.webp'],
+            ]));
 
-        $chosen = CandidateTheme::present($this->candidate(['nomor_urut' => 1, 'theme_layout' => 'column']));
-        $this->assertSame('column', $chosen['layout']);
-        $this->assertSame('dots', $chosen['pattern']);
+            foreach (['layout', 'pattern', 'background', 'texture', 'artwork'] as $gone) {
+                $this->assertArrayNotHasKey($gone, $theme, $gone);
+            }
+        }
 
-        $this->assertSame('poster', CandidateTheme::present($this->candidate(['theme_layout' => 'unknown']))['layout']);
+        $this->assertSame(['hero', 'banner', 'poster', 'closing'], CandidateTheme::ASSET_KEYS);
     }
 
     public function testAssetUrlsComeFromUploadDirectoryOnly(): void
     {
         $theme = CandidateTheme::present($this->candidate([
-            'foto_ketua'       => 'ketua.webp',
-            'theme_background' => '../../app/Config/Database.php',
-            'theme_asset'      => ['hero' => 'hero.webp', 'texture' => ['bukan-string'], 'poster' => 'poster a.jpg'],
+            'foto_ketua'  => 'ketua.webp',
+            'theme_asset' => ['hero' => 'hero.webp', 'banner' => '../../app/Config/Database.php', 'closing' => ['bukan-string'], 'poster' => 'poster a.jpg'],
         ]));
 
         $this->assertStringEndsWith('uploads/candidates/ketua.webp', $theme['photo_ketua']);
         $this->assertNull($theme['photo_wakil']);
-        $this->assertStringEndsWith('uploads/candidates/Database.php', $theme['background']);
         $this->assertStringEndsWith('uploads/candidates/hero.webp', $theme['hero']);
-        $this->assertNull($theme['texture']);
-        $this->assertNull($theme['artwork']);
+        $this->assertStringEndsWith('uploads/candidates/Database.php', $theme['banner']);
+        // File tidak ada di folder upload: tanpa ukuran (bukan membaca app/Config).
+        $this->assertNull($theme['banner_size']);
+        $this->assertNull($theme['closing']);
         $this->assertStringEndsWith('uploads/candidates/poster%20a.jpg', $theme['poster']);
+    }
+
+    public function testBannerSizeIsReadFromTheUploadedFile(): void
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'cand-size-' . bin2hex(random_bytes(4));
+        mkdir($dir);
+        Services::injectMock('candidateAssets', new CandidateAssets($dir));
+
+        try {
+            imagepng(imagecreatetruecolor(320, 180), $dir . DIRECTORY_SEPARATOR . 'c01-banner-a.png');
+
+            $theme = CandidateTheme::present($this->candidate(['theme_asset' => ['banner' => 'c01-banner-a.png']]));
+
+            $this->assertSame([320, 180], $theme['banner_size']);
+            $this->assertNull(CandidateTheme::present($this->candidate())['banner_size']);
+        } finally {
+            array_map('unlink', glob($dir . DIRECTORY_SEPARATOR . '*') ?: []);
+            rmdir($dir);
+            Services::resetSingle('candidateAssets');
+        }
+    }
+
+    public function testSoftAccentIsASolidLightTint(): void
+    {
+        $this->assertSame('#F8E8E6', CandidateTheme::soft('#C4432B'));
+        $this->assertSame('#E3E3E4', CandidateTheme::soft('#15141A'));
+        $this->assertSame('#FFFFFF', CandidateTheme::soft('#FFFFFF'));
+        // Aksen tidak valid tetap menghasilkan tint dari warna netral.
+        $this->assertSame('#E3E3E4', CandidateTheme::present($this->candidate(['theme_accent' => 'red']))['accent_soft']);
     }
 
     public function testFallbacksForEmptyData(): void
@@ -163,10 +200,15 @@ final class CandidateThemeTest extends CIUnitTestCase
         $this->assertSame('dQw4w9WgXcQ', $theme['video']);
         $this->assertSame('https://www.youtube.com/watch?v=dQw4w9WgXcQ', $theme['video_url']);
         $this->assertSame('https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1&rel=0', $theme['video_embed']);
+        // Stage 16: thumbnail asli YouTube (hqdefault selalu ada, maxres dicoba paslon.js).
+        $this->assertSame('https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg', $theme['video_thumb']);
+        $this->assertSame('https://i.ytimg.com/vi/dQw4w9WgXcQ/maxresdefault.jpg', $theme['video_thumb_hd']);
 
         $none = CandidateTheme::present($this->candidate());
         $this->assertNull($none['video']);
         $this->assertNull($none['video_embed']);
+        $this->assertNull($none['video_thumb']);
+        $this->assertNull($none['video_thumb_hd']);
         $this->assertSame([], $none['program']);
     }
 

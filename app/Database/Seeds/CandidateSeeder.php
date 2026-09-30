@@ -11,7 +11,8 @@ class CandidateSeeder extends Seeder
      * Seed 3 pasangan calon contoh (data pengembangan, bukan data nyata).
      * Foto & asset tema sengaja dikosongkan (null) karena upload asset
      * ditangani oleh panel admin pada Stage 3. Tanpa asset, halaman kandidat
-     * memakai monogram inisial + pola SVG sesuai theme_layout.
+     * memakai monogram inisial dan profil paslon dibuka judul sederhana
+     * (Stage 16: satu tampilan untuk semua pasangan, tanpa layout/pola).
      *
      * Stage 15: contoh profil & kampanye (slogan, bio, karakter, program,
      * pesan). Pasangan 02 sengaja tanpa bio & pesan untuk melihat halaman
@@ -45,10 +46,8 @@ class CandidateSeeder extends Seeder
                 'pesan_ketua'      => 'OSIS bukan milik pengurus saja. Ayo bangun sekolah yang kita banggakan bersama.',
                 'pesan_wakil'      => 'Setiap suara dan ide kalian berarti. Kami siap mendengar.',
                 'theme_name'       => 'Terracotta',
-                'theme_background' => null,
                 'theme_accent'     => '#C4432B',
                 'theme_asset'      => null,
-                'theme_layout'     => 'split',
                 'status_aktif'     => 1,
                 'created_at'       => $now,
                 'updated_at'       => $now,
@@ -70,10 +69,8 @@ class CandidateSeeder extends Seeder
                 'pesan_ketua'      => null,
                 'pesan_wakil'      => null,
                 'theme_name'       => 'Deep Forest',
-                'theme_background' => null,
                 'theme_accent'     => '#2F5D50',
                 'theme_asset'      => null,
-                'theme_layout'     => 'poster',
                 'status_aktif'     => 1,
                 'created_at'       => $now,
                 'updated_at'       => $now,
@@ -95,10 +92,8 @@ class CandidateSeeder extends Seeder
                 'pesan_ketua'      => 'Kami ingin setiap siswa merasa punya tempat di sekolah ini.',
                 'pesan_wakil'      => 'Ayo gunakan hak suaramu. Pilihanmu menentukan OSIS setahun ke depan.',
                 'theme_name'       => 'Midnight Navy',
-                'theme_background' => null,
                 'theme_accent'     => '#1B3A6B',
                 'theme_asset'      => null,
-                'theme_layout'     => 'column',
                 'status_aktif'     => 1,
                 'created_at'       => $now,
                 'updated_at'       => $now,

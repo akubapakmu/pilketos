@@ -7,13 +7,14 @@ use CodeIgniter\Model;
 /**
  * Pasangan calon Ketua & Wakil Ketua OSIS.
  *
- * Kolom file (foto_ketua, foto_wakil, theme_background) dan isi theme_asset
- * menyimpan NAMA FILE di public/uploads/candidates/ (bukan URL penuh).
- * theme_asset = JSON object, contoh: {"hero":"x.webp","texture":"y.webp","artwork":"z.webp","poster":"p.webp"}.
- * theme_layout = art direction halaman kandidat (split | poster | column, NULL = otomatis).
+ * Kolom file (foto_ketua, foto_wakil) dan isi theme_asset menyimpan NAMA FILE
+ * di public/uploads/candidates/ (bukan URL penuh).
+ * theme_asset = JSON object, contoh: {"hero":"x.webp","banner":"b.webp","poster":"p.webp","closing":"c.webp"}.
  * Stage 15: slogan, bio, karakter, program, pesan, dan video_youtube (hanya ID
  * video) untuk halaman profil paslon; semuanya opsional.
- * Data tampilan (URL, warna, layout) dibentuk oleh App\Libraries\CandidateTheme.
+ * Stage 16: satu tampilan untuk semua pasangan (kolom theme_layout &
+ * theme_background dihapus, migration SimplifyCandidateTheme).
+ * Data tampilan (URL, warna) dibentuk oleh App\Libraries\CandidateTheme.
  *
  * File diunggah admin lewat App\Libraries\CandidateAssets (Stage 3): nama
  * file acak, gambar diperiksa lalu di-encode ulang di server.
@@ -43,10 +44,8 @@ class CandidateModel extends Model
         'pesan_wakil',
         'video_youtube',
         'theme_name',
-        'theme_background',
         'theme_accent',
         'theme_asset',
-        'theme_layout',
         'status_aktif',
     ];
 
@@ -81,7 +80,6 @@ class CandidateModel extends Model
         'video_youtube'  => 'permit_empty|regex_match[/^[A-Za-z0-9_-]{11}$/]',
         'theme_name'     => 'permit_empty|max_length[100]',
         'theme_accent'   => 'permit_empty|regex_match[/^#[0-9A-Fa-f]{6}$/]',
-        'theme_layout'   => 'permit_empty|in_list[split,poster,column]',
         'status_aktif'   => 'permit_empty|in_list[0,1]',
     ];
 
@@ -138,9 +136,6 @@ class CandidateModel extends Model
         ],
         'theme_accent' => [
             'regex_match' => 'Warna aksen harus berformat #RRGGBB, contoh #C4432B.',
-        ],
-        'theme_layout' => [
-            'in_list' => 'Pilih layout otomatis, split, poster, atau kolom.',
         ],
     ];
 

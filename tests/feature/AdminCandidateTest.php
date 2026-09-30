@@ -21,6 +21,9 @@ use Tests\Support\UploadFixture;
  * fixture memakai batas 4 pasangan aktif agar pasangan ke-4 dapat ditambah
  * (penolakan melewati batas diuji CandidateLimitTest).
  *
+ * Stage 16: tanpa pilihan layout; slot latar panggung, artwork, dan tekstur
+ * diganti gambar pembuka profil (landscape) dan latar penutup.
+ *
  * @internal
  */
 final class AdminCandidateTest extends CIUnitTestCase
@@ -102,7 +105,6 @@ final class AdminCandidateTest extends CIUnitTestCase
             'misi'         => "1. Satu\n2. Dua",
             'theme_name'   => 'Ochre',
             'theme_accent' => 'b8860b',
-            'theme_layout' => 'poster',
             'status_aktif' => '1',
         ];
     }
@@ -117,8 +119,11 @@ final class AdminCandidateTest extends CIUnitTestCase
         $result = $this->withSession($this->admin())->get('admin/paslon');
 
         $result->assertStatus(200);
-        foreach (['Arka Wibisana', 'Bagas Prayoga', 'Dewi Anggraini', 'Terracotta', '#C4432B', 'Poster', '0 / 7'] as $text) {
+        foreach (['Arka Wibisana', 'Bagas Prayoga', 'Dewi Anggraini', 'Terracotta', '#C4432B', 'Poster', '0 / 6', 'Gambar pembuka profil', 'Latar penutup'] as $text) {
             $result->assertSee($text);
+        }
+        foreach (['<dt>Layout</dt>', 'Latar panggung', 'Artwork kampanye', 'Tekstur'] as $gone) {
+            $result->assertDontSee($gone);
         }
         $result->assertSee('href="' . site_url('admin/paslon/1/ubah') . '"');
         $result->assertSee('href="' . site_url('admin/paslon/1/intip') . '"');
@@ -128,7 +133,7 @@ final class AdminCandidateTest extends CIUnitTestCase
     {
         $result = $this->submit('admin/paslon', $this->fields(), [
             'asset_foto_ketua' => ['path' => $this->image(480, 600), 'name' => '../../foto ketua.php.png'],
-            'asset_texture'    => ['path' => $this->image(200, 200), 'name' => 'pola.png'],
+            'asset_banner'     => ['path' => $this->image(1600, 900), 'name' => 'pembuka.png'],
         ]);
 
         $result->assertRedirectTo(site_url('admin/paslon'));
@@ -136,16 +141,17 @@ final class AdminCandidateTest extends CIUnitTestCase
         $row = model(CandidateModel::class)->where('nomor_urut', 4)->first();
         $this->assertNotNull($row);
         $this->assertSame('#B8860B', $row['theme_accent']);
-        $this->assertSame('poster', $row['theme_layout']);
+        $this->assertArrayNotHasKey('theme_layout', $row);
         $ext = CandidateAssets::outputExtension('image/png'); // webp, atau png bila GD tanpa WebP
         $this->assertMatchesRegularExpression('/^c04-foto-ketua-[a-f0-9]{16}\.' . $ext . '$/', $row['foto_ketua']);
-        $this->assertSame(['texture'], array_keys($row['theme_asset']));
-        $this->assertMatchesRegularExpression('/^c04-texture-[a-f0-9]{16}\.' . $ext . '$/', $row['theme_asset']['texture']);
-        $this->assertEqualsCanonicalizing([$row['foto_ketua'], $row['theme_asset']['texture']], $this->stored());
+        $this->assertSame(['banner'], array_keys($row['theme_asset']));
+        $this->assertMatchesRegularExpression('/^c04-banner-[a-f0-9]{16}\.' . $ext . '$/', $row['theme_asset']['banner']);
+        $this->assertEqualsCanonicalizing([$row['foto_ketua'], $row['theme_asset']['banner']], $this->stored());
 
         $audit = $this->db->table('audit_logs')->where('action', 'CANDIDATE_CREATE')->get()->getRowArray();
         $this->assertStringContainsString('Pasangan 04 (Gilang Ramadhan & Intan Permata)', $audit['description']);
         $this->assertStringContainsString('foto calon ketua diunggah', $audit['description']);
+        $this->assertStringContainsString('gambar pembuka profil diunggah', $audit['description']);
     }
 
     public function testUploadedThemeIsUsedByVoterCandidatePage(): void
@@ -155,26 +161,31 @@ final class AdminCandidateTest extends CIUnitTestCase
             'nama_ketua'   => 'Bagas Prayoga',
             'nama_wakil'   => 'Citra Maheswari',
             'theme_accent' => '#1F6F5C',
-            'theme_layout' => 'split',
         ]), [
             'asset_foto_wakil' => ['path' => $this->image(400, 500, 'jpg'), 'name' => 'wakil.jpg'],
             'asset_hero'       => ['path' => $this->image(1200, 900, 'jpg'), 'name' => 'hero.jpg'],
-            'asset_background' => ['path' => $this->image(1600, 900, 'jpg'), 'name' => 'bg.jpg'],
-            'asset_artwork'    => ['path' => $this->image(600, 600), 'name' => 'art.png'],
+            'asset_banner'     => ['path' => $this->image(1600, 900, 'jpg'), 'name' => 'pembuka.jpg'],
             'asset_poster'     => ['path' => $this->image(600, 900), 'name' => 'poster.png'],
+            'asset_closing'    => ['path' => $this->image(1200, 600, 'jpg'), 'name' => 'penutup.jpg'],
         ])->assertRedirectTo(site_url('admin/paslon'));
 
         $row = model(CandidateModel::class)->find(2);
-        $this->assertSame(['hero', 'artwork', 'poster'], array_keys($row['theme_asset']));
+        $this->assertSame(['hero', 'banner', 'poster', 'closing'], array_keys($row['theme_asset']));
 
         $profile = $this->withSession(['user_type' => 'student', 'student_id' => 1, 'isLoggedIn' => true])->get('siswa/paslon/02');
 
         $profile->assertStatus(200);
         $profile->assertSee('--accent: #1F6F5C;');
-        $profile->assertSee('class="paslon paslon--split"');
-        foreach ([$row['foto_wakil'], $row['theme_background'], $row['theme_asset']['hero'], $row['theme_asset']['artwork'], $row['theme_asset']['poster']] as $file) {
+        $profile->assertDontSee('paslon--');
+        foreach ([$row['foto_wakil'], $row['theme_asset']['banner'], $row['theme_asset']['poster'], $row['theme_asset']['closing']] as $file) {
             $profile->assertSee(base_url('uploads/candidates/' . $file));
         }
+        // Gambar pembuka tampil utuh: ukuran asli untuk atribut width/height.
+        $profile->assertSee('<img class="px-cover__img" src="' . base_url('uploads/candidates/' . $row['theme_asset']['banner']) . '"');
+        $profile->assertSee('width="1600" height="900"');
+        $profile->assertSee('px-close px-close--image');
+        // Foto berdua (hero) khusus beranda & hasil akhir.
+        $profile->assertDontSee($row['theme_asset']['hero']);
         $profile->assertSee('Poster kampanye pasangan 02');
 
         // Sekilas paslon di bilik suara memakai foto yang sama dan menaut ke profil.
@@ -229,12 +240,14 @@ final class AdminCandidateTest extends CIUnitTestCase
         $this->submit('admin/paslon', $this->fields(), [
             'asset_foto_ketua' => ['path' => $php, 'name' => 'foto.jpg'],
             'asset_foto_wakil' => ['path' => $this->image(120, 120), 'name' => 'kecil.png'],
-            'asset_texture'    => ['path' => $this->image(100, 100), 'name' => 'ok.png'],
+            'asset_banner'     => ['path' => $this->image(1200, 1600), 'name' => 'tegak.png'],
+            'asset_closing'    => ['path' => $this->image(1200, 600), 'name' => 'ok.png'],
         ])->assertRedirectTo(site_url('admin/paslon/tambah'));
 
         $errors = session('errors');
         $this->assertStringContainsString('bukan gambar JPG/PNG/WebP', $errors['asset_foto_ketua']);
         $this->assertStringContainsString('terlalu kecil', $errors['asset_foto_wakil']);
+        $this->assertStringContainsString('Gambar pembuka profil harus mendatar (landscape)', $errors['asset_banner']);
         $this->assertSame([], $this->stored(), 'File valid lain ikut dibatalkan');
         $this->dontSeeInDatabase('candidates', ['nomor_urut' => 4]);
         $this->assertSame(0, $this->db->table('audit_logs')->countAllResults());
@@ -253,6 +266,9 @@ final class AdminCandidateTest extends CIUnitTestCase
             'created_at'  => '2000-01-01 00:00:00',
             'foto_ketua'  => '../../app/Config/Database.php',
             'theme_asset' => '{"hero":"../../.env"}',
+            // Stage 16: field lama yang sudah dihapus diabaikan (bukan error SQL).
+            'theme_layout'     => 'poster',
+            'theme_background' => 'bg.webp',
         ]))->assertRedirectTo(site_url('admin/paslon'));
 
         $row = model(CandidateModel::class)->find(3);
@@ -306,7 +322,8 @@ final class AdminCandidateTest extends CIUnitTestCase
 
         $result->assertStatus(200);
         $result->assertSee('Pratinjau admin.');
-        $result->assertSee('class="paslon paslon--poster"');
+        $result->assertSee('<article class="paslon" style="--accent: #2F5D50;');
+        $result->assertDontSee('paslon--');
         $result->assertSee('Bagas Prayoga');
         $result->assertSee('assets/css/voting.css');
         $result->assertSee('assets/css/paslon.css');
@@ -386,11 +403,19 @@ final class AdminCandidateTest extends CIUnitTestCase
         $result->assertStatus(200);
         $result->assertSee('value="Arka Wibisana"');
         $result->assertSee('value="#C4432B"');
-        $result->assertSee('name="theme_layout" value="split" checked');
+        $result->assertDontSee('name="theme_layout"');
+        $result->assertDontSee('Layout halaman kandidat');
         $result->assertSee('enctype="multipart/form-data"');
-        foreach (array_keys(CandidateAssets::SLOTS) as $slot) {
+        foreach (CandidateAssets::SLOTS as $slot => $config) {
             $result->assertSee('name="asset_' . $slot . '"');
+            $result->assertSee(esc($config['label']));
         }
+        foreach (['asset_background', 'asset_artwork', 'asset_texture', 'Latar panggung', 'Artwork kampanye', 'Tekstur'] as $gone) {
+            $result->assertDontSee($gone);
+        }
+        $result->assertSee('Disarankan 1920 × 1080 px (16:9)');
+        // Pratinjau gambar pembuka utuh (tidak dipotong), slot lain tetap.
+        $this->assertSame(1, substr_count((string) $result->getBody(), 'class="slot slot--whole"'));
         $result->assertSee('data-max-bytes="' . CandidateAssets::maxBytes('foto_ketua') . '"');
     }
 }

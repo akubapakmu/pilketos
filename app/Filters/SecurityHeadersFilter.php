@@ -16,7 +16,7 @@ use CodeIgniter\HTTP\ResponseInterface;
  * - Permissions-Policy: kamera, mikrofon, lokasi, pembayaran, USB dimatikan;
  *   layar penuh hanya untuk situs ini (halaman hasil akhir di proyektor) dan
  *   pemutar video kampanye youtube-nocookie.com (Stage 15; iframe itu hanya
- *   ada di profil paslon yang punya video, lihat CandidateTheme::allowVideoFrame());
+ *   ada di profil paslon yang punya video, lihat CandidateTheme::allowVideo());
  * - Cross-Origin-Opener-Policy / Cross-Origin-Resource-Policy same-origin;
  * - Cache-Control no-store untuk setiap respons yang belum mengaturnya
  *   (komputer lab dipakai bergantian: halaman pilihan siswa sebelumnya tidak

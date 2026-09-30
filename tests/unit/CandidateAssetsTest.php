@@ -8,6 +8,8 @@ use Tests\Support\UploadFixture;
 
 /**
  * Stage 3: validasi & pemrosesan unggahan asset kandidat.
+ * Stage 16: slot gambar pembuka profil (wajib landscape) & latar penutup;
+ * latar panggung, artwork, dan tekstur dihapus.
  *
  * @internal
  */
@@ -182,11 +184,47 @@ final class CandidateAssetsTest extends CIUnitTestCase
     public function testRejectsWrongDimensionsAndSize(): void
     {
         $this->assertRejected('terlalu kecil (200 × 300 px). Minimal 240 × 240 px', fn () => $this->process($this->image(200, 300, 'jpg'), 'jpg'));
-        $this->assertRejected('Latar panggung terlalu kecil', fn () => $this->process($this->image(700, 700, 'jpg'), 'jpg', 'background'));
+        $this->assertRejected('Latar penutup terlalu kecil', fn () => $this->process($this->image(700, 700, 'jpg'), 'jpg', 'closing'));
+        $this->assertRejected('Gambar pembuka profil terlalu kecil (1000 × 562 px). Minimal 1200 × 400 px', fn () => $this->process($this->image(1000, 562, 'jpg'), 'jpg', 'banner'));
 
         $source = $this->image(300, 300, 'jpg');
         $this->assertRejected('maksimal', fn () => $this->assets()->processFile($source, 'jpg', 6 * 1024 * 1024, 'foto_ketua', 1));
         $this->assertRejected('kosong', fn () => $this->assets()->processFile($source, 'jpg', 0, 'foto_ketua', 1));
+    }
+
+    public function testSlotsMatchTheSingleProfileLayout(): void
+    {
+        $this->assertSame(['foto_ketua', 'foto_wakil', 'banner', 'poster', 'closing', 'hero'], array_keys(CandidateAssets::SLOTS));
+        $this->assertTrue(CandidateAssets::SLOTS['banner']['landscape']);
+        $this->assertSame('banner', CandidateAssets::SLOTS['banner']['asset']);
+        $this->assertSame('closing', CandidateAssets::SLOTS['closing']['asset']);
+    }
+
+    public function testBannerMustBeLandscapeAndIsKeptWhole(): void
+    {
+        $this->assertRejected('Gambar pembuka profil harus mendatar (landscape): lebar lebih besar dari tinggi, mis. 1920 × 1080 px. File ini 1200 × 1500 px.', fn () => $this->process($this->image(1200, 1500, 'png'), 'png', 'banner'));
+        $this->assertRejected('harus mendatar (landscape)', fn () => $this->process($this->image(1300, 1300, 'jpg'), 'jpg', 'banner'));
+
+        $name = $this->process($this->image(2400, 1350, 'jpg'), 'jpg', 'banner');
+
+        $this->assertMatchesRegularExpression('/^c01-banner-[a-f0-9]{16}\.(webp|jpg)$/', $name);
+        // Tidak dipotong: rasio asli tetap, sisi terpanjang 2000 px.
+        $this->assertSame([2000, 1125], array_slice(getimagesize($this->dir . DIRECTORY_SEPARATOR . $name), 0, 2));
+    }
+
+    public function testBannerOrientationIsCheckedAfterExifRotation(): void
+    {
+        if (! function_exists('exif_read_data')) {
+            $this->markTestSkipped('Ekstensi exif tidak aktif.');
+        }
+
+        // Tersimpan tegak, tampil mendatar (orientasi 6): diterima.
+        $name = $this->process($this->withOrientation($this->image(1350, 2400, 'jpg'), 6), 'jpg', 'banner');
+        $this->assertSame([2000, 1125], array_slice(getimagesize($this->dir . DIRECTORY_SEPARATOR . $name), 0, 2));
+        unlink($this->dir . DIRECTORY_SEPARATOR . $name);
+
+        // Tersimpan mendatar, tampil tegak: ditolak.
+        $this->assertRejected('File ini 1350 × 2400 px.', fn () => $this->process($this->withOrientation($this->image(2400, 1350, 'jpg'), 6), 'jpg', 'banner'));
     }
 
     public function testHttpUploadErrorsAreReported(): void

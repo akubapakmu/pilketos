@@ -180,7 +180,6 @@ final class FinalResultTest extends CIUnitTestCase
     {
         $this->seedWinnerTwo();
         $this->db->table('candidates')->where('id', 2)->update([
-            'theme_layout' => 'column',
             'theme_accent' => '#7A1F5C',
             'theme_asset'  => json_encode(['hero' => 'c02-hero-0123456789abcdef.webp']),
         ]);
@@ -188,9 +187,10 @@ final class FinalResultTest extends CIUnitTestCase
 
         $result = $this->asAdmin()->get('admin/hasil');
 
-        $result->assertSee('victor victor--column');
-        $result->assertSee('victor__pattern--dots');
-        $result->assertSee('--accent: #7A1F5C;');
+        // Stage 16: satu susunan untuk pemenang mana pun, tanpa pola.
+        $result->assertSee('<section class="victor" style="--accent: #7A1F5C;');
+        $result->assertDontSee('victor--');
+        $result->assertDontSee('victor__pattern');
         $result->assertSee(base_url('uploads/candidates/c02-hero-0123456789abcdef.webp'));
         $result->assertSee('data-confetti-colors="#7A1F5C');
     }

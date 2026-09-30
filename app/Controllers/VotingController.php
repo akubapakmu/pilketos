@@ -100,7 +100,7 @@ abstract class VotingController extends BaseController
         }
 
         if ($current['video'] !== null) {
-            CandidateTheme::allowVideoFrame($this->response);
+            CandidateTheme::allowVideo($this->response);
         }
 
         $state = service('voting')->ballotState($type, $this->voterId());

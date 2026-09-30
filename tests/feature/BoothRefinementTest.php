@@ -229,24 +229,29 @@ final class BoothRefinementTest extends CIUnitTestCase
     /**
      * Stage 15: kepala profil paslon (pengganti eyebrow bab) juga tidak
      * menulis "Pasangan 0X" dua kali bila nama tema kosong.
+     * Stage 16: profil dibuka gambar khusus paslon (atau judul sederhana)
+     * tanpa nama tema; nama tema isian admin tetap tampil di Sekilas paslon.
      */
-    public function testChapterEyebrowNeverRepeatsTheDefaultThemeName(): void
+    public function testThemeNameNeverRepeatsTheDefaultPairLabel(): void
     {
         $this->db->table('candidates')->where('id', 1)->update(['theme_name' => '']);
 
         $page = $this->withSession($this->student())->get('siswa/paslon/01');
         $html = (string) $page->response()->getBody();
 
-        $this->assertSame(1, substr_count($html, '<span class="px-hero__tag">Paslon <strong>01</strong></span>'));
-        $this->assertStringNotContainsString('class="px-hero__theme"', $html);
+        $this->assertSame(1, substr_count($html, '<p class="px-cover__no">Paslon <strong>01</strong></p>'));
         $this->assertStringNotContainsString('Pasangan 01</span>', $html);
-        // Tema isian admin tetap tampil.
-        $this->withSession($this->student())->get('siswa/paslon/02')
-            ->assertSee('<span class="px-hero__theme">Deep Forest</span>');
+        $profile = $this->withSession($this->student())->get('siswa/paslon/02');
+        $profile->assertDontSee('Deep Forest');
+
+        // Sekilas paslon: tema isian admin tampil, tema kosong tidak ditulis ulang.
+        $booth = $this->withSession($this->student())->get('siswa/coblos');
+        $booth->assertSee('<span>Deep Forest</span>');
+        $booth->assertDontSee('<span>Pasangan 01</span>');
 
         // Label peran berjarak dari nama.
         $css = $this->asset('assets/css/paslon.css');
-        $this->assertMatchesRegularExpression('/\.px-person \{[^}]*gap: var\(--space-2\);/', $css);
+        $this->assertMatchesRegularExpression('/\.px-cover__person \{[^}]*gap: var\(--space-1\);/', $css);
     }
 
     public function testConfirmDialogIsCentredOverABlurredBackdrop(): void

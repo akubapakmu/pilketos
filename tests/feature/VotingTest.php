@@ -211,7 +211,7 @@ final class VotingTest extends CIUnitTestCase
         }
     }
 
-    public function testEachCandidateHasItsOwnThemeAndLayout(): void
+    public function testEachCandidateHasItsOwnThemeWithOneLayout(): void
     {
         $result = $this->withSession($this->student())->get('siswa/coblos');
 
@@ -221,35 +221,37 @@ final class VotingTest extends CIUnitTestCase
         // Tanpa foto: monogram inisial yang tetap punya nama untuk pembaca layar.
         $result->assertSee('aria-label="Arka Wibisana, calon ketua pasangan 01 (foto belum tersedia)"');
 
-        // Profil paslon: varian pembuka + pola mengikuti theme_layout.
-        foreach (['01' => ['split', 'grid'], '02' => ['poster', 'hatch'], '03' => ['column', 'dots']] as $label => [$layout, $pattern]) {
+        // Stage 16: monogram polos (tanpa pola) dan satu tampilan profil untuk semua.
+        $result->assertDontSee('portrait__pattern');
+        foreach (['01', '02', '03'] as $label) {
             $profile = $this->withSession($this->student())->get('siswa/paslon/' . $label);
-            $profile->assertSee('class="paslon paslon--' . $layout . '"');
-            $profile->assertSee('px-hero__pattern--' . $pattern);
+            $profile->assertSee('<article class="paslon" style="--accent: ');
+            $profile->assertDontSee('paslon--');
+            $profile->assertDontSee('pattern');
         }
     }
 
     public function testUploadedThemeAssetsAreUsedByTheCandidatePage(): void
     {
         model(\App\Models\CandidateModel::class)->update(1, [
-            'foto_ketua'       => 'ketua-01.webp',
-            'foto_wakil'       => 'wakil-01.webp',
-            'theme_background' => 'bg-01.webp',
-            'theme_asset'      => ['hero' => 'hero-01.webp', 'texture' => 'tex-01.webp', 'artwork' => 'art-01.webp', 'poster' => 'poster-01.webp'],
-            'theme_layout'     => 'poster',
-            'theme_accent'     => '#f2d14b',
+            'foto_ketua'   => 'ketua-01.webp',
+            'foto_wakil'   => 'wakil-01.webp',
+            'theme_asset'  => ['hero' => 'hero-01.webp', 'banner' => 'banner-01.webp', 'poster' => 'poster-01.webp', 'closing' => 'closing-01.webp'],
+            'theme_accent' => '#f2d14b',
         ]);
 
         $result = $this->withSession($this->student())->get('siswa/paslon/01');
 
-        foreach (['ketua-01.webp', 'wakil-01.webp', 'bg-01.webp', 'hero-01.webp', 'tex-01.webp', 'art-01.webp', 'poster-01.webp'] as $file) {
+        foreach (['ketua-01.webp', 'wakil-01.webp', 'banner-01.webp', 'poster-01.webp', 'closing-01.webp'] as $file) {
             $result->assertSee(base_url('uploads/candidates/' . $file));
         }
+        // Foto berdua (hero) khusus beranda & hasil akhir, tidak di profil.
+        $result->assertDontSee('hero-01.webp');
         $result->assertSee('Foto Arka Wibisana, calon ketua pasangan 01');
         $result->assertSee('Poster kampanye pasangan 01');
+        $result->assertSee('Gambar pembuka pasangan 01');
         // Aksen terang: teks di atas aksen memakai ink, teks aksen di atas kertas jatuh ke ink.
-        $result->assertSee('--accent: #F2D14B; --accent-ink: #15141A; --accent-text: #15141A;');
-        $result->assertSee('class="paslon paslon--poster"');
+        $result->assertSee('--accent: #F2D14B; --accent-ink: #15141A; --accent-text: #15141A; --accent-soft: #FDF9E9;');
 
         // Sekilas paslon di bilik suara memakai potret yang sama.
         $booth = $this->withSession($this->student())->get('siswa/coblos');
@@ -278,9 +280,10 @@ final class VotingTest extends CIUnitTestCase
         $result = $this->withSession($this->student())->get('siswa/paslon/01');
         $body   = $result->getBody();
 
-        $this->assertSame(1, substr_count($body, 'data-px-words'));
+        // Stage 16: visi statis (tanpa kata menyala) dan tanpa parallax pembuka.
+        $this->assertSame(0, substr_count($body, 'data-px-words'));
         $this->assertSame(3, substr_count($body, 'class="px-list__item"'));
-        $result->assertSee('data-px-parallax');
+        $result->assertDontSee('data-px-parallax');
         $result->assertSee('data-px-nav');
         $result->assertSee('data-px-reveal');
         $result->assertSee('assets/js/paslon.js');
