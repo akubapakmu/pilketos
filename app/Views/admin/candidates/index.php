@@ -7,10 +7,16 @@
  * Stage 12: tanpa eyebrow "Pasangan 01 · tema" (tema & status Nonaktif
  * pindah ke meta), kelengkapan asset berupa timeline.
  *
+ * Stage 15: notice "dirancang untuk 3 pasangan" diganti panel batas
+ * pasangan aktif yang dapat diatur admin (2-10, per pemilihan).
+ *
  * @var list<array{raw: array, theme: array, votes: int, vote_rows: int, assets: array<string, string>}> $rows
- * @var int $activeCount
+ * @var int                   $activeCount
+ * @var int                   $batas
+ * @var array<string, string> $errors
  */
 use App\Libraries\CandidateAssets;
+use App\Models\ElectionModel;
 
 $layoutNames = ['split' => 'Split', 'poster' => 'Poster', 'column' => 'Kolom'];
 ?>
@@ -34,9 +40,52 @@ $layoutNames = ['split' => 'Split', 'poster' => 'Poster', 'column' => 'Kolom'];
     <p class="notice"><?= icon('lock') ?><span>Pemilihan sudah selesai: susunan pasangan (tambah, hapus, nomor urut, status aktif) dikunci agar hasil akhir tidak berubah.</span></p>
   <?php endif; ?>
 
-  <?php if ($activeCount !== 3): ?>
-    <p class="notice"><?= icon('info') ?><span>Pemilihan ini dirancang untuk <strong>3 pasangan</strong>; saat ini ada <strong><?= $activeCount ?></strong> pasangan aktif.</span></p>
-  <?php endif; ?>
+  <?php
+    $oldBatas    = session()->getFlashdata('_ci_old_input')['post']['batas_pasangan'] ?? $batas;
+    $batasError  = $errors['batas_pasangan'] ?? null;
+    $canSetBatas = ($election ?? null) !== null && ! ($resultsLocked ?? false);
+  ?>
+  <section class="quota" aria-labelledby="quota-title">
+    <div class="quota__status">
+      <h2 class="quota__title" id="quota-title">Batas pasangan aktif</h2>
+      <p class="quota__count"><strong><?= $activeCount ?></strong> dari <strong><?= $batas ?></strong> pasangan aktif</p>
+      <ol class="quota__slots" aria-hidden="true">
+        <?php for ($i = 1; $i <= max($batas, $activeCount); $i++): ?>
+          <li class="quota__slot<?= $i <= $activeCount ? ' is-filled' : '' ?><?= $i > $batas ? ' is-over' : '' ?>"></li>
+        <?php endfor; ?>
+      </ol>
+      <p class="quota__hint">
+        <?php if ($activeCount > $batas): ?>
+          Jumlah pasangan aktif melebihi batas. Nonaktifkan pasangan yang tidak ikut atau naikkan batas.
+        <?php elseif ($activeCount === $batas): ?>
+          Batas penuh. Pasangan baru disimpan nonaktif sampai batas dinaikkan atau pasangan lain dinonaktifkan.
+        <?php else: ?>
+          Masih ada tempat untuk <?= $batas - $activeCount ?> pasangan aktif lagi. Pasangan nonaktif tidak dihitung.
+        <?php endif; ?>
+      </p>
+    </div>
+
+    <?php if ($canSetBatas): ?>
+      <form class="quota__form" action="<?= site_url('admin/paslon/batas') ?>" method="post" novalidate>
+        <?= csrf_field() ?>
+        <div class="field">
+          <label for="batas_pasangan">Ubah batas</label>
+          <div class="quota__row">
+            <input type="number" id="batas_pasangan" name="batas_pasangan" min="<?= ElectionModel::BATAS_PASANGAN_MIN ?>" max="<?= ElectionModel::BATAS_PASANGAN_MAX ?>"
+                   inputmode="numeric" required value="<?= esc((string) $oldBatas, 'attr') ?>"
+                   aria-describedby="batas-hint<?= $batasError !== null ? ' err-batas_pasangan' : '' ?>"<?= $batasError !== null ? ' aria-invalid="true"' : '' ?>>
+            <button type="submit" class="btn" data-loading-text="Menyimpan..."><?= icon('check') ?> Simpan batas</button>
+          </div>
+          <p class="field-hint" id="batas-hint"><?= ElectionModel::BATAS_PASANGAN_MIN ?> sampai <?= ElectionModel::BATAS_PASANGAN_MAX ?> pasangan, minimal sebanyak pasangan yang sedang aktif.</p>
+          <?php if ($batasError !== null): ?><p class="field-error" id="err-batas_pasangan"><?= esc($batasError) ?></p><?php endif; ?>
+        </div>
+      </form>
+    <?php elseif (($election ?? null) === null): ?>
+      <p class="quota__note"><?= icon('info') ?> <span>Batas dapat diubah setelah <a href="<?= site_url('admin/jadwal') ?>">jadwal pemilihan</a> dibuat. Sementara memakai bawaan <?= ElectionModel::BATAS_PASANGAN_DEFAULT ?> pasangan.</span></p>
+    <?php else: ?>
+      <p class="quota__note"><?= icon('lock') ?> <span>Dikunci: pemilihan sudah selesai.</span></p>
+    <?php endif; ?>
+  </section>
 
   <?php if ($rows === []): ?>
     <p class="empty">Belum ada pasangan calon. <a href="<?= site_url('admin/paslon/tambah') ?>">Tambah pasangan pertama</a>.</p>

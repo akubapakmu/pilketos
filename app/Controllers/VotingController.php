@@ -7,6 +7,7 @@ use App\Libraries\DeviceInfo;
 use App\Models\CandidateModel;
 use App\Services\VoteResult;
 use App\Services\VoterType;
+use CodeIgniter\Exceptions\PageNotFoundException;
 use CodeIgniter\HTTP\Exceptions\HTTPException;
 use CodeIgniter\HTTP\RedirectResponse;
 use CodeIgniter\HTTP\ResponseInterface;
@@ -20,10 +21,11 @@ use CodeIgniter\HTTP\ResponseInterface;
  * dari input, sehingga tidak ada IDOR: tidak ada parameter id pemilih/suara.
  *
  * Halaman:
- * - index   : kandidat + visi-misi interaktif + surat suara (paku/coblos);
- * - confirm : konfirmasi tanpa JavaScript (fallback terakhir);
- * - submit  : simpan suara (AJAX JSON atau form POST biasa);
- * - myVote  : pilihan milik pemilih sendiri (setelah memilih / login ulang).
+ * - index     : pembuka + "Sekilas paslon" + surat suara (paku/coblos);
+ * - candidate : profil lengkap satu paslon aktif (Stage 15, siswa|guru/paslon/0X);
+ * - confirm   : konfirmasi tanpa JavaScript (fallback terakhir);
+ * - submit    : simpan suara (AJAX JSON atau form POST biasa);
+ * - myVote    : pilihan milik pemilih sendiri (setelah memilih / login ulang).
  */
 abstract class VotingController extends BaseController
 {
@@ -69,6 +71,47 @@ abstract class VotingController extends BaseController
             'election'   => $state['election'],
             'canVote'    => $state['canVote'],
             'candidates' => CandidateTheme::presentAll(model(CandidateModel::class)->getActiveCandidates()),
+        ]);
+    }
+
+    /**
+     * GET <siswa|guru>/paslon/{nomorUrut}
+     * Stage 15: profil lengkap satu paslon AKTIF (nomor urut, "01" atau "1").
+     * Tetap dapat dibuka setelah memilih; tombol "Pilih" hanya tampil saat
+     * pemilih masih dapat mencoblos. Tidak ada data suara di halaman ini.
+     */
+    public function candidate($number = null)
+    {
+        $type    = $this->voterType();
+        $lineup  = CandidateTheme::presentAll(model(CandidateModel::class)->getActiveCandidates());
+        $current = null;
+
+        if (is_string($number) && ctype_digit($number) && strlen($number) <= 3) {
+            foreach ($lineup as $c) {
+                if ($c['number'] === (int) $number) {
+                    $current = $c;
+                    break;
+                }
+            }
+        }
+
+        if ($current === null) {
+            throw PageNotFoundException::forPageNotFound('Pasangan calon tidak ditemukan.');
+        }
+
+        if ($current['video'] !== null) {
+            CandidateTheme::allowVideoFrame($this->response);
+        }
+
+        $state = service('voting')->ballotState($type, $this->voterId());
+
+        return view('paslon/show', [
+            'title'   => sprintf('Paslon %s: %s & %s', $current['label'], $current['ketua'], $current['wakil']),
+            'type'    => $type,
+            'c'       => $current,
+            'lineup'  => $lineup,
+            'canVote' => $state['canVote'],
+            'voted'   => $state['vote'] !== null,
         ]);
     }
 

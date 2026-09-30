@@ -116,15 +116,16 @@ final class StageNineRefinementTest extends CIUnitTestCase
         $page = $this->withSession($this->student())->get('siswa/coblos');
         $html = (string) $page->response()->getBody();
 
-        // .booth-open membungkus pembuka + Sekilas paslon; navigasi bab di luar.
+        // .booth-open membungkus pembuka + Sekilas paslon; surat suara di luar
+        // (Stage 15: navigasi bab & bab pasangan pindah ke profil paslon).
         $open   = strpos($html, '<div class="booth-open">');
         $intro  = strpos($html, '<section class="booth-intro"');
         $lineup = strpos($html, '<section class="lineup"');
-        $nav    = strpos($html, '<nav class="chapter-nav"');
+        $ballot = strpos($html, '<section class="ballot');
         $this->assertNotFalse($open);
-        $this->assertTrue($open < $intro && $intro < $lineup && $lineup < $nav);
+        $this->assertTrue($open < $intro && $intro < $lineup && $lineup < $ballot);
         // (test: komentar DEBUG-VIEW boleh ada di antara tag)
-        $this->assertMatchesRegularExpression('/<\/section>(\s|<!--[^>]*-->)*<\/div>(\s|<!--[^>]*-->)*<nav class="chapter-nav"/', $html);
+        $this->assertMatchesRegularExpression('/<\/section>(\s|<!--[^>]*-->)*<\/div>(\s|<!--[^>]*-->)*<section class="ballot/', $html);
 
         $css = $this->asset('assets/css/voting.css');
         $this->assertMatchesRegularExpression('/\.booth-open > \.lineup \{[^}]*flex: 1 0 auto;/', $css);

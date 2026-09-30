@@ -17,6 +17,10 @@ use Tests\Support\UploadFixture;
  * File disimpan ke folder sementara (service candidateAssets di-mock),
  * bukan ke public/uploads/candidates.
  *
+ * Stage 15: halaman kandidat pemilih = profil paslon (siswa/paslon/0X);
+ * fixture memakai batas 4 pasangan aktif agar pasangan ke-4 dapat ditambah
+ * (penolakan melewati batas diuji CandidateLimitTest).
+ *
  * @internal
  */
 final class AdminCandidateTest extends CIUnitTestCase
@@ -43,6 +47,8 @@ final class AdminCandidateTest extends CIUnitTestCase
         $this->dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'cand-http-' . bin2hex(random_bytes(4));
         mkdir($this->dir);
         Services::injectMock('candidateAssets', new CandidateAssets($this->dir));
+
+        $this->db->table('elections')->update(['batas_pasangan' => 4]);
     }
 
     protected function tearDown(): void
@@ -161,15 +167,20 @@ final class AdminCandidateTest extends CIUnitTestCase
         $row = model(CandidateModel::class)->find(2);
         $this->assertSame(['hero', 'artwork', 'poster'], array_keys($row['theme_asset']));
 
-        $ballot = $this->withSession(['user_type' => 'student', 'student_id' => 1, 'isLoggedIn' => true])->get('siswa/coblos');
+        $profile = $this->withSession(['user_type' => 'student', 'student_id' => 1, 'isLoggedIn' => true])->get('siswa/paslon/02');
 
-        $ballot->assertStatus(200);
-        $ballot->assertSee('--accent: #1F6F5C;');
-        $this->assertSame(2, substr_count($ballot->getBody(), 'chapter chapter--split'));
+        $profile->assertStatus(200);
+        $profile->assertSee('--accent: #1F6F5C;');
+        $profile->assertSee('class="paslon paslon--split"');
         foreach ([$row['foto_wakil'], $row['theme_background'], $row['theme_asset']['hero'], $row['theme_asset']['artwork'], $row['theme_asset']['poster']] as $file) {
-            $ballot->assertSee(base_url('uploads/candidates/' . $file));
+            $profile->assertSee(base_url('uploads/candidates/' . $file));
         }
-        $ballot->assertSee('Poster kampanye pasangan 02');
+        $profile->assertSee('Poster kampanye pasangan 02');
+
+        // Sekilas paslon di bilik suara memakai foto yang sama dan menaut ke profil.
+        $ballot = $this->withSession(['user_type' => 'student', 'student_id' => 1, 'isLoggedIn' => true])->get('siswa/coblos');
+        $ballot->assertSee(base_url('uploads/candidates/' . $row['foto_wakil']));
+        $ballot->assertSee('href="' . site_url('siswa/paslon/02') . '"');
     }
 
     public function testReplacingAndRemovingAssetsDeletesOldFiles(): void
@@ -289,17 +300,83 @@ final class AdminCandidateTest extends CIUnitTestCase
         $this->seeInDatabase('audit_logs', ['action' => 'CANDIDATE_DELETE']);
     }
 
-    public function testPreviewRendersVoterChapterForAdmin(): void
+    public function testPreviewRendersVoterProfileForAdmin(): void
     {
         $result = $this->withSession($this->admin())->get('admin/paslon/2/intip');
 
         $result->assertStatus(200);
         $result->assertSee('Pratinjau admin.');
-        $result->assertSee('chapter chapter--poster');
+        $result->assertSee('class="paslon paslon--poster"');
         $result->assertSee('Bagas Prayoga');
         $result->assertSee('assets/css/voting.css');
+        $result->assertSee('assets/css/paslon.css');
+        $result->assertSee('assets/js/paslon.js');
         $result->assertSee('Admin tidak dapat memberikan suara');
+        $result->assertSee('href="' . site_url('admin/paslon/2/ubah') . '"');
+        $result->assertSee('href="' . site_url('admin/paslon/1/intip') . '"');
         $result->assertDontSee('data-coblos');
+        $result->assertDontSee('#coblos-');
+    }
+
+    /**
+     * Stage 15: field profil & kampanye tersimpan dari form admin; tautan
+     * YouTube disimpan sebagai ID video saja.
+     */
+    public function testProfileFieldsAreSavedAndVideoLinkBecomesAnId(): void
+    {
+        $this->submit('admin/paslon/1', $this->fields([
+            'nomor_urut'     => '1',
+            'slogan'         => "  Bersama   berkarya.\n ",
+            'bio_ketua'      => "Ketua kelas.\nSuka membaca.",
+            'karakter_ketua' => "Kreatif\nAktif, Jujur",
+            'program'        => "Student Voice — Wadah aspirasi.\nCreative Day: Pameran karya.",
+            'pesan_wakil'    => 'Ayo memilih!',
+            'video_youtube'  => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42s',
+        ]))->assertRedirectTo(site_url('admin/paslon'));
+
+        $row = model(CandidateModel::class)->find(1);
+        $this->assertSame('Bersama berkarya.', $row['slogan']);
+        $this->assertSame('Ketua kelas. Suka membaca.', $row['bio_ketua']);
+        $this->assertSame('Kreatif, Aktif, Jujur', $row['karakter_ketua']);
+        $this->assertSame("Student Voice — Wadah aspirasi.\nCreative Day: Pameran karya.", $row['program']);
+        $this->assertNull($row['pesan_ketua']);
+        $this->assertSame('Ayo memilih!', $row['pesan_wakil']);
+        $this->assertSame('dQw4w9WgXcQ', $row['video_youtube']);
+
+        $audit = $this->db->table('audit_logs')->where('action', 'CANDIDATE_UPDATE')->orderBy('id', 'DESC')->get()->getRowArray();
+        foreach (['slogan', 'bio ketua', 'karakter ketua', 'program unggulan', 'pesan wakil', 'video'] as $label) {
+            $this->assertStringContainsString($label, $audit['description']);
+        }
+
+        // Form ubah menampilkan ID sebagai tautan pendek.
+        $this->withSession($this->admin())->get('admin/paslon/1/ubah')->assertSee('value="https://youtu.be/dQw4w9WgXcQ"');
+    }
+
+    public function testUnknownVideoLinkAndOverlongProfileTextAreRejected(): void
+    {
+        $this->submit('admin/paslon/1', $this->fields([
+            'nomor_urut'    => '1',
+            'video_youtube' => 'https://vimeo.com/123456',
+            'pesan_ketua'   => str_repeat('a', 301),
+        ]))->assertRedirectTo(site_url('admin/paslon/1/ubah'));
+
+        $errors = session('errors');
+        $this->assertStringContainsString('Tautan YouTube tidak dikenali', $errors['video_youtube']);
+        $this->assertSame('Pesan calon ketua maksimal 300 karakter.', $errors['pesan_ketua']);
+        $this->seeInDatabase('candidates', ['id' => 1, 'video_youtube' => null, 'nama_ketua' => 'Arka Wibisana']);
+    }
+
+    public function testFormHasProfileAndCampaignFieldset(): void
+    {
+        $result = $this->withSession($this->admin())->get('admin/paslon/1/ubah');
+
+        $this->assertStringContainsString('<span class="form-x__no">03</span> Profil &amp; kampanye</legend>', (string) $result->getBody());
+        foreach (['slogan', 'bio_ketua', 'bio_wakil', 'karakter_ketua', 'karakter_wakil', 'program', 'pesan_ketua', 'pesan_wakil', 'video_youtube'] as $field) {
+            $result->assertSee('name="' . $field . '"');
+        }
+        $result->assertSee('value="Bersama berkarya, bersama berprestasi."');
+        $html = (string) $result->getBody();
+        $this->assertLessThan(strpos($html, 'Tema visual</legend>'), strpos($html, 'Profil &amp; kampanye</legend>'));
     }
 
     public function testEditFormShowsCurrentValuesAndUploadLimits(): void

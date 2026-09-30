@@ -3,6 +3,7 @@
 namespace App\Libraries;
 
 use App\Models\CandidateModel;
+use CodeIgniter\HTTP\ResponseInterface;
 
 /**
  * Mengubah baris `candidates` menjadi data tampilan dengan identitas visual
@@ -14,6 +15,9 @@ use App\Models\CandidateModel;
  * - theme_asset      : JSON {hero, texture, artwork, poster} berisi nama file;
  * - theme_layout     : art direction halaman (split | poster | column);
  * - foto_ketua / foto_wakil.
+ * Stage 15 (halaman profil paslon): slogan, bio, karakter (maks. 3 kata),
+ * program unggulan {title, text}, pesan ketua/wakil, dan video YouTube
+ * (hanya ID; URL embed selalu youtube-nocookie.com).
  * Asset yang belum diunggah tidak membuat halaman rusak: foto diganti monogram
  * inisial, texture diganti pola SVG solid sesuai layout.
  *
@@ -34,6 +38,18 @@ final class CandidateTheme
     ];
 
     public const ASSET_KEYS = ['hero', 'texture', 'artwork', 'poster'];
+
+    /**
+     * Stage 15: embed YouTube mode privasi (cookie baru dipasang saat diputar).
+     * Satu-satunya asal frame yang diizinkan CSP, dan hanya di halaman yang
+     * memuat video (lihat allowVideoFrame()).
+     */
+    public const VIDEO_ORIGIN = 'https://www.youtube-nocookie.com';
+
+    /**
+     * Kata karakter yang ditampilkan per orang.
+     */
+    public const MAX_TAGS = 3;
 
     private const INK      = '#15141A';
     private const PAPER    = '#FAF9F6';
@@ -71,7 +87,19 @@ final class CandidateTheme
             'photo_ketua'    => self::url($candidate['foto_ketua'] ?? null),
             'photo_wakil'    => self::url($candidate['foto_wakil'] ?? null),
             'background'     => self::url($candidate['theme_background'] ?? null),
+            'slogan'         => self::text($candidate['slogan'] ?? null),
+            'bio_ketua'      => self::text($candidate['bio_ketua'] ?? null),
+            'bio_wakil'      => self::text($candidate['bio_wakil'] ?? null),
+            'karakter_ketua' => self::tags($candidate['karakter_ketua'] ?? null),
+            'karakter_wakil' => self::tags($candidate['karakter_wakil'] ?? null),
+            'program'        => self::programItems($candidate['program'] ?? null),
+            'pesan_ketua'    => self::text($candidate['pesan_ketua'] ?? null),
+            'pesan_wakil'    => self::text($candidate['pesan_wakil'] ?? null),
+            'video'          => self::youtubeId((string) ($candidate['video_youtube'] ?? '')),
         ];
+
+        $theme['video_url']   = $theme['video'] === null ? null : 'https://www.youtube.com/watch?v=' . $theme['video'];
+        $theme['video_embed'] = $theme['video'] === null ? null : self::VIDEO_ORIGIN . '/embed/' . $theme['video'] . '?autoplay=1&rel=0';
 
         // Stage 8: nama tema kosong jatuh ke "Pasangan 0X"; tampilan pemilih
         // tidak menulisnya dua kali di samping label "Pasangan 0X".
@@ -94,6 +122,18 @@ final class CandidateTheme
     public static function presentAll(array $candidates): array
     {
         return array_values(array_map(self::present(...), $candidates));
+    }
+
+    /**
+     * Stage 15: izinkan iframe YouTube (mode privasi) HANYA untuk respons
+     * halaman yang memuat video paslon. Halaman lain tetap frame-src 'none'
+     * (Config\ContentSecurityPolicy).
+     */
+    public static function allowVideoFrame(ResponseInterface $response): void
+    {
+        $csp = $response->getCSP();
+        $csp->clearDirective('frame-src');
+        $csp->addFrameSrc(self::VIDEO_ORIGIN);
     }
 
     /**
@@ -224,7 +264,7 @@ final class CandidateTheme
             return $value;
         }
 
-        // Otomatis berbeda per nomor urut agar tiga pasangan tidak identik.
+        // Otomatis berbeda per nomor urut agar pasangan berurutan tidak identik.
         return self::LAYOUTS[max(0, $number - 1) % count(self::LAYOUTS)];
     }
 
@@ -253,6 +293,136 @@ final class CandidateTheme
     }
 
     /**
+     * Program unggulan (Stage 15): satu program per baris, judul dan
+     * penjelasan dipisah "—", " – ", " - ", ": " atau "|". Baris tanpa
+     * pemisah menjadi judul saja. Penomoran manual dibuang seperti misi.
+     *
+     * @return list<array{title: string, text: string}>
+     */
+    public static function programItems(mixed $program): array
+    {
+        $items = [];
+
+        foreach (self::misiItems($program) as $line) {
+            $parts = preg_split('/\s*\x{2014}\s*|\s+[\x{2013}-]\s+|\s*\|\s*|:\s+/u', $line, 2);
+            $title = trim((string) ($parts[0] ?? ''));
+            $text  = trim((string) ($parts[1] ?? ''));
+
+            if ($title === '') {
+                [$title, $text] = [$text, ''];
+            }
+
+            if ($title !== '') {
+                $items[] = ['title' => $title, 'text' => $text];
+            }
+        }
+
+        return $items;
+    }
+
+    /**
+     * Kata karakter (Stage 15): dipisah koma, titik tengah, titik koma, atau
+     * baris baru; duplikat dibuang; maksimal MAX_TAGS kata.
+     *
+     * @return list<string>
+     */
+    public static function tags(mixed $value): array
+    {
+        if (! is_string($value) || trim($value) === '') {
+            return [];
+        }
+
+        $tags = [];
+
+        foreach (preg_split('/[,;\x{00B7}\x{2022}\r\n]+/u', $value) as $tag) {
+            $tag = trim((string) preg_replace('/\s+/u', ' ', $tag));
+
+            if ($tag !== '' && ! in_array(mb_strtolower($tag), array_map('mb_strtolower', $tags), true)) {
+                $tags[] = $tag;
+            }
+
+            if (count($tags) === self::MAX_TAGS) {
+                break;
+            }
+        }
+
+        return $tags;
+    }
+
+    /**
+     * ID video YouTube (11 karakter) dari tautan yang ditempel admin:
+     * youtube.com/watch?v=ID, youtu.be/ID, youtube.com/shorts/ID,
+     * youtube.com/embed/ID, youtube-nocookie.com/embed/ID, atau ID saja.
+     * Tautan lain (situs lain, playlist tanpa v=, teks bebas) = null.
+     */
+    public static function youtubeId(string $input): ?string
+    {
+        $input = trim($input);
+
+        if ($input === '') {
+            return null;
+        }
+
+        if (preg_match('/^[A-Za-z0-9_-]{11}$/', $input) === 1) {
+            return $input;
+        }
+
+        if (! str_contains($input, '://')) {
+            $input = 'https://' . $input;
+        }
+
+        $parts = parse_url($input);
+        $host  = strtolower((string) ($parts['host'] ?? ''));
+        $path  = (string) ($parts['path'] ?? '');
+
+        if (! in_array($parts['scheme'] ?? '', ['http', 'https'], true)) {
+            return null;
+        }
+
+        $host = preg_replace('/^(?:www\.|m\.|music\.)/', '', $host);
+        $id   = null;
+
+        if ($host === 'youtu.be') {
+            $id = explode('/', ltrim($path, '/'))[0] ?? null;
+        } elseif ($host === 'youtube.com' || $host === 'youtube-nocookie.com') {
+            if (preg_match('#^/(?:shorts|embed|live|v)/([^/?]+)#', $path, $match) === 1) {
+                $id = $match[1];
+            } elseif ($path === '/watch' || $path === '/watch/') {
+                parse_str((string) ($parts['query'] ?? ''), $query);
+                $id = is_string($query['v'] ?? null) ? $query['v'] : null;
+            }
+        }
+
+        return is_string($id) && preg_match('/^[A-Za-z0-9_-]{11}$/', $id) === 1 ? $id : null;
+    }
+
+    /**
+     * Jumlah kolom grid yang seimbang untuk n pasangan (Stage 15, batas
+     * pasangan dapat diatur 2-10): n <= $max tampil satu baris; selebihnya
+     * baris sesedikit mungkin dengan isi baris serata mungkin
+     * (maks. 4: 5 -> 3+2, 6 -> 3+3, 7 -> 4+3, 9 -> 3+3+3).
+     */
+    public static function columns(int $count, int $max = 4): int
+    {
+        $max = max(1, $max);
+
+        if ($count <= $max) {
+            return max(1, $count);
+        }
+
+        return (int) ceil($count / (int) ceil($count / $max));
+    }
+
+    /**
+     * Custom property grid untuk daftar pasangan: --cols (layar lebar, maks. 4)
+     * dan --cols-md (tablet, maks. 3).
+     */
+    public static function gridStyle(int $count): string
+    {
+        return sprintf('--cols: %d; --cols-md: %d;', self::columns($count), self::columns($count, 3));
+    }
+
+    /**
      * Inisial dua kata pertama, contoh "Arka Wibisana" menjadi "AW".
      */
     public static function initials(string $name): string
@@ -270,6 +440,14 @@ final class CandidateTheme
         }
 
         return $letters === '' ? '?' : $letters;
+    }
+
+    /**
+     * Teks bebas yang dirapikan (spasi di tepi, baris baru seragam).
+     */
+    private static function text(mixed $value): string
+    {
+        return is_string($value) ? trim(str_replace(["\r\n", "\r"], "\n", $value)) : '';
     }
 
     private static function url(mixed $filename): ?string

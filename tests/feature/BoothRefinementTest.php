@@ -176,9 +176,11 @@ final class BoothRefinementTest extends CIUnitTestCase
             '/@media \(max-width: 719px\) \{\s*\.booth-open \{[^}]*min-height: calc\(100svh - 65px\);/',
             $css,
         );
-        $this->assertMatchesRegularExpression('/\.chapter,\s*\.ballot \{[^}]*min-height: 100svh;/', $css);
+        // Stage 15: bab pasangan pindah ke profil paslon; surat suara tetap satu layar.
+        $this->assertMatchesRegularExpression('/\n  \.ballot \{\s*display: flex;[^}]*min-height: 100svh;/', $css);
+        $this->assertStringNotContainsString('.chapter', $css);
         // Desktop: bagian lebih lebar dari kontainer bawaan (1080px).
-        $this->assertStringContainsString(".booth-intro,\n.lineup,\n.chapter-nav,\n.chapter,\n.ballot { --container-w: 1360px; }", $css);
+        $this->assertStringContainsString(".booth-intro,\n.lineup,\n.ballot { --container-w: 1360px; }", $css);
 
         $js = $this->asset('assets/js/candidates.js');
         $this->assertStringContainsString("document.addEventListener('osis:journey'", $js);
@@ -224,21 +226,27 @@ final class BoothRefinementTest extends CIUnitTestCase
         $this->assertStringContainsString('.hole-bit {', $css);
     }
 
+    /**
+     * Stage 15: kepala profil paslon (pengganti eyebrow bab) juga tidak
+     * menulis "Pasangan 0X" dua kali bila nama tema kosong.
+     */
     public function testChapterEyebrowNeverRepeatsTheDefaultThemeName(): void
     {
         $this->db->table('candidates')->where('id', 1)->update(['theme_name' => '']);
 
-        $page = $this->withSession($this->student())->get('siswa/coblos');
+        $page = $this->withSession($this->student())->get('siswa/paslon/01');
         $html = (string) $page->response()->getBody();
 
-        $this->assertSame(1, substr_count($html, 'Pasangan <strong>01</strong>'));
-        $this->assertStringNotContainsString('<span class="chapter__theme">Pasangan 01</span>', $html);
-        $this->assertStringNotContainsString('<span>Pasangan 01</span>', $html);
+        $this->assertSame(1, substr_count($html, '<span class="px-hero__tag">Paslon <strong>01</strong></span>'));
+        $this->assertStringNotContainsString('class="px-hero__theme"', $html);
+        $this->assertStringNotContainsString('Pasangan 01</span>', $html);
         // Tema isian admin tetap tampil.
-        $page->assertSee('<span class="chapter__theme">Deep Forest</span>');
+        $this->withSession($this->student())->get('siswa/paslon/02')
+            ->assertSee('<span class="px-hero__theme">Deep Forest</span>');
 
-        $css = $this->asset('assets/css/voting.css');
-        $this->assertMatchesRegularExpression('/\.chapter__role \{[^}]*margin-bottom: var\(--space-3\);/', $css);
+        // Label peran berjarak dari nama.
+        $css = $this->asset('assets/css/paslon.css');
+        $this->assertMatchesRegularExpression('/\.px-person \{[^}]*gap: var\(--space-2\);/', $css);
     }
 
     public function testConfirmDialogIsCentredOverABlurredBackdrop(): void

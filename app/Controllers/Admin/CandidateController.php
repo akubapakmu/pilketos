@@ -7,9 +7,11 @@ use App\Libraries\CandidateAssets;
 use App\Libraries\CandidateTheme;
 use App\Models\AuditLogModel;
 use App\Models\CandidateModel;
+use App\Models\ElectionModel;
 use CodeIgniter\Database\Exceptions\DatabaseException;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use CodeIgniter\HTTP\RedirectResponse;
+use CodeIgniter\I18n\Time;
 
 /**
  * Kelola pasangan calon + tema visual (Stage 3).
@@ -25,6 +27,12 @@ use CodeIgniter\HTTP\RedirectResponse;
  *
  * Stage 4: setelah pemilihan selesai, tambah/hapus pasangan ditolak dan
  * nomor urut & status aktif dipertahankan (hasil akhir tidak berubah).
+ *
+ * Stage 15: batas jumlah pasangan AKTIF diatur di halaman ini (kolom
+ * elections.batas_pasangan, 2-10, bawaan 3). Mengaktifkan pasangan melewati
+ * batas ditolak; batas tidak dapat diturunkan di bawah jumlah pasangan aktif.
+ * Field profil & kampanye (slogan, bio, karakter, program, pesan, video)
+ * dipakai halaman profil paslon (paslon/partials/profile).
  */
 class CandidateController extends AdminController
 {
@@ -32,15 +40,24 @@ class CandidateController extends AdminController
      * Label field untuk pesan audit.
      */
     private const FIELD_LABELS = [
-        'nomor_urut'   => 'nomor urut',
-        'nama_ketua'   => 'nama ketua',
-        'nama_wakil'   => 'nama wakil',
-        'visi'         => 'visi',
-        'misi'         => 'misi',
-        'theme_name'   => 'nama tema',
-        'theme_accent' => 'warna aksen',
-        'theme_layout' => 'layout',
-        'status_aktif' => 'status aktif',
+        'nomor_urut'     => 'nomor urut',
+        'nama_ketua'     => 'nama ketua',
+        'nama_wakil'     => 'nama wakil',
+        'visi'           => 'visi',
+        'misi'           => 'misi',
+        'slogan'         => 'slogan',
+        'bio_ketua'      => 'bio ketua',
+        'bio_wakil'      => 'bio wakil',
+        'karakter_ketua' => 'karakter ketua',
+        'karakter_wakil' => 'karakter wakil',
+        'program'        => 'program unggulan',
+        'pesan_ketua'    => 'pesan ketua',
+        'pesan_wakil'    => 'pesan wakil',
+        'video_youtube'  => 'video',
+        'theme_name'     => 'nama tema',
+        'theme_accent'   => 'warna aksen',
+        'theme_layout'   => 'layout',
+        'status_aktif'   => 'status aktif',
     ];
 
     /**
@@ -68,7 +85,69 @@ class CandidateController extends AdminController
             'title'       => 'Pasangan Calon',
             'rows'        => $rows,
             'activeCount' => count(array_filter($rows, static fn (array $r): bool => (int) $r['raw']['status_aktif'] === 1)),
+            'batas'       => ElectionModel::batasPasangan($this->election()),
+            'errors'      => (array) (session()->getFlashdata('errors') ?? []),
         ], 'candidates');
+    }
+
+    /**
+     * POST admin/paslon/batas
+     * Stage 15: batas jumlah pasangan aktif untuk pemilihan berjalan.
+     */
+    public function limit(): RedirectResponse
+    {
+        $election = $this->election();
+
+        if ($election === null) {
+            return redirect()->to('admin/paslon')->with('error', 'Buat jadwal pemilihan dulu (menu Jadwal), lalu atur batas pasangan.');
+        }
+
+        if ($this->resultsLocked()) {
+            return redirect()->to('admin/paslon')->with('error', self::RESULTS_LOCKED_MESSAGE);
+        }
+
+        $raw = trim((string) $this->request->getPost('batas_pasangan'));
+        $min = ElectionModel::BATAS_PASANGAN_MIN;
+        $max = ElectionModel::BATAS_PASANGAN_MAX;
+
+        if (! ctype_digit($raw) || (int) $raw < $min || (int) $raw > $max) {
+            return redirect()->to('admin/paslon')->withInput()->with('errors', [
+                'batas_pasangan' => sprintf('Batas pasangan berupa angka %d sampai %d.', $min, $max),
+            ]);
+        }
+
+        $batas  = (int) $raw;
+        $active = $this->activeCount();
+
+        if ($batas < $active) {
+            return redirect()->to('admin/paslon')->withInput()->with('errors', [
+                'batas_pasangan' => sprintf(
+                    'Saat ini ada %d pasangan aktif. Nonaktifkan dulu pasangan yang tidak ikut, atau pilih batas minimal %d.',
+                    $active,
+                    $active,
+                ),
+            ]);
+        }
+
+        $old = ElectionModel::batasPasangan($election);
+
+        if ($old === $batas) {
+            return redirect()->to('admin/paslon')->with('success', sprintf('Batas pasangan aktif tetap %d.', $batas));
+        }
+
+        model(ElectionModel::class)->builder()->where('id', (int) $election['id'])->update([
+            'batas_pasangan' => $batas,
+            'updated_at'     => Time::now()->toDateTimeString(),
+        ]);
+        $this->forgetElection();
+
+        $this->audit(
+            AuditLogModel::CANDIDATE_LIMIT,
+            sprintf('Batas pasangan aktif %d -> %d (saat ini %d aktif).', $old, $batas, $active),
+            ['election_id' => (int) $election['id']],
+        );
+
+        return redirect()->to('admin/paslon')->with('success', sprintf('Batas pasangan aktif sekarang %d.', $batas));
     }
 
     /**
@@ -82,7 +161,10 @@ class CandidateController extends AdminController
 
         $max = (int) (model(CandidateModel::class)->builder()->selectMax('nomor_urut', 'max')->get()->getRowArray()['max'] ?? 0);
 
-        return $this->form(null, ['nomor_urut' => min(99, $max + 1), 'status_aktif' => 1]);
+        // Stage 15: batas penuh -> pasangan baru disiapkan nonaktif dulu.
+        $full = $this->activeCount() >= ElectionModel::batasPasangan($this->election());
+
+        return $this->form(null, ['nomor_urut' => min(99, $max + 1), 'status_aktif' => $full ? 0 : 1]);
     }
 
     /**
@@ -151,7 +233,7 @@ class CandidateController extends AdminController
 
     /**
      * GET admin/paslon/{id}/intip
-     * Pratinjau halaman kandidat persis seperti yang dilihat pemilih (tanpa surat suara).
+     * Pratinjau profil paslon persis seperti yang dilihat pemilih (tanpa surat suara).
      */
     public function preview($id = null)
     {
@@ -161,9 +243,15 @@ class CandidateController extends AdminController
             static fn (array $c): bool => (int) $c['status_aktif'] === 1 || (int) $c['id'] === (int) $candidate['id'],
         );
 
+        $theme = CandidateTheme::present($candidate);
+
+        if ($theme['video'] !== null) {
+            CandidateTheme::allowVideoFrame($this->response);
+        }
+
         return view('admin/candidates/preview', [
             'title'     => sprintf('Pratinjau Pasangan %02d', $candidate['nomor_urut']),
-            'candidate' => CandidateTheme::present($candidate),
+            'candidate' => $theme,
             'active'    => (int) $candidate['status_aktif'] === 1,
             'switcher'  => CandidateTheme::presentAll(array_values($others)),
             'bodyClass' => 'is-admin-preview',
@@ -181,13 +269,15 @@ class CandidateController extends AdminController
         }
 
         return $this->render('admin/candidates/form', [
-            'title'     => $candidate === null ? 'Tambah Pasangan' : sprintf('Ubah Pasangan %02d', $candidate['nomor_urut']),
-            'candidate' => $candidate,
-            'values'    => $values,
-            'theme'     => $candidate === null ? null : CandidateTheme::present($candidate),
-            'files'     => $candidate === null ? [] : $this->assetFiles($candidate),
-            'errors'    => (array) (session()->getFlashdata('errors') ?? []),
-            'postMax'   => CandidateAssets::iniBytes((string) ini_get('post_max_size')),
+            'title'        => $candidate === null ? 'Tambah Pasangan' : sprintf('Ubah Pasangan %02d', $candidate['nomor_urut']),
+            'candidate'    => $candidate,
+            'values'       => $values,
+            'theme'        => $candidate === null ? null : CandidateTheme::present($candidate),
+            'files'        => $candidate === null ? [] : $this->assetFiles($candidate),
+            'errors'       => (array) (session()->getFlashdata('errors') ?? []),
+            'postMax'      => CandidateAssets::iniBytes((string) ini_get('post_max_size')),
+            'batas'        => ElectionModel::batasPasangan($this->election()),
+            'activeOthers' => $this->activeCount($candidate === null ? null : (int) $candidate['id']),
         ], 'candidates');
     }
 
@@ -220,6 +310,19 @@ class CandidateController extends AdminController
         $assets = service('candidateAssets');
         $stored = [];
         $errors = [];
+
+        // Stage 15: batas pasangan aktif, hanya saat pasangan BARU diaktifkan
+        // (tambah aktif, atau nonaktif -> aktif). Mengubah pasangan yang sudah
+        // aktif selalu boleh. Dilaporkan bersama kesalahan file (satu kali kirim).
+        $activating = (int) $input['status_aktif'] === 1 && ($existing === null || (int) $existing['status_aktif'] !== 1);
+        $batas      = ElectionModel::batasPasangan($this->election());
+
+        if ($activating && $this->activeCount($existing === null ? null : (int) $existing['id']) >= $batas) {
+            $errors['status_aktif'] = sprintf(
+                'Batas %d pasangan aktif sudah penuh. Simpan sebagai nonaktif, nonaktifkan pasangan lain, atau naikkan batas di halaman Pasangan calon.',
+                $batas,
+            );
+        }
 
         foreach (array_keys(CandidateAssets::SLOTS) as $slot) {
             $file = $this->request->getFile('asset_' . $slot);
@@ -292,17 +395,33 @@ class CandidateController extends AdminController
 
         $number = $post('nomor_urut');
         $layout = $post('theme_layout');
+        // Satu baris (spasi & baris baru dirapatkan); kosong = null.
+        $line = static fn (string $value): ?string => ($value = trim((string) preg_replace('/\s+/u', ' ', $value))) === '' ? null : $value;
+        // Kata karakter: baris baru juga dianggap pemisah.
+        $tags = static fn (string $value): ?string => $line((string) preg_replace('/\s*\n\s*/u', ', ', $value));
+        // Tautan YouTube -> ID. Tautan tidak dikenali dikirim apa adanya agar
+        // ditolak validasi model ("Tautan YouTube tidak dikenali").
+        $video = $post('video_youtube');
 
         return [
-            'nomor_urut'   => ctype_digit($number) ? (int) $number : $number,
-            'nama_ketua'   => (string) preg_replace('/\s+/u', ' ', $post('nama_ketua')),
-            'nama_wakil'   => (string) preg_replace('/\s+/u', ' ', $post('nama_wakil')),
-            'visi'         => $post('visi') === '' ? null : $post('visi'),
-            'misi'         => $post('misi') === '' ? null : $post('misi'),
-            'theme_name'   => $post('theme_name') === '' ? null : $post('theme_name'),
-            'theme_accent' => $accent === '' ? null : $accent,
-            'theme_layout' => $layout === '' ? null : $layout,
-            'status_aktif' => $post('status_aktif') === '1' ? 1 : 0,
+            'nomor_urut'     => ctype_digit($number) ? (int) $number : $number,
+            'nama_ketua'     => (string) preg_replace('/\s+/u', ' ', $post('nama_ketua')),
+            'nama_wakil'     => (string) preg_replace('/\s+/u', ' ', $post('nama_wakil')),
+            'visi'           => $post('visi') === '' ? null : $post('visi'),
+            'misi'           => $post('misi') === '' ? null : $post('misi'),
+            'slogan'         => $line($post('slogan')),
+            'bio_ketua'      => $line($post('bio_ketua')),
+            'bio_wakil'      => $line($post('bio_wakil')),
+            'karakter_ketua' => $tags($post('karakter_ketua')),
+            'karakter_wakil' => $tags($post('karakter_wakil')),
+            'program'        => $post('program') === '' ? null : $post('program'),
+            'pesan_ketua'    => $line($post('pesan_ketua')),
+            'pesan_wakil'    => $line($post('pesan_wakil')),
+            'video_youtube'  => $video === '' ? null : (CandidateTheme::youtubeId($video) ?? mb_substr($video, 0, 200)),
+            'theme_name'     => $post('theme_name') === '' ? null : $post('theme_name'),
+            'theme_accent'   => $accent === '' ? null : $accent,
+            'theme_layout'   => $layout === '' ? null : $layout,
+            'status_aktif'   => $post('status_aktif') === '1' ? 1 : 0,
         ];
     }
 
@@ -397,6 +516,20 @@ class CandidateController extends AdminController
         }
 
         return $changes;
+    }
+
+    /**
+     * Jumlah pasangan aktif, tanpa pasangan $exceptId (yang sedang diubah).
+     */
+    private function activeCount(?int $exceptId = null): int
+    {
+        $builder = model(CandidateModel::class)->builder()->where('status_aktif', 1);
+
+        if ($exceptId !== null) {
+            $builder->where('id !=', $exceptId);
+        }
+
+        return $builder->countAllResults();
     }
 
     private function findOr404(mixed $id): array

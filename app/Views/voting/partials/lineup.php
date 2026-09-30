@@ -1,31 +1,34 @@
 <?php
 /**
- * "Sekilas paslon" (Stage 7): ketiga pasangan dalam satu pandangan, tepat di
- * bawah pembuka, supaya pemilih bisa membandingkan tanpa menggulir tiga bab
- * panjang dan yang sudah mantap bisa langsung ke kotaknya di surat suara.
+ * "Sekilas paslon" (Stage 7): semua pasangan dalam satu pandangan, tepat di
+ * bawah pembuka, supaya pemilih bisa membandingkan lalu membuka profil
+ * lengkapnya, dan yang sudah mantap bisa langsung ke kotaknya di surat suara.
  *
  * - HP: kartu digeser horizontal (scroll-snap), kartu berikutnya mengintip;
- * - >= 720px: tiga kolom berdampingan.
- * - "Baca visi & misi" -> bab pasangan (#pasangan-0X);
+ * - >= 720px: kolom berdampingan; jumlah kolom seimbang untuk berapa pun
+ *   pasangan (CandidateTheme::gridStyle(), Stage 15);
+ * - "Profil lengkap" -> halaman profil paslon (<siswa|guru>/paslon/0X, Stage 15);
  * - "Pilih 0X" -> kotak surat suara (#coblos-0X, disorot lewat :target),
  *   hanya tampil saat pencoblosan dibuka. Tanpa JavaScript tetap berfungsi.
  *
  * Stage 10 (HP): kartu bergeser sendiri 01 -> terakhir -> 01 tiap 2 detik
  * (candidates.js, [data-lineup]); berhenti sejenak saat disentuh/difokus.
- * Panah halus di bawah menggulir ke navigasi bab (#navigasi-paslon).
+ * Panah halus di bawah menggulir ke surat suara (Stage 15).
  *
- * @var list<array> $candidates Hasil CandidateTheme::presentAll()
- * @var bool        $canVote
+ * @var list<array>             $candidates Hasil CandidateTheme::presentAll()
+ * @var bool                    $canVote
+ * @var \App\Services\VoterType $type
  */
+use App\Libraries\CandidateTheme;
 ?>
 <section class="lineup" id="sekilas" aria-labelledby="lineup-title">
   <div class="container">
     <header class="lineup__head">
       <h2 class="lineup__title" id="lineup-title">Sekilas paslon</h2>
-      <p class="lineup__hint">Bandingkan ketiganya, lalu baca visi &amp; misi lengkapnya<?= $canVote ? ' atau langsung pilih' : '' ?>.</p>
+      <p class="lineup__hint">Bandingkan semua pasangan, lalu buka profil lengkapnya<?= $canVote ? ' atau langsung pilih' : '' ?>.</p>
     </header>
 
-    <ol class="lineup__list" aria-label="Pasangan calon" data-lineup>
+    <ol class="lineup__list" aria-label="Pasangan calon" style="<?= esc(CandidateTheme::gridStyle(count($candidates)), 'attr') ?>" data-lineup>
       <?php foreach ($candidates as $c): ?>
         <li class="pair-card" style="<?= esc($c['style'], 'attr') ?>">
           <div class="pair-card__band">
@@ -49,7 +52,7 @@
           <?php endif; ?>
 
           <div class="pair-card__actions">
-            <a class="pair-card__read" href="#pasangan-<?= esc($c['label'], 'attr') ?>">Baca visi &amp; misi<span class="visually-hidden"> pasangan <?= esc($c['label']) ?></span></a>
+            <a class="pair-card__read" href="<?= esc(site_url($type->path('paslon/' . $c['label'])), 'attr') ?>">Profil lengkap<span class="visually-hidden"> pasangan <?= esc($c['label']) ?></span></a>
             <?php if ($canVote): ?>
               <a class="pair-card__pick" href="#coblos-<?= esc($c['label'], 'attr') ?>" data-pick>
                 Pilih <?= esc($c['label']) ?> <?= icon('arrow-down') ?>
@@ -60,6 +63,6 @@
       <?php endforeach; ?>
     </ol>
 
-    <a class="lineup__next" href="#navigasi-paslon" aria-label="Lanjut ke bab tiap pasangan calon"><?= icon('chevron-down') ?></a>
+    <a class="lineup__next" href="#surat-suara" aria-label="Lanjut ke surat suara"><?= icon('chevron-down') ?></a>
   </div>
 </section>

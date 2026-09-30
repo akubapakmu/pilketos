@@ -25,6 +25,11 @@
  * Stage 10: navigasi bab punya id #navigasi-paslon, tujuan panah di bawah
  * "Sekilas paslon" (HP).
  *
+ * Stage 15: bab tiap pasangan (visi-misi) pindah ke halaman profil paslon
+ * (<siswa|guru>/paslon/0X, tombol "Profil lengkap" di kartu Sekilas paslon).
+ * Bilik suara cukup: pembuka -> Sekilas paslon -> surat suara, sehingga
+ * tetap ringkas berapa pun jumlah pasangan (batas diatur admin).
+ *
  * @var \App\Services\VoterType $type
  * @var array                   $voter
  * @var array|null              $election
@@ -33,7 +38,7 @@
  */
 $status  = $election['status'] ?? null;
 $journey = [
-    ['Kenali paslon', 'Bandingkan visi & misi ketiga pasangan.', $candidates !== [] ? '#sekilas' : null],
+    ['Kenali paslon', 'Bandingkan semua pasangan, buka profil lengkapnya.', $candidates !== [] ? '#sekilas' : null],
     ['Coblos satu', $canVote ? 'Tekan Coblos, atau seret paku ke kotak pilihanmu.' : 'Lihat surat suara dan kotak tiap pasangan.', '#surat-suara'],
     ['Konfirmasi & kunci', 'Periksa sekali lagi. Setelah dikunci, pilihan tidak dapat diubah.', null],
 ];
@@ -95,27 +100,9 @@ $journey = [
 </section>
 
 <?php if ($candidates !== []): ?>
-  <?= view('voting/partials/lineup', ['candidates' => $candidates, 'canVote' => $canVote]) ?>
+  <?= view('voting/partials/lineup', ['candidates' => $candidates, 'canVote' => $canVote, 'type' => $type]) ?>
 <?php endif; ?>
 </div>
-
-<?php if ($candidates !== []): ?>
-  <nav class="chapter-nav" id="navigasi-paslon" aria-label="Lompat ke pasangan calon" data-chapter-nav>
-    <div class="container chapter-nav__row">
-      <?php foreach ($candidates as $c): ?>
-        <a class="chapter-nav__link" href="#pasangan-<?= esc($c['label'], 'attr') ?>" style="<?= esc($c['style'], 'attr') ?>">
-          <span class="chapter-nav__swatch" aria-hidden="true"></span><?= esc($c['label']) ?>
-          <span class="chapter-nav__name"><?= esc($c['ketua']) ?></span>
-        </a>
-      <?php endforeach; ?>
-      <a class="chapter-nav__link chapter-nav__link--ballot" href="#surat-suara"><?= icon('nail') ?> <?= $canVote ? 'Coblos' : 'Surat suara' ?></a>
-    </div>
-  </nav>
-
-  <?php foreach ($candidates as $c): ?>
-    <?= view('voting/partials/chapter', ['c' => $c, 'canVote' => $canVote]) ?>
-  <?php endforeach; ?>
-<?php endif; ?>
 
 <?= view('voting/partials/ballot', [
     'candidates' => $candidates,

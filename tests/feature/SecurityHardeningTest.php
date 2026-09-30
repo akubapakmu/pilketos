@@ -123,7 +123,8 @@ final class SecurityHardeningTest extends CIUnitTestCase
             $this->assertSame('nosniff', $response->getHeaderLine('X-Content-Type-Options'), $path);
             $this->assertSame('same-origin', $response->getHeaderLine('Referrer-Policy'), $path);
             $this->assertStringContainsString('camera=()', $response->getHeaderLine('Permissions-Policy'), $path);
-            $this->assertStringContainsString('fullscreen=(self)', $response->getHeaderLine('Permissions-Policy'), $path);
+            // Stage 15: layar penuh juga boleh untuk pemutar video kampanye (youtube-nocookie).
+            $this->assertStringContainsString('fullscreen=(self "https://www.youtube-nocookie.com")', $response->getHeaderLine('Permissions-Policy'), $path);
             $this->assertSame('same-origin', $response->getHeaderLine('Cross-Origin-Opener-Policy'), $path);
             $this->assertStringContainsString('no-store', $response->getHeaderLine('Cache-Control'), $path);
         }

@@ -87,6 +87,10 @@ final class StageTenRefinementTest extends CIUnitTestCase
     // bilik suara
     // ------------------------------------------------------------------
 
+    /**
+     * Stage 15: panah di bawah Sekilas paslon menuju surat suara (navigasi
+     * bab sudah tidak ada; profil lengkap di halaman profil paslon).
+     */
     public function testLineupAutoplaysOnPhonesAndArrowScrollsToChapterNav(): void
     {
         $this->scheduleAt('2026-10-01 09:00:00');
@@ -94,12 +98,12 @@ final class StageTenRefinementTest extends CIUnitTestCase
         $page = $this->withSession($this->student())->get('siswa/coblos');
         $html = (string) $page->response()->getBody();
 
-        $page->assertSee('<ol class="lineup__list" aria-label="Pasangan calon" data-lineup>');
-        $page->assertSee('<a class="lineup__next" href="#navigasi-paslon" aria-label="Lanjut ke bab tiap pasangan calon">');
-        $page->assertSee('<nav class="chapter-nav" id="navigasi-paslon"');
-        // panah di dalam .lineup (bagian bawahnya), navigasi bab sesudahnya
+        $page->assertSee('<ol class="lineup__list" aria-label="Pasangan calon" style="--cols: 3; --cols-md: 3;" data-lineup>');
+        $page->assertSee('<a class="lineup__next" href="#surat-suara" aria-label="Lanjut ke surat suara">');
+        $page->assertDontSee('id="navigasi-paslon"');
+        // panah di dalam .lineup (bagian bawahnya), surat suara sesudahnya
         $this->assertLessThan(strpos($html, 'class="lineup__next"'), strpos($html, '</ol>'));
-        $this->assertLessThan(strpos($html, 'id="navigasi-paslon"'), strpos($html, 'class="lineup__next"'));
+        $this->assertLessThan(strpos($html, 'id="surat-suara"'), strpos($html, 'class="lineup__next"'));
 
         $js = $this->asset('assets/js/candidates.js');
         $this->assertStringContainsString("initLineupAutoplay(document.querySelector('[data-lineup]'))", $js);
