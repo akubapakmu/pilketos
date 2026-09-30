@@ -4,8 +4,9 @@
 <?php
 /**
  * Dasbor admin + live count (Stage 9: menu & breadcrumb "Beranda").
- * Strip jadwal cukup mulai & berakhir (status sudah ada di topbar), countdown
- * "Ditutup dalam" di sampingnya (HP: di bawahnya).
+ * Strip jadwal cukup mulai & berakhir (status terbaca di indikator live &
+ * countdown; Stage 17: badge status topbar dihapus), countdown "Ditutup dalam"
+ * di sampingnya (HP: di bawahnya).
  * Stage 11: di HP countdown bergaya terminal (latar tinta, huruf mono,
  * 03:12:45 rata tengah, selebar layar tanpa sudut); "Rekap jenjang" menjadi
  * "Rekap kelas" (7/8/9) dan "Rekap kelas" menjadi "Rekap rombel" (7A, 8B).

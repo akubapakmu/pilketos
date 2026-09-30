@@ -19,7 +19,6 @@
     text-align: center;
     vertical-align: top;
     padding-top: 3mm;
-    border-top: 0.3mm solid #15141A;
   }
 }
 </style>
@@ -42,7 +41,6 @@
  */
 use App\Services\FinalResult;
 
-$status  = $election['status'] ?? null;
 $state   = $result['state'];
 $winner  = $result['winner'];
 $theme   = static fn (array $c): array => $themes[(int) $c['id']] ?? [];
@@ -81,8 +79,10 @@ $accents = array_values(array_unique(array_merge(
           <p>Pemilihan belum dijadwalkan. Hasil akhir baru ada setelah pemilihan berlangsung dan selesai.</p>
           <p><a class="btn" href="<?= site_url('admin/jadwal') ?>"><?= icon('calendar') ?> Atur jadwal</a></p>
         <?php else: ?>
+          <?php /* Stage 17: tanpa label status ("Sedang Berlangsung", dst.); keadaan
+             pemilihan terbaca dari label countdown (Dibuka dalam / Ditutup dalam). */ ?>
           <p>
-            Status sekarang <strong><?= esc(election_status_label($status)) ?></strong>. Hasil akhir terbuka pada
+            Hasil akhir terbuka pada
             <strong><time datetime="<?= esc($election['end_at'], 'attr') ?>"><?= esc(format_waktu($election['end_at'])) ?></time></strong>
             (sejak waktu selesai, pencoblosan ditolak server). Selama pemilihan berjalan, pantau angka sementara di Beranda.
           </p>

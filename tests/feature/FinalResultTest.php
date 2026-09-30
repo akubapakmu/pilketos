@@ -117,7 +117,9 @@ final class FinalResultTest extends CIUnitTestCase
 
         $result->assertStatus(200);
         $result->assertSee('Hasil akhir belum tersedia');
-        $result->assertSee('Sedang Berlangsung');
+        // Stage 17: tanpa label status; keadaan terbaca dari label countdown.
+        $result->assertDontSee('Sedang Berlangsung');
+        $result->assertSee('Ditutup dalam');
         $result->assertSee('data-countdown');
         $result->assertDontSee('Pasangan terpilih');
         $result->assertDontSee('class="standings"');
@@ -129,7 +131,8 @@ final class FinalResultTest extends CIUnitTestCase
     {
         $this->scheduleAt('2026-10-01 06:00:00');
         $upcoming = $this->asAdmin()->get('admin/hasil');
-        $upcoming->assertSee('Belum Dibuka');
+        $upcoming->assertDontSee('Belum Dibuka');
+        $upcoming->assertSee('Dibuka dalam');
         $upcoming->assertDontSee('data-confetti');
 
         $this->db->disableForeignKeyChecks();

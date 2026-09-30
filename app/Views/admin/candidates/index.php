@@ -10,6 +10,9 @@
  * Stage 15: notice "dirancang untuk 3 pasangan" diganti panel batas
  * pasangan aktif yang dapat diatur admin (2-10, per pemilihan).
  *
+ * Stage 17: kotak nomor kartu diganti dua foto pasangan dalam satu kotak
+ * persegi (admin/partials/pair_thumb); nomor muncul saat diarahkan kursor.
+ *
  * @var list<array{raw: array, theme: array, votes: int, vote_rows: int, assets: array<string, string>}> $rows
  * @var int                   $activeCount
  * @var int                   $batas
@@ -98,7 +101,7 @@ use App\Models\ElectionModel;
         $filled = count($row['assets']);
       ?>
       <li class="cand-card<?= $active ? '' : ' cand-card--inactive' ?>" style="<?= esc($t['style'], 'attr') ?>">
-        <div class="cand-card__no" aria-hidden="true"><?= esc($t['label']) ?></div>
+        <?= view('admin/partials/pair_thumb', ['pair' => $t, 'class' => 'cand-card__thumb']) ?>
 
         <div class="cand-card__body">
           <h2 class="cand-card__names">

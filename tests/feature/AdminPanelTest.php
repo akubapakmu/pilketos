@@ -177,7 +177,9 @@ final class AdminPanelTest extends CIUnitTestCase
 
         $result->assertStatus(200);
         $result->assertSee('Pemilihan Ketua dan Wakil Ketua OSIS SMP 1 DAWE');
-        $result->assertSee('Sedang Berlangsung');
+        // Stage 17: badge status topbar dihapus; status terbaca dari countdown.
+        $result->assertDontSee('Sedang Berlangsung');
+        $result->assertSee('Ditutup dalam');
         $result->assertSee('Hasil sementara');
         $result->assertSee('data-live-url="' . site_url('admin/hitung-suara') . '"');
         $result->assertSee('assets/js/admin-live.js');

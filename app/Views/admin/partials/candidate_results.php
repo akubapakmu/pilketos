@@ -2,6 +2,8 @@
 /**
  * Suara per pasangan: batang horizontal berwarna aksen pasangan + donat.
  * Warna hanya penanda identitas; angka & persentase selalu tertulis.
+ * Stage 17: kotak nomor diganti dua foto pasangan dalam satu kotak persegi
+ * (admin/partials/pair_thumb); nomor muncul saat kotak diarahkan kursor.
  *
  * @var list<array<string, mixed>> $candidates Snapshot::candidates
  * @var int                        $total      Total suara sah
@@ -19,7 +21,7 @@ $offset = 0.0;
     <ol class="results__list">
       <?php foreach ($candidates as $c): ?>
         <li class="result" style="--accent: <?= esc($c['accent'], 'attr') ?>; --accent-ink: <?= esc($c['accent_ink'], 'attr') ?>;" data-live-candidate="<?= (int) $c['id'] ?>">
-          <span class="result__no" aria-hidden="true"><?= esc($c['label']) ?></span>
+          <?= view('admin/partials/pair_thumb', ['pair' => $c, 'class' => 'result__thumb']) ?>
           <div class="result__body">
             <p class="result__names">
               <span class="visually-hidden">Pasangan <?= esc($c['label']) ?>:</span>
