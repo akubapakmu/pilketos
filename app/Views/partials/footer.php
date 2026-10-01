@@ -6,7 +6,9 @@
  *
  * Stage 19: beranda mengirim $online (OnlineVisitors::publicCounts()):
  * satu baris di atas teks footer berisi pengunjung yang belum login dan
- * yang sudah login, diperbarui presence.js.
+ * yang sudah login, diperbarui presence.js (Stage 21: tiap detik). Di HP
+ * label "Online" diganti ikon siaran biru muda (teks tetap untuk pembaca
+ * layar).
  *
  * @var bool                                             $footerInScene
  * @var array{total: int, guests: int, users: int}|null $online
@@ -15,7 +17,7 @@
 <footer class="site-footer<?= ($footerInScene ?? false) ? ' site-footer--scene' : '' ?>">
   <?php if (($online ?? null) !== null): ?>
     <p class="site-footer__online">
-      <span class="site-footer__online-label">Online</span>
+      <span class="site-footer__online-label"><?= icon('live', 'site-footer__online-icon') ?><span class="site-footer__online-text">Online</span></span>
       <span><span class="site-footer__num" data-online-count="guests"><?= angka($online['guests']) ?></span> belum login</span>
       <span><span class="site-footer__num" data-online-count="users"><?= angka($online['users']) ?></span> sudah login</span>
     </p>

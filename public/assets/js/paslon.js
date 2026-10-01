@@ -8,7 +8,9 @@
  *
  * - [data-px-nav]    : bagian aktif (aria-current; bawaan bagian pertama);
  *                      bar HP menggeser tautan aktif ke area terlihat. Di
- *                      desktop navigasi berupa kolom kanan yang selalu tampil.
+ *                      desktop navigasi berupa panel di tepi kanan layar.
+ *                      Stage 21: [data-px-progress] = garis progres baca
+ *                      (--px-progress 0..1 sepanjang isi profil).
  * - [data-px-reveal] : muncul bertahap saat masuk layar (sekali).
  * - [data-px-zoom]   : poster dibuka di <dialog> (fokus & Escape bawaan).
  * - [data-px-video]  : thumbnail asli YouTube (i.ytimg.com) + tombol putar;
@@ -35,6 +37,8 @@
 
     var links = Array.prototype.slice.call(nav.querySelectorAll('[data-px-nav-link]'));
     var list = nav.querySelector('.px-nav__list');
+    var progress = nav.querySelector('[data-px-progress]');
+    var shell = nav.parentNode;
     var sections = [];
 
     links.forEach(function (link) {
@@ -46,6 +50,10 @@
 
     if (sections.length === 0) {
       return;
+    }
+
+    if (progress) {
+      progress.hidden = false;
     }
 
     var activeIndex = -1;
@@ -94,6 +102,14 @@
       }
 
       setActive(index);
+
+      // Progres baca: dari awal isi profil sampai ujung kolom isi.
+      if (progress) {
+        var rect = shell.getBoundingClientRect();
+        var span = rect.height - window.innerHeight;
+        var value = span > 0 ? Math.min(1, Math.max(0, -rect.top / span)) : 1;
+        progress.style.setProperty('--px-progress', value.toFixed(4));
+      }
     }
 
     function request() {

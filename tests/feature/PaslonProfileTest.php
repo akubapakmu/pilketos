@@ -15,7 +15,8 @@ use Config\Services;
  * Stage 16: satu tampilan untuk semua pasangan. Pembuka = satu gambar
  * landscape buatan paslon (banner) + tombol di bawahnya, navigasi bagian,
  * kepala bagian berikon, Pesan terpisah dari penutup, video dengan thumbnail
- * asli YouTube, penutup bergambar tanpa warna aksen.
+ * asli YouTube, penutup bergambar tanpa warna aksen. Stage 21: kepala bagian
+ * tanpa ikon (pola latar per bagian), poster berikon unduh & layar penuh.
  *
  * @internal
  */
@@ -120,10 +121,12 @@ final class PaslonProfileTest extends CIUnitTestCase
         $page->assertSee('OSIS bukan milik pengurus saja.');
         $page->assertSee('class="px-finale"');
 
-        // Kepala bagian berikon (judul dikapitalkan CSS, teks tetap apa adanya).
-        foreach (['users' => 'Kenali pasangan', 'eye' => 'Visi kami', 'target' => 'Misi kami', 'bulb' => 'Program unggulan kami', 'message' => 'Pesan dari kami'] as $icon => $title) {
-            $this->assertMatchesRegularExpression('/<span class="px-head__icon"><svg class="icon[^"]*icon--' . $icon . '"[^>]*>.*?<\/svg><\/span><div class="px-head__text"><h2 class="px-head__title" id="px-[a-z]+-1">' . $title . '<\/h2>/s', $html, $title);
+        // Kepala bagian (Stage 21: tanpa ikon, modifier pola per bagian; judul
+        // dikapitalkan CSS, teks tetap apa adanya).
+        foreach (['profil' => 'Kenali pasangan', 'visi' => 'Visi kami', 'misi' => 'Misi kami', 'program' => 'Program unggulan kami', 'pesan' => 'Pesan dari kami'] as $key => $title) {
+            $this->assertStringContainsString('<div class="px-head px-head--' . $key . '"><h2 class="px-head__title" id="px-' . $key . '-1">' . $title . '</h2>', $html, $title);
         }
+        $this->assertStringNotContainsString('px-head__icon', $html);
 
         // Navigasi bagian hanya untuk bagian yang ada, urut seperti halaman.
         $page->assertSee('class="px-shell px-shell--nav"');
@@ -307,6 +310,7 @@ final class PaslonProfileTest extends CIUnitTestCase
         $page->assertSee('href="#poster" data-px-nav-link');
         $page->assertSee('<section class="px-section px-poster" id="poster"');
         $page->assertSee('<img class="px-poster__img" src="' . $url . '"');
+        // Stage 21: ikon layar penuh (lightbox; tanpa JS membuka file poster).
         $page->assertSee('href="' . $url . '" target="_blank" rel="noopener" data-px-zoom');
         $page->assertSee('data-px-lightbox');
         $page->assertDontSee('href="#video"');

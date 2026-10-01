@@ -324,6 +324,8 @@ final class VisitorTracker
                 $this->prune($now);
             }
 
+            $this->countsChanged();
+
             return true;
         }
 
@@ -341,6 +343,12 @@ final class VisitorTracker
             return true;
         }
 
+        // Stage 21: angka online di beranda & admin diperbarui tiap detik dari
+        // cache singkat. Pengunjung yang baru kembali online atau berganti akun
+        // (masuk/keluar) mengubah angka: cache dibuang agar langsung terlihat.
+        $wasAway = strtotime((string) $row['last_seen_at']) < $now->getTimestamp() - max(30, $this->config->onlineSeconds);
+        $account = $row['user_type'] !== $userType || (int) $row['user_id'] !== (int) $userId;
+
         $builder = $db->table('visitors')->where('id', (int) $row['id']);
 
         if (isset($event['path'])) {
@@ -348,6 +356,10 @@ final class VisitorTracker
         }
 
         $builder->set($data)->update();
+
+        if ($wasAway || $account) {
+            $this->countsChanged();
+        }
 
         return true;
     }
@@ -440,6 +452,17 @@ final class VisitorTracker
         db_connect()->table('visitors')
             ->where('last_seen_at <', $now->subDays($days)->toDateTimeString())
             ->delete();
+    }
+
+    /**
+     * Buang cache angka online (OnlineVisitors::counts()) agar perubahan
+     * jumlah pengunjung terbaca pada pembaruan berikutnya (Stage 21).
+     */
+    private function countsChanged(): void
+    {
+        if ($this->config->countCacheSeconds > 0) {
+            cache()->delete(OnlineVisitors::CACHE_KEY);
+        }
     }
 
     /**

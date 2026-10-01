@@ -21,13 +21,23 @@
    kolom kanan dengan semua label terlihat), 1280 px. Gerak saat scroll hanya
    aktif bila paslon.js memasang .px-motion (tanpa prefers-reduced-motion);
    animasi pembuka hanya dengan .js dan prefers-reduced-motion: no-preference.
+
+   Stage 21: halaman selebar layar (tanpa batas 1240 px). Kepala bagian
+   tanpa ikon, rata tengah, di atas pita selebar layar berpola SVG khas tiap
+   bagian (mask berwarna aksen, opacity rendah). Navigasi gelap, teks terang,
+   tanpa titik: bar menempel di HP/tablet; di desktop panel melayang di tepi
+   kanan layar, menempel di tengah tinggi layar, dengan garis progres baca.
+   Poster berikon unduh & layar penuh; kutipan pesan miring 400 dengan
+   avatar sebaris nama; video tanpa bilah keterangan.
    ========================================================================== */
 
 .paslon {
   --px-gutter: var(--space-4);
   --px-nav-h: 52px;
-  --px-nav-w: 11.5rem;
-  --px-nav-gap: var(--space-7);
+  --px-nav-w: 12.5rem;
+  /* jarak panel navigasi desktop dari tepi kanan layar */
+  --px-nav-edge: clamp(12px, 1.6vw, 28px);
+  --px-nav-gap: var(--space-6);
   --px-radius: 16px;
   --px-radius-sm: 12px;
   --px-card: #FFFFFF;
@@ -47,20 +57,26 @@
   .paslon { --px-gutter: var(--space-6); }
 }
 
+@media (min-width: 1280px) {
+  .paslon { --px-gutter: clamp(32px, 3.6vw, 72px); }
+}
+
 @media (min-width: 1024px) {
   .paslon [id] { scroll-margin-top: var(--space-5); }
 }
 
-/* -- kolom isi (+ ruang navigasi kanan di desktop) -- */
+/* -- kolom isi selebar layar (Stage 21) + ruang navigasi kanan di desktop.
+   --px-pad-l / --px-pad-r dipakai pita kepala bagian & bar navigasi HP untuk
+   melebar sampai tepi layar. -- */
 .px-shell {
+  --px-pad-l: var(--px-gutter);
+  --px-pad-r: var(--px-gutter);
   position: relative;
-  max-width: 1240px;
-  margin-inline: auto;
-  padding: var(--space-4) var(--px-gutter) clamp(56px, 9vw, 104px);
+  padding: var(--space-4) var(--px-pad-r) clamp(56px, 9vw, 104px) var(--px-pad-l);
 }
 
 @media (min-width: 1024px) {
-  .px-shell--nav { padding-right: calc(var(--px-gutter) + var(--px-nav-w) + var(--px-nav-gap)); }
+  .px-shell--nav { --px-pad-r: calc(var(--px-nav-edge) + var(--px-nav-w) + var(--px-nav-gap)); }
 }
 
 .px-back {
@@ -98,10 +114,12 @@
   background: var(--paper-dim);
 }
 
+/* >= 720 px: selebar kolom, tetapi tidak lebih tinggi dari layar (tombol di
+   bawahnya tetap terlihat); --px-cover-ratio = lebar / tinggi file asli */
 @media (min-width: 720px) {
   .px-cover__img {
-    width: 100%;
-    margin-inline: 0;
+    width: min(100%, calc((100svh - 190px) * var(--px-cover-ratio, 1.7778)));
+    margin-inline: auto;
     border-radius: var(--px-radius);
     box-shadow: var(--px-shadow);
   }
@@ -226,16 +244,23 @@
 }
 
 /* ==========================================================================
-   2. Navigasi bagian: bar menempel (HP/tablet), kolom kanan (desktop)
+   2. Navigasi bagian (Stage 21: latar gelap, teks terang, tanpa titik).
+      HP/tablet: bar menempel di atas. Desktop: panel melayang di tepi kanan
+      layar, menempel di tengah tinggi layar selama isi profil digulir.
    ========================================================================== */
 
 .px-nav {
   position: sticky;
   top: 0;
   z-index: 30;
-  margin: var(--space-6) calc(-1 * var(--px-gutter)) 0;
-  background: var(--paper);
-  box-shadow: 0 14px 20px -20px rgba(21, 20, 26, 0.55);
+  margin: var(--space-6) calc(-1 * var(--px-pad-r)) 0 calc(-1 * var(--px-pad-l));
+}
+
+.px-nav__inner {
+  position: relative;
+  background: var(--ink);
+  color: #FFFFFF;
+  box-shadow: 0 16px 28px -22px rgba(21, 20, 26, 0.9);
 }
 
 .px-nav__title { display: none; }
@@ -260,11 +285,10 @@
 .px-nav__link {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
   min-height: 36px;
   padding: 0 var(--space-4);
   border-radius: 999px;
-  color: var(--gray-700);
+  color: rgba(255, 255, 255, 0.7);
   font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
@@ -272,58 +296,101 @@
   transition: background-color 0.2s var(--ease), color 0.2s var(--ease);
 }
 
-.px-nav__link:hover { color: var(--ink); }
+.px-nav__link:hover { color: #FFFFFF; }
 
 .px-nav__link[aria-current="true"] {
-  background: var(--px-soft);
-  color: var(--ink);
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
 }
 
-.px-nav__dot {
-  flex: 0 0 auto;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--gray-300);
-  transition: background-color 0.2s var(--ease), transform 0.2s var(--ease);
+.px-nav .px-nav__link:focus-visible {
+  outline: 2px solid #FFFFFF;
+  outline-offset: -2px;
 }
 
-.px-nav__link[aria-current="true"] .px-nav__dot { background: var(--accent); }
+/* garis progres baca (paslon.js mengisi --px-progress 0..1): HP di tepi
+   bawah bar, desktop di bawah daftar */
+.px-nav__progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: block;
+  height: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.px-nav__progress-fill {
+  display: block;
+  height: 100%;
+  background: #FFFFFF;
+  transform: scaleX(var(--px-progress, 0));
+  transform-origin: left center;
+}
 
 @media (min-width: 1024px) {
-  /* kolom kanan setinggi isi; kartu di dalamnya menempel saat digulir */
+  /* kolom kanan setinggi isi profil, dekat tepi kanan layar */
   .px-nav {
     position: absolute;
-    top: var(--space-4);
-    right: var(--px-gutter);
+    top: 0;
+    right: var(--px-nav-edge);
     bottom: 0;
     z-index: 5;
     width: var(--px-nav-w);
     margin: 0;
-    background: none;
-    box-shadow: none;
+    pointer-events: none;
+  }
+
+  /* rail setinggi layar yang menempel: panel selalu di tengah tinggi layar
+     dan ikut tergulir pergi di ujung isi (tidak menimpa penutup) */
+  .px-nav__rail {
+    position: sticky;
+    top: 0;
+    display: flex;
+    align-items: center;
+    height: 100vh;
   }
 
   .px-nav__inner {
-    position: sticky;
-    top: var(--space-5);
-    padding: var(--space-5) var(--space-3) var(--space-4);
-    border-radius: var(--px-radius);
-    background: var(--px-card);
-    box-shadow: var(--px-shadow);
+    width: 100%;
+    padding: var(--space-5) var(--space-2) var(--space-4);
+    border-radius: 22px;
+    background: rgba(21, 20, 26, 0.95);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    backdrop-filter: blur(12px) saturate(140%);
+    box-shadow:
+      0 1px 2px rgba(21, 20, 26, 0.18),
+      0 28px 56px -28px rgba(21, 20, 26, 0.7),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    pointer-events: auto;
   }
 
   .px-nav__title {
-    display: block;
-    margin: 0 var(--space-3) var(--space-3);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin: 0 var(--space-3) var(--space-4);
     font-size: 0.6875rem;
     font-weight: 700;
     letter-spacing: 0.16em;
     text-transform: uppercase;
-    color: var(--gray-500);
+    color: rgba(255, 255, 255, 0.58);
   }
 
-  .px-nav__title strong { color: var(--accent-text); }
+  /* nomor paslon: chip warna aksen dengan cincin terang (tetap terlihat
+     walau aksen gelap) */
+  .px-nav__title strong {
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.24);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+  }
 
   .px-nav .px-nav__list {
     flex-direction: column;
@@ -336,17 +403,30 @@
   .px-nav__item:last-child { margin: 0; }
 
   .px-nav__link {
-    gap: var(--space-3);
-    min-height: 40px;
+    min-height: 42px;
     padding: 0 var(--space-3);
-    border-radius: 10px;
+    border-radius: 12px;
     font-size: 0.9375rem;
+    transition: background-color 0.2s var(--ease), color 0.2s var(--ease), transform 0.25s var(--ease);
   }
 
-  .px-nav__link[aria-current="true"] { font-weight: 700; }
+  .px-nav__link:hover {
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateX(-2px);
+  }
 
-  .px-nav__dot { width: 9px; height: 9px; }
-  .px-nav__link[aria-current="true"] .px-nav__dot { transform: scale(1.15); }
+  .px-nav__link[aria-current="true"] {
+    background: rgba(255, 255, 255, 0.13);
+    font-weight: 700;
+    transform: none;
+  }
+
+  .px-nav__progress {
+    position: relative;
+    margin: var(--space-4) var(--space-3) 0;
+    height: 3px;
+    border-radius: 3px;
+  }
 }
 
 /* ==========================================================================
@@ -355,23 +435,85 @@
 
 .px-section { padding-top: clamp(48px, 8vw, 88px); }
 
-/* kepala bagian: ikon + judul kapital + subjudul */
+/* kepala bagian (Stage 21): judul kapital + subjudul rata tengah, tanpa
+   ikon, di atas pita selebar layar berpola khas tiap bagian. Pola = SVG
+   satu warna sebagai mask, diwarnai aksen pasangan dengan opacity rendah. */
 .px-head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-bottom: clamp(24px, 4vw, 36px);
-}
-
-.px-head__icon {
-  flex: 0 0 auto;
+  position: relative;
+  isolation: isolate;
   display: grid;
-  color: var(--accent-text);
+  justify-items: center;
+  gap: var(--space-1);
+  margin-bottom: clamp(24px, 4vw, 40px);
+  padding-block: clamp(28px, 5vw, 52px);
+  text-align: center;
 }
 
-.px-head__icon .icon { width: 34px; height: 34px; }
+.px-head::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: calc(-1 * var(--px-pad-r, var(--px-gutter)));
+  bottom: 0;
+  left: calc(-1 * var(--px-pad-l, var(--px-gutter)));
+  z-index: -1;
+  background: var(--accent);
+  opacity: 0.13;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
 
-.px-head__text { min-width: 0; }
+/* satu pola per bagian */
+.px-head--profil::before {
+  -webkit-mask-image: url('../img/patterns/px-dots.svg');
+  mask-image: url('../img/patterns/px-dots.svg');
+  -webkit-mask-size: 20px 20px;
+  mask-size: 20px 20px;
+}
+
+.px-head--visi::before {
+  -webkit-mask-image: url('../img/patterns/px-plus.svg');
+  mask-image: url('../img/patterns/px-plus.svg');
+  -webkit-mask-size: 28px 28px;
+  mask-size: 28px 28px;
+}
+
+.px-head--misi::before {
+  -webkit-mask-image: url('../img/patterns/px-diagonal.svg');
+  mask-image: url('../img/patterns/px-diagonal.svg');
+  -webkit-mask-size: 16px 16px;
+  mask-size: 16px 16px;
+}
+
+.px-head--program::before {
+  -webkit-mask-image: url('../img/patterns/px-waves.svg');
+  mask-image: url('../img/patterns/px-waves.svg');
+  -webkit-mask-size: 40px 16px;
+  mask-size: 40px 16px;
+}
+
+.px-head--poster::before {
+  -webkit-mask-image: url('../img/patterns/px-rings.svg');
+  mask-image: url('../img/patterns/px-rings.svg');
+  -webkit-mask-size: 32px 32px;
+  mask-size: 32px 32px;
+}
+
+.px-head--pesan::before {
+  -webkit-mask-image: url('../img/patterns/px-zigzag.svg');
+  mask-image: url('../img/patterns/px-zigzag.svg');
+  -webkit-mask-size: 24px 14px;
+  mask-size: 24px 14px;
+}
+
+.px-head--video::before {
+  -webkit-mask-image: url('../img/patterns/px-triangles.svg');
+  mask-image: url('../img/patterns/px-triangles.svg');
+  -webkit-mask-size: 28px 28px;
+  mask-size: 28px 28px;
+}
 
 .px-head__title {
   font-size: clamp(1.05rem, 2.4vw, 1.3rem);
@@ -383,10 +525,10 @@
 }
 
 .px-head__sub {
-  margin-top: 2px;
+  max-width: 52ch;
   font-size: 0.9rem;
   line-height: 1.45;
-  color: var(--gray-500);
+  color: var(--gray-700);
 }
 
 /* -- 3a. Kenali pasangan: dua kartu -- */
@@ -490,9 +632,12 @@
   background: var(--px-soft);
 }
 
+/* Stage 21: pernyataan visi di tengah panel selebar layar */
 .px-visi__text {
   position: relative;
-  margin: 0;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
   padding-left: clamp(34px, 6vw, 60px);
 }
 
@@ -614,13 +759,23 @@
   .px-programs { grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); }
 }
 
-/* -- 3e. Poster kampanye -- */
+/* -- 3e. Poster kampanye (Stage 21: ikon unduh kiri bawah, layar penuh
+   kanan bawah, tanpa teks; tombol lama "Lihat fullscreen" dihapus) -- */
 .px-poster__figure {
   display: grid;
   justify-items: center;
-  gap: var(--space-5);
   margin: 0;
 }
+
+.px-poster__frame {
+  position: relative;
+  max-width: 100%;
+  border-radius: var(--px-radius-sm);
+  box-shadow: 0 2px 6px rgba(21, 20, 26, 0.08), 0 24px 48px -28px rgba(21, 20, 26, 0.45);
+  transition: transform 0.5s var(--ease);
+}
+
+.px-poster__frame:hover { transform: translateY(-3px); }
 
 .px-poster__img {
   width: auto;
@@ -628,17 +783,40 @@
   height: auto;
   max-height: 80svh;
   border-radius: var(--px-radius-sm);
-  box-shadow: 0 2px 6px rgba(21, 20, 26, 0.08), 0 24px 48px -28px rgba(21, 20, 26, 0.45);
   cursor: zoom-in;
-  transition: transform 0.5s var(--ease);
 }
 
-.px-poster__img:hover { transform: translateY(-3px); }
-
-.px-poster__bar {
-  display: flex;
-  justify-content: center;
+.px-poster__tool {
+  position: absolute;
+  bottom: var(--space-3);
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(12, 12, 16, 0.64);
+  color: #FFFFFF;
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  transition: background-color 0.2s var(--ease), transform 0.2s var(--ease);
 }
+
+.px-poster__tool .icon { width: 20px; height: 20px; }
+
+.px-poster__tool:hover {
+  background: rgba(12, 12, 16, 0.84);
+  transform: scale(1.06);
+}
+
+/* cincin ganda: terlihat di atas poster terang maupun gelap */
+.px-poster__tool:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 4px var(--ink);
+}
+
+.px-poster__tool--download { left: var(--space-3); }
+.px-poster__tool--full { right: var(--space-3); }
 
 /* -- 3f. Pesan dari kami: kartu kutipan -- */
 .px-quotes {
@@ -648,7 +826,7 @@
 
 .px-quote {
   display: grid;
-  align-content: start;
+  align-content: space-between;
   gap: var(--space-4);
   margin: 0;
   padding: var(--space-5);
@@ -660,21 +838,30 @@
 
 .px-quote__text p {
   font-size: clamp(1rem, 1.8vw, 1.125rem);
-  font-weight: 600;
+  font-style: italic;
+  font-weight: 400;
   line-height: 1.55;
   color: var(--ink);
   text-wrap: pretty;
 }
 
+/* Stage 21: avatar sebaris dengan nama & peran di bawah kutipan */
 .px-quote__who {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
   font-size: 0.9375rem;
 }
 
-.px-quote__who strong { font-weight: 800; }
+.px-quote__id {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
 
-.px-quote__who span {
+.px-quote__id strong { font-weight: 800; }
+
+.px-quote__id span {
   font-size: 0.8125rem;
   font-weight: 600;
   color: var(--gray-700);
@@ -682,14 +869,15 @@
 
 .px-avatar {
   display: grid;
+  flex: 0 0 auto;
   place-items: center;
-  width: 64px;
-  height: 64px;
+  width: 52px;
+  height: 52px;
   overflow: hidden;
   border-radius: var(--px-radius-sm);
   background: var(--accent);
   color: var(--accent-ink);
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 800;
 }
 
@@ -704,10 +892,12 @@
   .px-quote:only-child { grid-column: 1 / -1; }
 }
 
-/* -- 3g. Video kampanye: thumbnail asli YouTube + tombol play -- */
+/* -- 3g. Video kampanye: thumbnail asli YouTube + tombol play; Stage 21:
+   pemutar saja (tanpa bilah keterangan), muat satu layar -- */
 .px-video {
   display: grid;
-  gap: var(--space-3);
+  width: min(100%, calc((100svh - 160px) * 16 / 9));
+  margin-inline: auto;
 }
 
 .px-video__frame {
@@ -771,17 +961,6 @@
 .px-video__facade:hover .px-video__play {
   background: rgba(12, 12, 16, 0.8);
   transform: scale(1.06);
-}
-
-.px-video__bar {
-  display: flex;
-  max-width: none;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-4);
-  font-size: 0.875rem;
-  color: var(--gray-700);
 }
 
 /* -- lightbox poster (<dialog> native: fokus & Escape bawaan browser) -- */
@@ -850,17 +1029,6 @@
 
 .px-btn:hover { opacity: 0.88; }
 .px-btn .icon { width: 18px; height: 18px; }
-
-.px-btn--dark {
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.px-btn--quiet {
-  min-height: 40px;
-  padding: 0 var(--space-4);
-  font-size: 0.875rem;
-}
 
 /* ==========================================================================
    4. Penutup: gambar latar khusus paslon, TANPA warna aksen
@@ -1092,7 +1260,9 @@
   .px-cta:hover,
   .px-cta:hover .icon,
   .px-meet__card:hover .px-meet__photo img,
-  .px-poster__img:hover,
+  .px-poster__frame:hover,
+  .px-poster__tool:hover,
+  .px-nav__link:hover,
   .px-list__item:hover .px-list__n,
   .px-video__facade:hover .px-video__thumb,
   .px-video__facade:hover .px-video__play { transform: none; }

@@ -16,7 +16,9 @@ use Config\Visitors;
  * termasuk persentase pengguna online terhadap seluruh akun sistem; daftar &
  * sebaran dapat disaring cakupan waktu (online / hari ini / 7 hari), jenis
  * pengunjung, dan kata kunci. admin-visitors.js memuat ulang bagian halaman
- * setiap REFRESH_SECONDS detik tanpa muat ulang penuh.
+ * setiap REFRESH_SECONDS detik tanpa muat ulang penuh. Stage 21: papan angka
+ * (ringkasan) dimuat ulang tiap Config\Visitors::$counterRefreshSeconds
+ * detik lewat GET admin/pengunjung/ringkas (fragmen saja, query ringan).
  */
 class VisitorController extends AdminController
 {
@@ -60,7 +62,22 @@ class VisitorController extends AdminController
             'window'    => max(30, $config->onlineSeconds),
             'enabled'   => $config->enabled,
             'refresh'   => self::REFRESH_SECONDS,
+            'tick'      => max(1, $config->counterRefreshSeconds),
             'updated'   => Time::now(),
         ], 'visitors');
+    }
+
+    /**
+     * GET admin/pengunjung/ringkas: papan angka saja (partial yang sama
+     * dengan halaman), tanpa layout. Selalu dihitung langsung (tanpa cache).
+     */
+    public function summary()
+    {
+        $this->response->setHeader('Cache-Control', 'no-store, max-age=0');
+
+        return view('admin/visitors/summary', [
+            'summary' => service('onlineVisitors')->summary(),
+            'updated' => Time::now(),
+        ]);
     }
 }

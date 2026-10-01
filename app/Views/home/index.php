@@ -52,6 +52,9 @@ $firstScreen = [
  * dengan tombol masuk (desktop saja), dan di atas teks footer scene SUARA
  * (belum login & sudah login). presence.js memperbarui [data-online-count].
  *
+ * Stage 21: foto pasangan dapat diklik -> foto ukuran penuh (pair_view) dengan
+ * tautan "Lihat profil pasangan" bila pengunjung login (pair['profile']).
+ *
  * @var array|null       $live       PublicLiveCount::build() + pairs; null = live count publik mati
  * @var array|null       $online     OnlineVisitors::publicCounts() (+ pengunjung ini); null = dimatikan
  * @var \Config\Homepage $home
@@ -215,6 +218,12 @@ $entries = [
     </div>
   </section>
 </div>
+
+<?php /* Stage 21: foto pasangan ukuran penuh, di luar scene (fokus dialog tidak
+         memindahkan scene). Dibuka dari button.pair__zoom di setiap foto. */ ?>
+<?php foreach ($pairs as $p): ?>
+  <?= view('home/partials/pair_view', ['pair' => $p]) ?>
+<?php endforeach; ?>
 
 <nav class="pager" aria-label="Bagian beranda" data-pager>
   <ol class="pager__list">

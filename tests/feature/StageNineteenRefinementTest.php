@@ -516,7 +516,7 @@ final class StageNineteenRefinementTest extends CIUnitTestCase
 
         // pengunjung ini (belum punya cookie) ikut terhitung sebagai tamu
         $this->assertMatchesRegularExpression('#<p class="hero-online" data-reveal>\s*<span class="hero-online__item"><span class="hero-online__num" data-online-count="total">3</span> online</span>\s*<span class="hero-online__item"><span class="hero-online__num" data-online-count="users">1</span> <span class="visually-hidden">pengguna </span>login</span>\s*</p>#', $html);
-        $this->assertMatchesRegularExpression('#<p class="site-footer__online">\s*<span class="site-footer__online-label">Online</span>\s*<span><span class="site-footer__num" data-online-count="guests">2</span> belum login</span>\s*<span><span class="site-footer__num" data-online-count="users">1</span> sudah login</span>\s*</p>\s*<p class="site-footer__text">#', $html);
+        $this->assertMatchesRegularExpression('#<p class="site-footer__online">\s*<span class="site-footer__online-label"><svg class="icon[^"]*icon--live[^"]*site-footer__online-icon"[^>]*>.*?</svg><span class="site-footer__online-text">Online</span></span>\s*<span><span class="site-footer__num" data-online-count="guests">2</span> belum login</span>\s*<span><span class="site-footer__num" data-online-count="users">1</span> sudah login</span>\s*</p>\s*<p class="site-footer__text">#', $html);
         $this->assertStringContainsString('assets/js/presence.js', $html);
         $this->assertStringContainsString('data-presence-url="' . esc(site_url('kunjungan/detak'), 'attr') . '"', $html);
 

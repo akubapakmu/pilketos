@@ -17,6 +17,8 @@ use CodeIgniter\Config\BaseConfig;
  *
  * Hanya angka ringkas (tamu & pengguna login online) yang tampil publik di
  * beranda; rincian per pengunjung hanya di panel admin (admin/pengunjung).
+ * Stage 21: angka di beranda & papan angka admin diperbarui tiap
+ * $counterRefreshSeconds detik tanpa muat ulang halaman.
  * Alamat halaman pemilih disimpan tanpa nomor (siswa/paslon/02 menjadi
  * siswa/paslon) sehingga pilihan atau minat pemilih tidak terbaca.
  *
@@ -62,8 +64,17 @@ class Visitors extends BaseConfig
     public bool $publicCounter = true;
 
     /**
-     * Cache singkat angka online (detik) agar detak ratusan layar tidak
-     * masing-masing menghitung ulang ke MySQL. 0 = tanpa cache.
+     * Stage 21: irama pembaruan angka online (detik) tanpa muat ulang halaman:
+     * beranda membaca GET kunjungan/online, halaman admin Pengunjung online
+     * membaca papan angkanya. Minimal 1. Hanya berjalan selama tab terlihat.
      */
-    public int $countCacheSeconds = 5;
+    public int $counterRefreshSeconds = 1;
+
+    /**
+     * Cache singkat angka online (detik) agar ratusan layar yang membaca
+     * angka tiap detik tidak masing-masing menghitung ulang ke MySQL
+     * (paling banyak satu hitungan per detik). Pengunjung baru, kembali
+     * online, atau berganti akun langsung membuang cache. 0 = tanpa cache.
+     */
+    public int $countCacheSeconds = 1;
 }

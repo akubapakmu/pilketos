@@ -49,6 +49,12 @@ final class CandidateTheme
     public const THUMB_ORIGIN = 'https://i.ytimg.com';
 
     /**
+     * Stage 21: nama file unduhan poster kampanye (nomor urut dua digit),
+     * contoh paslon-osis-no-02-spensada-2026.webp. Ekstensi mengikuti file.
+     */
+    public const POSTER_DOWNLOAD = 'paslon-osis-no-%s-spensada-2026';
+
+    /**
      * Kata karakter yang ditampilkan per orang.
      */
     public const MAX_TAGS = 3;
@@ -121,6 +127,9 @@ final class CandidateTheme
         // Ukuran asli gambar pembuka untuk atribut width/height (tampil utuh,
         // tanpa dipotong): ruang disiapkan sebelum gambar selesai dimuat.
         $theme['banner_size'] = $theme['banner'] === null ? null : self::imageSize($assets['banner']);
+
+        // Stage 21: nama file saat poster diunduh (atribut download).
+        $theme['poster_download'] = $theme['poster'] === null ? null : self::posterDownload($theme['label'], (string) $assets['poster']);
 
         $theme['style'] = self::style($theme);
 
@@ -475,6 +484,21 @@ final class CandidateTheme
     private static function url(mixed $filename): ?string
     {
         return is_string($filename) ? CandidateModel::assetUrl($filename) : null;
+    }
+
+    /**
+     * Nama file unduhan poster: POSTER_DOWNLOAD + ekstensi file asli
+     * (jpg/jpeg/png/webp hasil unggah; selain itu jpg).
+     */
+    public static function posterDownload(string $label, string $filename): string
+    {
+        $extension = strtolower(pathinfo(basename($filename), PATHINFO_EXTENSION));
+
+        if (! in_array($extension, ['jpg', 'jpeg', 'png', 'webp'], true)) {
+            $extension = 'jpg';
+        }
+
+        return sprintf(self::POSTER_DOWNLOAD, $label) . '.' . $extension;
     }
 
     /**

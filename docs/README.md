@@ -8,7 +8,7 @@ Dokumentasi pendukung aplikasi Pemilihan Ketua & Wakil Ketua OSIS SMP 1 DAWE
 docs/
 ├── spesifikasi/     brief & spesifikasi per tahap (00–05)
 ├── desain/          identitas visual, tipografi, aset, gerak (06–10)
-└── catatan-tahap/   catatan implementasi & handoff tiap tahap (STAGE1–19)
+└── catatan-tahap/   catatan implementasi & handoff tiap tahap (STAGE1–21)
 ```
 
 Dokumen di `spesifikasi/` dan `desain/` adalah **rencana** (apa yang harus
@@ -63,6 +63,7 @@ catatan tahap.
 | [`STAGE18-NOTES.md`](catatan-tahap/STAGE18-NOTES.md) | Stage 18: beranda — scene pertama hanya gambar hero (desktop & HP) + tombol **Masuk untuk memilih** / **Lihat perolehan suara** (kicker, judul terlihat, baris pendukung, kontur SVG, dan perforasi dihapus), "Kembali ke awal" di scene perolehan suara menjadi panah saja |
 | [`STAGE19-NOTES.md`](catatan-tahap/STAGE19-NOTES.md) | Stage 19: banner final dasbor dua baris kapital (tanpa kalimat "Pencoblosan ditolak server"), panggung pemenang rata tengah dengan teks mengikuti aksen + tally dua baris + catatan kaki miring berbintang, logo header admin HP dari `Config\Homepage`, **pengunjung online** (tabel `visitors`, detak `presence.js`, `matomo/device-detector`, halaman admin dengan persentase pengguna online, angka ringkas di beranda) |
 | [`STAGE20-NOTES.md`](catatan-tahap/STAGE20-NOTES.md) | Stage 20: HTML/CSS/JS dikirim ter-minify ke browser hanya di production (kode sumber tetap asli; saklar hardcode `app/Config/Minify.php`, file `*.min.*` dibuat otomatis di folder yang sama, `php spark osis:minify [--clean]`), watermark banner ASCII FAJAR / © SMP 1 DAWE 2026 di view-source & file CSS/JS ter-minify |
+| [`STAGE21-NOTES.md`](catatan-tahap/STAGE21-NOTES.md) | Stage 21: angka online beranda & papan angka admin **Pengunjung online** diperbarui tiap 1 detik tanpa muat ulang (`GET kunjungan/online`, `GET admin/pengunjung/ringkas`, `visitors.counterRefreshSeconds`); beranda HP: partisipasi 0.7rem, jadwal dock disembunyikan, ikon online biru muda; foto pasangan ukuran penuh dengan tautan **Lihat profil pasangan** (siswa/guru/admin, tamu tanpa tautan); profil paslon selebar layar, navigasi gelap tanpa titik di tepi kanan, kepala bagian tanpa ikon berpola SVG khas, poster berikon unduh (`paslon-osis-no-0X-spensada-2026`) & layar penuh, kutipan miring 400 dengan avatar sebaris nama, video tanpa bilah |
 
 Catatan tahap adalah arsip: isinya menggambarkan kondisi proyek saat tahap itu
 selesai, termasuk letak file saat itu (sebelum dokumen dipindah ke `docs/`).

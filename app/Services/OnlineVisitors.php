@@ -46,6 +46,12 @@ final class OnlineVisitors
         'admin'   => 'Admin',
     ];
 
+    /**
+     * Kunci cache angka online (counts()); dibuang VisitorTracker saat ada
+     * pengunjung baru, pengunjung kembali online, atau berganti akun.
+     */
+    public const CACHE_KEY = 'visitors_online_counts';
+
     private const WHO_TYPES = ['siswa' => 'student', 'guru' => 'teacher', 'admin' => 'admin'];
 
     private Visitors $config;
@@ -68,11 +74,12 @@ final class OnlineVisitors
             return $compute();
         }
 
-        return cache()->remember('visitors_online_counts', $this->config->countCacheSeconds, $compute);
+        return cache()->remember(self::CACHE_KEY, $this->config->countCacheSeconds, $compute);
     }
 
     /**
-     * Angka ringkas untuk publik (beranda & balasan detak).
+     * Angka ringkas untuk publik (beranda, balasan detak, dan GET
+     * kunjungan/online yang dibaca beranda tiap detik).
      *
      * @return array{total: int, guests: int, users: int}
      */

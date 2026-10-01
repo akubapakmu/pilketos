@@ -19,9 +19,41 @@ use Throwable;
  * Balasan: irama detak berikutnya + angka ringkas online (tamu, pengguna
  * login, total) untuk penghitung di beranda. Tidak ada nama, IP, atau
  * perangkat siapa pun.
+ *
+ * Stage 21: GET kunjungan/online hanya membaca angka ringkas yang sama
+ * (cache singkat OnlineVisitors), dipanggil presence.js tiap
+ * Config\Visitors::$counterRefreshSeconds detik di halaman yang menampilkan
+ * angka online (beranda). Tidak menulis apa pun ke database.
  */
 class PresenceController extends BaseController
 {
+    /**
+     * GET kunjungan/online: {online: {total, guests, users}, interval}.
+     */
+    public function online(): ResponseInterface
+    {
+        $config = config(Visitors::class);
+
+        if (! $config->enabled || ! $config->publicCounter) {
+            return $this->response->setStatusCode(404)->setJSON(['ok' => false]);
+        }
+
+        $this->response->setHeader('Cache-Control', 'no-store, max-age=0');
+
+        try {
+            $online = service('onlineVisitors')->publicCounts();
+        } catch (Throwable $e) {
+            log_message('error', 'Angka pengunjung online gagal dihitung: {message}', ['message' => $e->getMessage()]);
+
+            return $this->response->setStatusCode(503)->setJSON(['ok' => false]);
+        }
+
+        return $this->response->setJSON([
+            'online'   => $online,
+            'interval' => max(1, $config->counterRefreshSeconds),
+        ]);
+    }
+
     public function heartbeat(): ResponseInterface
     {
         $config = config(Visitors::class);

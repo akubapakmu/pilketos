@@ -216,7 +216,8 @@ Salin dari `.env.example`:
 | `visitors.enabled` | (bawaan `true`) | `false` = tanpa pencatatan pengunjung, detak, maupun angka online (bagian 8.2) |
 | `visitors.onlineSeconds`, `visitors.heartbeatSeconds` | `180`, `60` | batas "online" (aktif dalam N detik terakhir) dan irama detak halaman yang terbuka |
 | `visitors.publicCounter` | (bawaan `true`) | `false` = angka online tidak tampil di beranda (tetap ada di panel admin) |
-| `visitors.retentionDays`, `visitors.countCacheSeconds` | `7`, `5` | baris pengunjung yang tidak aktif lebih lama dihapus otomatis; cache singkat angka online |
+| `visitors.retentionDays`, `visitors.countCacheSeconds` | `7`, `1` | baris pengunjung yang tidak aktif lebih lama dihapus otomatis; cache singkat angka online (dibuang otomatis saat ada pengunjung baru/berganti akun) |
+| `visitors.counterRefreshSeconds` | `1` | Stage 21: angka online beranda & papan angka admin diperbarui tiap N detik tanpa muat ulang halaman (hanya selama tab terlihat) |
 
 Zona waktu aplikasi tetap `Asia/Jakarta` (`app/Config/App.php`), jadi jam di
 komputer server harus benar.
@@ -596,13 +597,15 @@ membuka situs, tamu (belum login) maupun siswa/guru/admin yang login.
   Hints, halaman pertama, situs asal, dan tema perangkat. Baris browser Anda
   bertanda **Anda**.
 - Saring: waktu (online sekarang / hari ini / 7 hari), jenis pengunjung,
-  kata kunci (nama, NISN/NIP, IP, browser, perangkat). Halaman diperbarui
-  otomatis setiap 20 detik tanpa muat ulang.
+  kata kunci (nama, NISN/NIP, IP, browser, perangkat). Tanpa muat ulang:
+  papan angka diperbarui **setiap detik** (Stage 21,
+  `GET admin/pengunjung/ringkas`), sebaran & tabel setiap 20 detik.
 
 Cara kerja: setiap halaman yang dibuka dicatat (filter `visitors`), lalu
 selama halaman terbuka browser mengirim detak tiap 60 detik
 (`POST kunjungan/detak`, `presence.js`). Online = aktif dalam 3 menit
-terakhir. Perangkat & browser diurai pustaka Composer `matomo/device-detector`
+terakhir. Angka di beranda dibaca ulang tiap detik (`GET kunjungan/online`,
+hanya angka, tanpa menulis apa pun). Perangkat & browser diurai pustaka Composer `matomo/device-detector`
 (sudah dipakai sejak Stage 11) dari User-Agent + Client Hints, jadi berupa
 perkiraan. Bot dan pustaka HTTP (curl, Python) tidak dihitung. Demi
 kerahasiaan pilihan, halaman pemilih dicatat tanpa nomor paslon
@@ -719,12 +722,18 @@ Siswa > Impor atau Guru > Impor:
   landscape buatan paslon** (tampil utuh) dengan tombol **Lihat Visi & Misi**
   di bawahnya (tanpa gambar: judul sederhana); lalu Kenali pasangan (kartu
   foto, nama, peran, bio, pill karakter), Visi kami, Misi kami, Program
-  unggulan, Poster kampanye (layar penuh), Pesan dari kami, Video kampanye
+  unggulan, Poster kampanye, Pesan dari kami, Video kampanye
   (thumbnail asli YouTube + tombol putar), dan penutup berlatar gambar khusus
   (tanpa warna aksen) dengan **Pilih Paslon 0X** / kembali ke daftar dan deret
-  nomor semua paslon. Kepala bagian berikon; tanpa pola, tekstur, dan garis.
-  Navigasi bagian: bar menempel di HP/tablet, kolom kanan dengan semua label
-  di desktop (≥ 1024 px). Rincian:
+  nomor semua paslon. Stage 21: halaman selebar layar; kepala bagian tanpa
+  ikon, rata tengah, di atas pita berpola SVG khas tiap bagian (warna aksen
+  samar); poster dengan ikon **unduh** (kiri bawah, file
+  `paslon-osis-no-0X-spensada-2026`) dan **layar penuh** (kanan bawah);
+  kutipan pesan miring dengan avatar sebaris nama; video tanpa bilah
+  keterangan. Navigasi bagian gelap, teks terang, tanpa titik: bar menempel
+  di HP/tablet, panel di tepi kanan layar yang selalu di tengah tinggi layar
+  + garis progres baca di desktop (≥ 1024 px). Rincian:
+  [`STAGE21-NOTES.md`](docs/catatan-tahap/STAGE21-NOTES.md),
   [`STAGE16-NOTES.md`](docs/catatan-tahap/STAGE16-NOTES.md) (awal:
   [`STAGE15-NOTES.md`](docs/catatan-tahap/STAGE15-NOTES.md)).
 - Surat suara: tekan **Coblos** di kotak pasangan, atau tekan-tahan paku,
@@ -884,8 +893,8 @@ composer install
 composer test                 (atau vendor\bin\phpunit --no-coverage)
 ```
 
-Hasil terakhir (Stage 20): **499 test, 4.660 assertion, lulus** pada PHP
-8.3.6 dengan MariaDB 10.11.14 (Stage 19: 484 test, Stage 18: 468 test, Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
+Hasil terakhir (Stage 21): **516 test, 4.863 assertion, lulus** pada PHP
+8.3.6 dengan MariaDB 10.11.14 (Stage 20: 499 test, Stage 19: 484 test, Stage 18: 468 test, Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
 8.0.46; Stage 5 dan 6 tidak mengubah schema maupun query. Test paralel (race
 condition) memakai `pcntl_fork` sehingga di-skip di Windows. Rincian dan uji
 browser: [`STAGE4-NOTES.md`](docs/catatan-tahap/STAGE4-NOTES.md) bagian 9,
@@ -901,7 +910,7 @@ beserta ringkasan tiap dokumen: [`docs/README.md`](docs/README.md).
 |---|---|
 | [`docs/spesifikasi/`](docs/spesifikasi) | `00-MASTER-PROJECT.md` (spesifikasi utama, source of truth) dan brief Stage 1–5 (`01`–`05`) |
 | [`docs/desain/`](docs/desain) | Identitas visual SMP 1 DAWE, Stage 6 (`06`–`10`): arah visual, tipografi, spesifikasi aset, prompt gambar, sistem gerak |
-| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE20-NOTES.md`) |
+| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE21-NOTES.md`) |
 
 ## 21. Beranda imersif & aset visual
 
@@ -915,14 +924,15 @@ interaksi. Palet netral "Pagi Muria" + warna aksen masing-masing pasangan.
 |---|---|
 | 01 Lereng | hanya gambar hero (lereng Muria + atap sekolah; lanskap di desktop, potret di HP), lapisan depan opsional, tombol **Masuk untuk memilih** dan **Lihat perolehan suara**; titik "embun" di sekitar pointer. Stage 18: tanpa teks di atas gambar, tanpa garis kontur & perforasi. Stage 19: pojok kanan bawah (desktop), sebaris dengan tombol masuk: angka kecil "**12** online · **4** login". Tanpa warna/nomor/foto pasangan |
 | 02 Masuk | "Masuk sebagai": portal **SISWA** (`/siswa/masuk`) dan **GURU** (`/guru/masuk`) bergambar |
-| 03 Perolehan suara | judul & pasangan rata tengah (Stage 10: tanpa label status di samping judul); foto pasangan, persentase tepat di bawah foto; baris penutup "Suara masuk" (persentase partisipasi, jumlah pemilih, "Diperbarui [tanggal] [jam]", meter); footer + panah ke atas (kembali ke scene 01). Stage 19: di atas teks footer "ONLINE **8** belum login **4** sudah login" |
+| 03 Perolehan suara | judul & pasangan rata tengah (Stage 10: tanpa label status di samping judul); foto pasangan, persentase tepat di bawah foto; baris penutup "Suara masuk" (persentase partisipasi, jumlah pemilih, "Diperbarui [tanggal] [jam]", meter); footer + panah ke atas (kembali ke scene 01). Stage 19: di atas teks footer "ONLINE **8** belum login **4** sudah login" (Stage 21: di HP kata "Online" menjadi ikon biru muda). Stage 21: foto pasangan dapat diklik → foto ukuran penuh dengan tautan **Lihat profil pasangan** bagi siswa/guru/admin yang login |
 
 - Berpindah scene: roda mouse/trackpad (satu gestur = satu scene), geser
   sentuh, panah/PageUp/PageDown/spasi/Home/End, garis navigasi di kanan
   layar, atau tombol di tiap scene. Alamat `/#masuk` dan `/#perolehan`
   membuka scene itu langsung.
 - **Panel status** di bawah layar (gaya terminal): status pemilihan, hitung
-  mundur jam server, jadwal, garis progres. Tidak pernah menutupi tombol.
+  mundur jam server, jadwal (Stage 21: disembunyikan di HP), garis progres.
+  Tidak pernah menutupi tombol.
 - **Layar pembuka**: selalu tampil setiap kali beranda dimuat (1,5–5,2 detik,
   mengikuti aset layar pertama), tanpa tombol lewati: pemandangan hero yang
   sama berkabut pekat, lockup di tengah, bilah muat. Keluar: kabut memudar
@@ -971,15 +981,17 @@ Warna identitas sekolah (parijoto, `homepage.identityAccent`) hanya dipakai
 pada bilah muat layar pembuka, dan otomatis diganti warna netral bila mirip
 (CIEDE2000 < 20) warna aksen salah satu pasangan calon.
 
-Angka online di beranda (Stage 19) diperbarui oleh detak halaman tiap 60
-detik; matikan dengan `visitors.publicCounter = false` (bagian 8.2).
+Angka online di beranda (Stage 19) diperbarui tiap detik tanpa muat ulang
+(Stage 21, `visitors.counterRefreshSeconds`); matikan dengan
+`visitors.publicCounter = false` (bagian 8.2).
 
 Perolehan suara publik dapat dimatikan: `homepage.publicLiveCount = false`
 (scene ketiga menjadi "Pasangan calon" tanpa angka). Rincian teknis:
 [`STAGE5-NOTES.md`](docs/catatan-tahap/STAGE5-NOTES.md),
 [`STAGE6-NOTES.md`](docs/catatan-tahap/STAGE6-NOTES.md), dan
 [`STAGE18-NOTES.md`](docs/catatan-tahap/STAGE18-NOTES.md) (hero tanpa teks), dan
-[`STAGE19-NOTES.md`](docs/catatan-tahap/STAGE19-NOTES.md) (angka online).
+[`STAGE19-NOTES.md`](docs/catatan-tahap/STAGE19-NOTES.md) (angka online), dan
+[`STAGE21-NOTES.md`](docs/catatan-tahap/STAGE21-NOTES.md) (angka tiap detik, foto ukuran penuh).
 
 ## Lisensi
 
