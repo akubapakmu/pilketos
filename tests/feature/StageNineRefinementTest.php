@@ -92,7 +92,8 @@ final class StageNineRefinementTest extends CIUnitTestCase
     {
         $this->scheduleAt('2026-10-01 09:00:00', '2026-10-05 12:00:00');
 
-        $page = $this->withSession($this->student())->get('siswa/coblos');
+        // Stage 22: panel terminal di kepala surat suara (halaman bilik-suara).
+        $page = $this->withSession($this->student())->get('siswa/bilik-suara');
         $html = (string) $page->response()->getBody();
 
         $page->assertDontSee('jam-server &middot; pilketos');
@@ -109,33 +110,34 @@ final class StageNineRefinementTest extends CIUnitTestCase
         $this->assertMatchesRegularExpression('/\.term \.countdown__units \{[^}]*flex-wrap: nowrap;[^}]*white-space: nowrap;/', $css);
         $this->assertMatchesRegularExpression('/\.term \.countdown--terminal \{\s*--term-size: clamp\(1\.5rem, 8vw, 2\.25rem\);/', $css);
 
-        $this->assertLessThan(strpos($html, 'class="term"'), strpos($html, 'class="booth-open"'));
+        $this->assertLessThan(strpos($html, 'class="ballot__sheet"'), strpos($html, 'class="term ballot__term"'));
     }
 
-    public function testBoothIntroAndLineupShareTheFirstPhoneScreen(): void
+    /**
+     * Stage 9: pembuka + Sekilas paslon berbagi layar pertama HP (.booth-open).
+     * Stage 22: ketiganya halaman sendiri: pembuka (coblos), Sekilas paslon
+     * (sekilas-paslon, tanpa petunjuk), surat suara (bilik-suara).
+     */
+    public function testBoothIntroLineupAndBallotAreSeparatePages(): void
     {
-        $page = $this->withSession($this->student())->get('siswa/coblos');
-        $html = (string) $page->response()->getBody();
+        $intro = (string) $this->withSession($this->student())->get('siswa/coblos')->response()->getBody();
+        $this->assertStringContainsString('<section class="steps"', $intro);
+        $this->assertStringNotContainsString('class="booth-open"', $intro);
+        $this->assertStringNotContainsString('<section class="lineup"', $intro);
+        $this->assertStringNotContainsString('<section class="ballot', $intro);
 
-        // .booth-open membungkus pembuka + Sekilas paslon; surat suara di luar
-        // (Stage 15: navigasi bab & bab pasangan pindah ke profil paslon).
-        $open   = strpos($html, '<div class="booth-open">');
-        $intro  = strpos($html, '<section class="booth-intro"');
-        $lineup = strpos($html, '<section class="lineup"');
-        $ballot = strpos($html, '<section class="ballot');
-        $this->assertNotFalse($open);
-        $this->assertTrue($open < $intro && $intro < $lineup && $lineup < $ballot);
-        // (test: komentar DEBUG-VIEW boleh ada di antara tag)
-        $this->assertMatchesRegularExpression('/<\/section>(\s|<!--[^>]*-->)*<\/div>(\s|<!--[^>]*-->)*<section class="ballot/', $html);
+        $lineup = (string) $this->withSession($this->student())->get('siswa/sekilas-paslon')->response()->getBody();
+        $this->assertStringContainsString('<section class="lineup" id="sekilas"', $lineup);
+        $this->assertStringNotContainsString('<section class="ballot', $lineup);
+        $this->assertStringNotContainsString('lineup__hint', $lineup);
+
+        $ballot = (string) $this->withSession($this->student())->get('siswa/bilik-suara')->response()->getBody();
+        $this->assertStringContainsString('<section class="ballot', $ballot);
+        $this->assertStringNotContainsString('<section class="lineup"', $ballot);
 
         $css = $this->asset('assets/css/voting.css');
-        $this->assertMatchesRegularExpression('/\.booth-open > \.lineup \{[^}]*flex: 1 0 auto;/', $css);
-        $this->assertStringNotContainsString("  .booth-intro {\n    display: flex;", $css);
-        // Desktop: petunjuk satu baris sejajar judul.
-        $this->assertMatchesRegularExpression(
-            '/@media \(min-width: 960px\) \{\s*\.lineup__head \{ flex-wrap: nowrap; \}[^@]*\.lineup__hint \{[^}]*max-width: none;[^}]*white-space: nowrap;/',
-            $css,
-        );
+        $this->assertStringNotContainsString('.lineup__hint', $css);
+        $this->assertStringNotContainsString('.booth-open > .lineup', $css);
     }
 
     // ------------------------------------------------------------------

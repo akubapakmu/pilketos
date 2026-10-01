@@ -72,7 +72,7 @@ if (! function_exists('asset_url')) {
      * penanda versi berubah otomatis setiap file diperbarui sehingga browser
      * tidak memakai CSS/JS lama setelah aplikasi di-update.
      *
-     * Stage 22: CSS/JS di public/assets adalah hasil build ter-minify +
+     * Stage 23: CSS/JS di public/assets adalah hasil build ter-minify +
      * watermark dari resources/assets (App\Libraries\AssetMinifier, dibangun
      * ulang otomatis bila sumbernya lebih baru); penanda versi = waktu ubah
      * file yang benar-benar disajikan.

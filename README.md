@@ -123,11 +123,11 @@ app/Services/        VoteService, UnlockService, AnalyticsService, PublicLiveCou
 app/Views/           layouts, home (+ partials: splash, dock, pair_photo), student, teacher,
                      voting, admin/**, errors
 public/              index.php, .htaccess, assets/{css,js,fonts,img}, uploads/candidates/
-                     (assets/css & assets/js: hasil build ter-minify + watermark, Stage 22)
+                     (assets/css & assets/js: hasil build ter-minify + watermark, Stage 23)
                      (img/brand: lockup acara + logo SMP 1 DAWE, img/home: latar hero & layar
                      pembuka, kontur, perforasi, ilustrasi pintu masuk; img/auth: foto login
                      admin; img/results: stempel hasil akhir)
-resources/           assets/css, assets/js: kode sumber CSS/JS rapi & berkomentar (Stage 22),
+resources/           assets/css, assets/js: kode sumber CSS/JS rapi & berkomentar (Stage 23),
                      tidak dapat dibuka browser; edit di sini lalu php spark osis:minify
 tests/               unit, database, feature (PHPUnit)
 writable/            cache (+ cache/dompdf: metrik font PDF), logs, session, uploads/imports (pratinjau impor)
@@ -188,8 +188,8 @@ seperti `/student/login` sudah tidak ada dan menjawab 404):
 
 | Untuk | Alamat |
 |---|---|
-| Siswa | `/siswa/masuk`, `/siswa` (dasbor), `/siswa/coblos` (bilik suara), `/siswa/paslon/01` (profil paslon), `/siswa/pilihanku` |
-| Guru | `/guru/masuk`, `/guru`, `/guru/coblos`, `/guru/paslon/01`, `/guru/pilihanku` |
+| Siswa | `/siswa/masuk`, `/siswa` (dasbor), `/siswa/coblos` (pembuka langkah memilih), `/siswa/sekilas-paslon` (Sekilas paslon), `/siswa/paslon/01` (profil paslon), `/siswa/bilik-suara` (surat suara), `/siswa/pilihanku` |
+| Guru | `/guru/masuk`, `/guru`, `/guru/coblos`, `/guru/sekilas-paslon`, `/guru/paslon/01`, `/guru/bilik-suara`, `/guru/pilihanku` |
 | Admin | `/admin/masuk`, `/admin` (dasbor), `/admin/analitik` (+ `/jenis-pemilih`, `/jenis-kelamin`, `/kelas`, `/rombel`), `/admin/analitik/suara`, `/admin/hasil`, `/admin/paslon`, `/admin/siswa`, `/admin/siswa/tambah`, `/admin/guru`, `/admin/guru/tambah`, `/admin/siswa/impor`, `/admin/guru/impor`, `/admin/jadwal`, `/admin/buka-kunci`, `/admin/riwayat` |
 | JSON (dipakai halaman) | `/jam-server` (countdown), `/hitung-suara` (beranda), `/admin/hitung-suara` (dasbor admin) |
 
@@ -484,7 +484,7 @@ foto kandidat, impor Excel, batas ukuran (40-50 MB pesan aplikasi, di atasnya
 Hari H: pantau **Beranda** panel admin (live count); bila perlu unlock, lihat bagian 14.
 Setelah waktu selesai: buka **Hasil akhir**, lalu backup lagi.
 
-### 7.6 Minify HTML/CSS/JS & watermark (Stage 20, Stage 22)
+### 7.6 Minify HTML/CSS/JS & watermark (Stage 20, Stage 23)
 
 Browser hanya menerima CSS dan JS yang **sudah diperkecil, tanpa komentar**,
 di semua environment (development maupun production). Baris pertama setiap
@@ -514,7 +514,7 @@ dengan banner yang sama tepat setelah `<!DOCTYPE html>`, tetapi khusus saat
   `*.min.js` dari Stage 20 dihapus oleh `php spark osis:minify` (atau
   `php spark osis:minify --clean`).
 
-Rincian: [`STAGE22-NOTES.md`](docs/catatan-tahap/STAGE22-NOTES.md) (sumber di
+Rincian: [`STAGE23-NOTES.md`](docs/catatan-tahap/STAGE23-NOTES.md) (sumber di
 `resources/`, build ter-commit) dan
 [`STAGE20-NOTES.md`](docs/catatan-tahap/STAGE20-NOTES.md) (aturan minify).
 
@@ -719,18 +719,23 @@ Siswa > Impor atau Guru > Impor:
   melayang di bawah layar. Di HP tombol Dasbor & Keluar cukup ikon; Stage 10:
   kartu hak suara rata tengah dan sisa waktu menjadi strip selebar layar
   tepat di atas footer (tidak melayang).
-- Bilik suara (`/siswa/coblos`, `/guru/coblos`, Stage 7-8): pembuka rata
-  tengah "Kenali, lalu coblos." dengan journey timeline tiga langkah (Kenali
-  paslon, Coblos satu, Konfirmasi & kunci) dan countdown bergaya terminal
-  (Stage 9: tanpa teks bilah judul/perintah, angka satu baris di HP); di HP
-  pembuka + Sekilas paslon berbagi layar pertama, surat suara setinggi
-  satu layar. Lalu **Sekilas paslon** (satu kartu per pasangan untuk membandingkan: nomor, foto, nama,
-  tema, kutipan visi, jumlah misi; digeser di HP, Stage 10: bergeser sendiri
-  tiap 2 detik 01 -> terakhir -> 01, berhenti saat disentuh; panah halus di
-  bawahnya menuju surat suara). **Profil lengkap** menuju
-  halaman profil paslon, **Pilih 0X** langsung ke kotak pasangan itu di surat suara
-  (kotak disorot dan tombol Coblos-nya difokuskan). Jumlah kolom mengikuti
-  jumlah pasangan (Stage 15, mis. 5 pasangan = 3 + 2).
+- Alur memilih (Stage 22: halaman berurutan, dulu satu halaman bilik suara
+  Stage 7-15):
+  1. **Pembuka** (`/siswa/coblos`, `/guru/coblos`): satu layar satu langkah,
+     tulisan besar di tengah layar diketik: **Kenali Calonmu** → **Pilih
+     Pasanganmu** → **Cek Lagi Pilihanmu**, lalu tombol **Selanjutnya**
+     (Lewati tersedia; tanpa JS / reduced-motion / sudah ditonton di sesi
+     ini: ketiga langkah bertumpuk);
+  2. **Sekilas paslon** (`/siswa/sekilas-paslon`): satu kartu per pasangan
+     (nomor, foto, nama, tema, kutipan visi, jumlah misi) dengan satu tombol
+     selebar kartu **Profil Lengkap Paslon 0X** bermotif SVG unik tiap
+     paslon; HP satu kartu per baris, desktop paling banyak tiga per baris;
+  3. **Profil paslon** (di bawah), tombol 3D **Pilih Paslon 0X**;
+  4. **Bilik suara** (`/siswa/bilik-suara`): countdown terminal + surat
+     suara; `#coblos-0X` menyorot kotak pasangan dan memfokuskan tombol
+     Coblos-nya. Jumlah kolom mengikuti jumlah pasangan (Stage 15, mis.
+     5 pasangan = 3 + 2). Rincian:
+     [`STAGE22-NOTES.md`](docs/catatan-tahap/STAGE22-NOTES.md).
 - Profil paslon (`/siswa/paslon/0X`, `/guru/paslon/0X`, Stage 15, redesain
   Stage 16): satu tampilan untuk semua pasangan. Pembuka = satu **gambar
   landscape buatan paslon** (tampil utuh) dengan tombol **Lihat Visi & Misi**
@@ -738,8 +743,13 @@ Siswa > Impor atau Guru > Impor:
   foto, nama, peran, bio, pill karakter), Visi kami, Misi kami, Program
   unggulan, Poster kampanye, Pesan dari kami, Video kampanye
   (thumbnail asli YouTube + tombol putar), dan penutup berlatar gambar khusus
-  (tanpa warna aksen) dengan **Pilih Paslon 0X** / kembali ke daftar dan deret
-  nomor semua paslon. Stage 21: halaman selebar layar; kepala bagian tanpa
+  (tanpa warna aksen) dengan **Pilih Paslon 0X** / kembali ke daftar. Stage
+  22: tombol pilih berupa animasi **3D tangan menekan tombol** (three.js
+  r186 disimpan lokal di `public/assets/vendor/`, cadangan tombol 2D);
+  nama di penutup maks. dua baris selebar penutup; deret nomor diganti bar
+  pemilih paslon menempel (desktop di atas, HP di bawah); judul kepala
+  bagian lebih besar, subjudul miring, pola Misi disamarkan, nomor program
+  di kiri, kata karakter di HP selebar kartu. Stage 21: halaman selebar layar; kepala bagian tanpa
   ikon, rata tengah, di atas pita berpola SVG khas tiap bagian (warna aksen
   samar); poster dengan ikon **unduh** (kiri bawah, file
   `paslon-osis-no-0X-spensada-2026`) dan **layar penuh** (kanan bawah);
@@ -747,6 +757,7 @@ Siswa > Impor atau Guru > Impor:
   keterangan. Navigasi bagian gelap, teks terang, tanpa titik: bar menempel
   di HP/tablet, panel di tepi kanan layar yang selalu di tengah tinggi layar
   + garis progres baca di desktop (≥ 1024 px). Rincian:
+  [`STAGE22-NOTES.md`](docs/catatan-tahap/STAGE22-NOTES.md),
   [`STAGE21-NOTES.md`](docs/catatan-tahap/STAGE21-NOTES.md),
   [`STAGE16-NOTES.md`](docs/catatan-tahap/STAGE16-NOTES.md) (awal:
   [`STAGE15-NOTES.md`](docs/catatan-tahap/STAGE15-NOTES.md)).
@@ -907,8 +918,8 @@ composer install
 composer test                 (atau vendor\bin\phpunit --no-coverage)
 ```
 
-Hasil terakhir (Stage 22): **522 test, 5.038 assertion, lulus** pada PHP
-8.3.6 dengan MariaDB 10.11.14 (Stage 21: 516 test, Stage 20: 499 test, Stage 19: 484 test, Stage 18: 468 test, Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
+Hasil terakhir (Stage 23): **541 test, 5.293 assertion, lulus** pada PHP
+8.3.6 dengan MariaDB 10.11.14 (Stage 22: 535 test, Stage 21: 516 test, Stage 20: 499 test, Stage 19: 484 test, Stage 18: 468 test, Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
 8.0.46; Stage 5 dan 6 tidak mengubah schema maupun query. Test paralel (race
 condition) memakai `pcntl_fork` sehingga di-skip di Windows. Rincian dan uji
 browser: [`STAGE4-NOTES.md`](docs/catatan-tahap/STAGE4-NOTES.md) bagian 9,
@@ -924,7 +935,7 @@ beserta ringkasan tiap dokumen: [`docs/README.md`](docs/README.md).
 |---|---|
 | [`docs/spesifikasi/`](docs/spesifikasi) | `00-MASTER-PROJECT.md` (spesifikasi utama, source of truth) dan brief Stage 1–5 (`01`–`05`) |
 | [`docs/desain/`](docs/desain) | Identitas visual SMP 1 DAWE, Stage 6 (`06`–`10`): arah visual, tipografi, spesifikasi aset, prompt gambar, sistem gerak |
-| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE22-NOTES.md`) |
+| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE23-NOTES.md`) |
 
 ## 21. Beranda imersif & aset visual
 

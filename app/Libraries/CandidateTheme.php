@@ -55,6 +55,14 @@ final class CandidateTheme
     public const POSTER_DOWNLOAD = 'paslon-osis-no-%s-spensada-2026';
 
     /**
+     * Stage 22: motif SVG tombol "Profil Lengkap Paslon 0X" di Sekilas paslon,
+     * satu per nomor urut (batas admin maks. 10 pasangan, jadi tidak ada yang
+     * kembar). File public/assets/img/patterns/px-{motif}.svg; kelas
+     * .pair-card__profile--{motif} di voting.css.
+     */
+    public const MOTIFS = ['diagonal', 'dots', 'waves', 'plus', 'zigzag', 'rings', 'triangles', 'grid', 'checker', 'cross'];
+
+    /**
      * Kata karakter yang ditampilkan per orang.
      */
     public const MAX_TAGS = 3;
@@ -132,6 +140,7 @@ final class CandidateTheme
         $theme['poster_download'] = $theme['poster'] === null ? null : self::posterDownload($theme['label'], (string) $assets['poster']);
 
         $theme['style'] = self::style($theme);
+        $theme['motif'] = self::motif($number);
 
         return $theme;
     }
@@ -451,6 +460,44 @@ final class CandidateTheme
     public static function gridStyle(int $count): string
     {
         return sprintf('--cols: %d; --cols-md: %d;', self::columns($count), self::columns($count, 3));
+    }
+
+    /**
+     * Motif unik untuk nomor urut (1 -> MOTIFS[0], ...). Nomor di luar daftar
+     * berputar ulang (tidak terjadi selama batas admin maks. 10).
+     */
+    public static function motif(int $number): string
+    {
+        return self::MOTIFS[(max(1, $number) - 1) % count(self::MOTIFS)];
+    }
+
+    /**
+     * Stage 22: nama dibagi paling banyak dua baris untuk penutup profil
+     * paslon. Satu kata = satu baris; dua kata = kata kedua turun baris; tiga
+     * kata atau lebih = dua baris yang panjangnya paling seimbang.
+     *
+     * @return list<string>
+     */
+    public static function nameLines(string $name): array
+    {
+        $words = preg_split('/\s+/u', trim($name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        if (count($words) < 2) {
+            return $words === [] ? [] : [$words[0]];
+        }
+
+        $best = null;
+
+        for ($i = 1; $i < count($words); $i++) {
+            $lines = [implode(' ', array_slice($words, 0, $i)), implode(' ', array_slice($words, $i))];
+            $width = max(mb_strlen($lines[0]), mb_strlen($lines[1]));
+
+            if ($best === null || $width < $best[0]) {
+                $best = [$width, $lines];
+            }
+        }
+
+        return $best[1];
     }
 
     /**

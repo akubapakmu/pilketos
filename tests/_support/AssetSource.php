@@ -5,7 +5,7 @@ namespace Tests\Support;
 use App\Libraries\AssetMinifier;
 
 /**
- * Isi file aset untuk test (Stage 22). CSS/JS di public/assets adalah hasil
+ * Isi file aset untuk test (Stage 23). CSS/JS di public/assets adalah hasil
  * minify, jadi test yang memeriksa aturan CSS / kode JS membaca sumber rapinya
  * di resources/assets. File lain (SVG, gambar, robots.txt) dibaca dari public/.
  */

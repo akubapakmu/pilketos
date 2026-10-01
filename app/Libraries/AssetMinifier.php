@@ -8,10 +8,10 @@ use MatthiasMullie\Minify\JS;
 use Throwable;
 
 /**
- * Minify keluaran ke browser + watermark view-source (Stage 20, Stage 22;
+ * Minify keluaran ke browser + watermark view-source (Stage 20, Stage 23;
  * Config\Minify).
  *
- * - CSS/JS (Stage 22): kode sumber yang rapi & berkomentar ada di
+ * - CSS/JS (Stage 23): kode sumber yang rapi & berkomentar ada di
  *   resources/assets/{css,js}/ (di luar public/, tidak dapat dibuka browser).
  *   public/assets/{css,js}/ berisi HASIL BUILD bernama sama: diperkecil +
  *   watermark, ikut di-commit, dan disajikan di SEMUA environment tanpa
@@ -75,7 +75,7 @@ final class AssetMinifier
 
     /**
      * Apakah jenis 'html' | 'css' | 'js' dikirim ter-minify. CSS/JS di semua
-     * environment (Stage 22), HTML hanya saat production.
+     * environment (Stage 23), HTML hanya saat production.
      */
     public function active(string $type): bool
     {

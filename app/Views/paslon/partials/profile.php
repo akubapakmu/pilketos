@@ -25,6 +25,14 @@
  * poster dengan ikon unduh (kiri bawah) & layar penuh (kanan bawah); kutipan
  * pesan miring dengan avatar sebaris nama; video tanpa bilah keterangan.
  *
+ * Stage 22: deret nomor paslon di penutup (px-others) diganti bar pemilih
+ * paslon .px-switch (desktop: menempel di atas selebar layar, gelap, nomor +
+ * nama; HP/tablet: menempel di bawah, "Profil Paslon" + nomor kotak sama
+ * lebar); nama di penutup dibagi maks. dua baris (CandidateTheme::nameLines(),
+ * desktop selebar penutup tanpa terpotong); tombol pilih ($action['pick3d'])
+ * berupa tombol 3D tangan menekan (pick3d.js + three.js, cadangan tombol 2D);
+ * kata karakter (px-tags) anak kartu agar di HP tampil selebar kartu di bawah.
+ *
  * Interaksi (paslon.js, progressive enhancement; tanpa JS semua konten tetap
  * tampil utuh dan tautan tetap berfungsi):
  * - [data-px-nav]    : penanda bagian aktif;
@@ -36,7 +44,7 @@
  *
  * @var array                                                                $c       CandidateTheme::present()
  * @var list<array{label: string, href: string, current: bool, ketua: string, wakil: string}> $others Deret nomor paslon (urut nomor, tampil setara)
- * @var list<array{label: string, href: string, icon?: string, primary?: bool}> $actions Tombol penutup
+ * @var list<array{label: string, href: string, icon?: string, primary?: bool, pick3d?: bool}> $actions Tombol penutup
  * @var array{label: string, href: string}|null                              $back    Tautan kembali di atas pembuka
  */
 use App\Libraries\CandidateTheme;
@@ -65,7 +73,28 @@ $head = static fn (string $key, string $title, string $sub = ''): string => '<di
     . ($sub === '' ? '' : '<p class="px-head__sub">' . esc($sub) . '</p>')
     . '</div>';
 ?>
+<?php $switch = count($others ?? []) > 1; ?>
 <article class="paslon" style="<?= esc($c['style'], 'attr') ?>" data-paslon aria-labelledby="<?= esc($id('title'), 'attr') ?>">
+  <?php /* ------------------------------------- pemilih paslon (Stage 22) */ ?>
+  <?php if ($switch): ?>
+    <nav class="px-switch" aria-label="Profil paslon lain">
+      <div class="px-switch__inner">
+        <p class="px-switch__label" aria-hidden="true">Profil Paslon</p>
+        <ol class="px-switch__list">
+          <?php foreach ($others as $o): ?>
+            <li class="px-switch__item">
+              <a class="px-switch__link" href="<?= esc($o['href'], 'attr') ?>"<?= $o['current'] ? ' aria-current="page"' : '' ?>>
+                <span class="px-switch__no" aria-hidden="true"><?= esc($o['label']) ?></span>
+                <span class="px-switch__names" aria-hidden="true"><?= esc($o['ketua']) ?> &amp; <?= esc($o['wakil']) ?></span>
+                <span class="visually-hidden">Paslon <?= esc($o['label']) ?>: <?= esc($o['ketua']) ?> dan <?= esc($o['wakil']) ?></span>
+              </a>
+            </li>
+          <?php endforeach; ?>
+        </ol>
+      </div>
+    </nav>
+  <?php endif; ?>
+
   <div class="px-shell<?= count($sections) > 1 ? ' px-shell--nav' : '' ?>">
     <?php if (($back ?? null) !== null): ?>
       <a class="px-back" href="<?= esc($back['href'], 'attr') ?>"><?= icon('arrow-left') ?> <?= esc($back['label']) ?></a>
@@ -141,14 +170,14 @@ $head = static fn (string $key, string $title, string $sub = ''): string => '<di
               <?php if ($p['bio'] !== ''): ?>
                 <p class="px-meet__bio"><?= esc($p['bio']) ?></p>
               <?php endif; ?>
-              <?php if ($p['tags'] !== []): ?>
-                <ul class="px-tags" aria-label="Karakter <?= esc($p['name'], 'attr') ?>">
-                  <?php foreach ($p['tags'] as $tag): ?>
-                    <li><?= esc($tag) ?></li>
-                  <?php endforeach; ?>
-                </ul>
-              <?php endif; ?>
             </div>
+            <?php if ($p['tags'] !== []): ?>
+              <ul class="px-tags" aria-label="Karakter <?= esc($p['name'], 'attr') ?>">
+                <?php foreach ($p['tags'] as $tag): ?>
+                  <li><?= esc($tag) ?></li>
+                <?php endforeach; ?>
+              </ul>
+            <?php endif; ?>
           </div>
         <?php endforeach; ?>
       </div>
@@ -275,8 +304,9 @@ $head = static fn (string $key, string $title, string $sub = ''): string => '<di
             <?php if ($i++ === 1): ?>
               <span class="px-finale__x" aria-hidden="true">&times;</span><span class="visually-hidden"> dan </span>
             <?php endif; ?>
+            <?php $lines = CandidateTheme::nameLines($p['name']); ?>
             <span class="px-finale__person">
-              <strong><?= esc($p['name']) ?></strong>
+              <strong style="--px-chars: <?= max(1, ...array_map('mb_strlen', $lines ?: [''])) ?>;"><?php foreach ($lines as $n => $line): ?><?= $n > 0 ? ' ' : '' ?><span class="px-finale__line"><?= esc($line) ?></span><?php endforeach; ?></strong>
               <span class="px-finale__role"><span class="visually-hidden">, </span><?= esc($p['long']) ?></span>
             </span>
           <?php endforeach; ?>
@@ -288,29 +318,26 @@ $head = static fn (string $key, string $title, string $sub = ''): string => '<di
         <?php if (($actions ?? []) !== []): ?>
           <div class="px-finale__actions">
             <?php foreach ($actions as $action): ?>
-              <a class="px-btn<?= ($action['primary'] ?? false) ? ' px-btn--primary' : '' ?>" href="<?= esc($action['href'], 'attr') ?>"<?= ($action['pick'] ?? false) ? ' data-pick' : '' ?>>
-                <?= esc($action['label']) ?><?= isset($action['icon']) ? ' ' . icon($action['icon']) : '' ?>
-              </a>
+              <?php if ($action['pick3d'] ?? false): ?>
+                <?php /* Stage 22: tombol 3D tangan menekan (pick3d.js). Tanpa
+                         JS/WebGL tetap tombol 2D bergaya dengan ikon tangan. */ ?>
+                <a class="px-pick" href="<?= esc($action['href'], 'attr') ?>" data-px-pick>
+                  <span class="px-pick__stage" aria-hidden="true"><canvas class="px-pick__canvas" data-px-pick-canvas></canvas></span>
+                  <span class="px-pick__face">
+                    <svg class="px-pick__hand" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><path d="M9 11.5V5a1.5 1.5 0 0 1 3 0v5.5m0-1a1.5 1.5 0 0 1 3 0v1.5m0-.5a1.5 1.5 0 0 1 3 0v1.5m0-.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-4.6-2.15L4.6 16.6a1.6 1.6 0 0 1 2.4-2.1L9 16.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <span class="px-pick__label"><?= esc($action['label']) ?></span>
+                  </span>
+                </a>
+              <?php else: ?>
+                <a class="px-btn<?= ($action['primary'] ?? false) ? ' px-btn--primary' : '' ?>" href="<?= esc($action['href'], 'attr') ?>">
+                  <?= esc($action['label']) ?><?= isset($action['icon']) ? ' ' . icon($action['icon']) : '' ?>
+                </a>
+              <?php endif; ?>
             <?php endforeach; ?>
           </div>
         <?php endif; ?>
       </div>
 
-      <?php if (count($others ?? []) > 1): ?>
-        <nav class="px-others" aria-label="Profil paslon lain">
-          <p class="px-others__label" aria-hidden="true">Profil paslon</p>
-          <ol class="px-others__list">
-            <?php foreach ($others as $o): ?>
-              <li>
-                <a class="px-others__link" href="<?= esc($o['href'], 'attr') ?>"<?= $o['current'] ? ' aria-current="page"' : '' ?>>
-                  <span class="px-others__no" aria-hidden="true"><?= esc($o['label']) ?></span>
-                  <span class="visually-hidden">Paslon <?= esc($o['label']) ?>: <?= esc($o['ketua']) ?> dan <?= esc($o['wakil']) ?></span>
-                </a>
-              </li>
-            <?php endforeach; ?>
-          </ol>
-        </nav>
-      <?php endif; ?>
     </div>
   </section>
 </article>

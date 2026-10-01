@@ -125,7 +125,7 @@ final class SystemCheck
 
         $this->add($app->CSPEnabled ? self::OK : self::WARN, 'Content-Security-Policy', $app->CSPEnabled ? 'aktif' : 'nonaktif (app.CSPEnabled = false)');
 
-        // Stage 22: CSS/JS di public/assets adalah hasil build dari
+        // Stage 23: CSS/JS di public/assets adalah hasil build dari
         // resources/assets (ikut di-commit); usang = belum dibangun ulang.
         $minifier = new AssetMinifier();
         $outdated = $minifier->outdated();

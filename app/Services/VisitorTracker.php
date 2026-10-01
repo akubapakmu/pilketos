@@ -61,8 +61,13 @@ final class VisitorTracker
         'admin/masuk'         => 'Masuk admin',
         'siswa'               => 'Dasbor siswa',
         'guru'                => 'Dasbor guru',
-        'siswa/coblos'        => 'Bilik suara siswa',
-        'guru/coblos'         => 'Bilik suara guru',
+        // Stage 22: coblos = pembuka multi-langkah; surat suara di bilik-suara.
+        'siswa/coblos'        => 'Langkah memilih (siswa)',
+        'guru/coblos'         => 'Langkah memilih (guru)',
+        'siswa/sekilas-paslon' => 'Sekilas paslon (siswa)',
+        'guru/sekilas-paslon' => 'Sekilas paslon (guru)',
+        'siswa/bilik-suara'   => 'Bilik suara siswa',
+        'guru/bilik-suara'    => 'Bilik suara guru',
         'siswa/coblos/yakin'  => 'Konfirmasi pilihan siswa',
         'guru/coblos/yakin'   => 'Konfirmasi pilihan guru',
         'siswa/paslon'        => 'Profil paslon (siswa)',
@@ -176,7 +181,7 @@ final class VisitorTracker
     }
 
     /**
-     * Label halaman yang ramah untuk admin, contoh "siswa/coblos" menjadi
+     * Label halaman yang ramah untuk admin, contoh "siswa/bilik-suara" menjadi
      * "Bilik suara siswa". Halaman lain tampil sebagai path-nya.
      */
     public static function pageLabel(?string $path): string

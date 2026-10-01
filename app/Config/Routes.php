@@ -44,7 +44,11 @@ $routes->post('admin/masuk', 'Admin\AuthController::attemptLogin');
 // -----------------------------------------------------------------
 $routes->group('siswa', ['filter' => 'studentauth'], static function (RouteCollection $routes) {
     $routes->get('/', 'Student\DashboardController::index');
+    // Stage 22: coblos = pembuka multi-langkah -> sekilas-paslon -> profil
+    // paslon -> bilik-suara (surat suara). POST coblos tetap menyimpan suara.
     $routes->get('coblos', 'Student\VoteController::index');
+    $routes->get('sekilas-paslon', 'Student\VoteController::lineup');
+    $routes->get('bilik-suara', 'Student\VoteController::booth');
     $routes->post('coblos', 'Student\VoteController::submit');
     $routes->get('coblos/yakin/(:num)', 'Student\VoteController::confirm/$1');
     // Stage 15: profil lengkap paslon aktif (nomor urut, contoh siswa/paslon/01)
@@ -59,7 +63,11 @@ $routes->group('siswa', ['filter' => 'studentauth'], static function (RouteColle
 // -----------------------------------------------------------------
 $routes->group('guru', ['filter' => 'teacherauth'], static function (RouteCollection $routes) {
     $routes->get('/', 'Teacher\DashboardController::index');
+    // Stage 22: coblos = pembuka multi-langkah -> sekilas-paslon -> profil
+    // paslon -> bilik-suara (surat suara). POST coblos tetap menyimpan suara.
     $routes->get('coblos', 'Teacher\VoteController::index');
+    $routes->get('sekilas-paslon', 'Teacher\VoteController::lineup');
+    $routes->get('bilik-suara', 'Teacher\VoteController::booth');
     $routes->post('coblos', 'Teacher\VoteController::submit');
     $routes->get('coblos/yakin/(:num)', 'Teacher\VoteController::confirm/$1');
     // Stage 15: profil lengkap paslon aktif (nomor urut, contoh guru/paslon/01)

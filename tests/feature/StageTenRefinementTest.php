@@ -89,37 +89,26 @@ final class StageTenRefinementTest extends CIUnitTestCase
     // ------------------------------------------------------------------
 
     /**
-     * Stage 15: panah di bawah Sekilas paslon menuju surat suara (navigasi
-     * bab sudah tidak ada; profil lengkap di halaman profil paslon).
+     * Stage 10: kartu Sekilas paslon bergeser sendiri di HP + panah ke surat
+     * suara. Stage 22: tanpa geser otomatis & tanpa panah: HP satu kartu per
+     * baris, desktop paling banyak tiga per baris (StageTwentyTwoRefinementTest).
      */
-    public function testLineupAutoplaysOnPhonesAndArrowScrollsToChapterNav(): void
+    public function testLineupNoLongerAutoplaysOrPointsToTheBallot(): void
     {
         $this->scheduleAt('2026-10-01 09:00:00');
 
-        $page = $this->withSession($this->student())->get('siswa/coblos');
-        $html = (string) $page->response()->getBody();
+        $page = $this->withSession($this->student())->get('siswa/sekilas-paslon');
 
-        $page->assertSee('<ol class="lineup__list" aria-label="Pasangan calon" style="--cols: 3; --cols-md: 3;" data-lineup>');
-        $page->assertSee('<a class="lineup__next" href="#surat-suara" aria-label="Lanjut ke surat suara">');
+        $page->assertSee('<ol class="lineup__list" aria-label="Pasangan calon" style="--cols: 3; --cols-md: 3;">');
+        $page->assertDontSee('data-lineup');
+        $page->assertDontSee('lineup__next');
         $page->assertDontSee('id="navigasi-paslon"');
-        // panah di dalam .lineup (bagian bawahnya), surat suara sesudahnya
-        $this->assertLessThan(strpos($html, 'class="lineup__next"'), strpos($html, '</ol>'));
-        $this->assertLessThan(strpos($html, 'id="surat-suara"'), strpos($html, 'class="lineup__next"'));
-
-        $js = $this->asset('assets/js/candidates.js');
-        $this->assertStringContainsString("initLineupAutoplay(document.querySelector('[data-lineup]'))", $js);
-        $this->assertStringContainsString("window.matchMedia('(max-width: 719px)')", $js);
-        $this->assertStringContainsString('var DELAY = 2000;', $js);
-        $this->assertStringContainsString("behavior: 'smooth'", $js);
-        // setelah pasangan terakhir kembali ke pasangan pertama
-        $this->assertStringContainsString('next = 0;', $js);
-        // gerak mati dengan prefers-reduced-motion
-        $this->assertMatchesRegularExpression('/function initLineupAutoplay\(list\) \{\s*if \(!list \|\| reduced/', $js);
+        $page->assertDontSee('candidates.js');
+        $this->assertFileDoesNotExist(FCPATH . 'assets/js/candidates.js');
 
         $css = $this->asset('assets/css/voting.css');
-        $this->assertStringContainsString('.lineup__next { display: none; }', $css);
-        $this->assertMatchesRegularExpression('/@media \(max-width: 719px\) \{\s*\.lineup__next \{\s*display: flex;/', $css);
-        $this->assertMatchesRegularExpression('/\.lineup__next \.icon \{[^}]*animation: lineup-nudge/', $css);
+        $this->assertStringNotContainsString('.lineup__next', $css);
+        $this->assertStringNotContainsString('scroll-snap-type', $css);
     }
 
     public function testSuccessMetaPutsVoteTimeOnItsOwnLineOnPhones(): void

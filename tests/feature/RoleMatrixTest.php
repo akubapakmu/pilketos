@@ -278,7 +278,8 @@ final class RoleMatrixTest extends CIUnitTestCase
 
     public function testViewCandidatesForAllRoles(): void
     {
-        foreach ([[self::STUDENT, 'siswa/coblos'], [self::TEACHER, 'guru/coblos'], [self::ADMIN, 'admin/paslon']] as [$session, $path]) {
+        // Stage 22: daftar pasangan pemilih di Sekilas paslon & bilik suara.
+        foreach ([[self::STUDENT, 'siswa/sekilas-paslon'], [self::TEACHER, 'guru/sekilas-paslon'], [self::STUDENT, 'siswa/bilik-suara'], [self::TEACHER, 'guru/bilik-suara'], [self::ADMIN, 'admin/paslon']] as [$session, $path]) {
             $page = $this->page($session, $path);
             $page->assertStatus(200);
             $page->assertSee('Arka Wibisana');

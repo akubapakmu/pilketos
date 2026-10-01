@@ -13,7 +13,8 @@
  *
  * Tombol penutup mengikuti keadaan pemilih:
  * - pencoblosan dibuka: "Pilih Paslon 0X" -> kotaknya di surat suara
- *   (coblos#coblos-0X) + "Kembali ke daftar paslon" (coblos#sekilas);
+ *   (Stage 22: tombol 3D tangan menekan, bilik-suara#coblos-0X) +
+ *   "Kembali ke daftar paslon" (Stage 22: halaman sekilas-paslon);
  * - sudah memilih: "Lihat pilihanku";
  * - belum dibuka / sudah ditutup: "Kembali ke daftar paslon".
  *
@@ -23,8 +24,9 @@
  * @var bool                    $canVote
  * @var bool                    $voted
  */
-$booth = site_url($type->path('coblos'));
-$list  = ['label' => 'Kembali ke daftar paslon', 'href' => $booth . '#sekilas', 'icon' => 'arrow-left'];
+$booth = site_url($type->path('bilik-suara'));
+$list  = ['label' => 'Kembali ke daftar paslon', 'href' => site_url($type->path('sekilas-paslon')), 'icon' => 'arrow-left'];
+$pick  = ! $voted && $canVote;
 
 if ($voted) {
     $back    = ['label' => 'Dasbor', 'href' => site_url($type->path())];
@@ -32,7 +34,7 @@ if ($voted) {
 } elseif ($canVote) {
     $back    = ['label' => 'Semua paslon', 'href' => $list['href']];
     $actions = [
-        ['label' => 'Pilih Paslon ' . $c['label'], 'href' => $booth . '#coblos-' . $c['label'], 'icon' => 'arrow-right', 'primary' => true],
+        ['label' => 'Pilih Paslon ' . $c['label'], 'href' => $booth . '#coblos-' . $c['label'], 'primary' => true, 'pick3d' => true],
         $list,
     ];
 } else {
@@ -53,4 +55,7 @@ $others = array_map(static fn (array $o): array => [
 
 <?= $this->section('scripts') ?>
 <script src="<?= asset_url('assets/js/paslon.js') ?>" defer></script>
+<?php if ($pick): ?>
+  <script type="module" src="<?= asset_url('assets/js/pick3d.js') ?>"></script>
+<?php endif; ?>
 <?= $this->endSection() ?>

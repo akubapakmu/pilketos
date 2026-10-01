@@ -5,7 +5,7 @@ namespace Config;
 use CodeIgniter\Config\BaseConfig;
 
 /**
- * Minify keluaran ke browser + watermark view-source (Stage 20, Stage 22).
+ * Minify keluaran ke browser + watermark view-source (Stage 20, Stage 23).
  *
  * - CSS/JS: kode sumber rapi & berkomentar ada di resources/assets/{css,js}/
  *           (di luar public/, tidak pernah sampai ke browser). File bernama

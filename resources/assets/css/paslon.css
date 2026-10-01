@@ -29,6 +29,14 @@
    kanan layar, menempel di tengah tinggi layar, dengan garis progres baca.
    Poster berikon unduh & layar penuh; kutipan pesan miring 400 dengan
    avatar sebaris nama; video tanpa bilah keterangan.
+
+   Stage 22: bar pemilih paslon .px-switch menggantikan deret nomor di
+   penutup (desktop: menempel di atas selebar layar; HP/tablet: menempel di
+   bawah, nomor kotak sama lebar); judul kepala bagian 1,5x (HP) s.d. 3x
+   (desktop), subjudul miring; pola kepala Misi disamarkan lapisan putih
+   buram; nomor program di kiri sejajar judul; kata karakter di HP selebar
+   kartu di bawah; nama penutup maks. dua baris selebar penutup di desktop;
+   tombol pilih berupa tombol 3D tangan menekan (pick3d.js, three.js).
    ========================================================================== */
 
 .paslon {
@@ -38,6 +46,8 @@
   /* jarak panel navigasi desktop dari tepi kanan layar */
   --px-nav-edge: clamp(12px, 1.6vw, 28px);
   --px-nav-gap: var(--space-6);
+  /* tinggi bar pemilih paslon (Stage 22); 0 bila hanya satu paslon */
+  --px-switch-h: 0px;
   --px-radius: 16px;
   --px-radius-sm: 12px;
   --px-card: #FFFFFF;
@@ -62,7 +72,7 @@
 }
 
 @media (min-width: 1024px) {
-  .paslon [id] { scroll-margin-top: var(--space-5); }
+  .paslon [id] { scroll-margin-top: calc(var(--px-switch-h) + var(--space-5)); }
 }
 
 /* -- kolom isi selebar layar (Stage 21) + ruang navigasi kanan di desktop.
@@ -244,6 +254,153 @@
 }
 
 /* ==========================================================================
+   1b. Pemilih paslon (Stage 22, pengganti deret nomor di penutup).
+       HP/tablet: menempel di dasar layar, "Profil Paslon" di kiri lalu nomor
+       kotak bersudut tegas yang lebarnya dibagi rata. Desktop: menempel di
+       atas selebar layar, gelap, nomor kotak + nama ketua & wakil.
+   ========================================================================== */
+
+/* satu tampilan untuk semua pasangan: tinggi bar dibaca lewat :has() (tanpa
+   kelas varian di <article>) */
+.paslon:has(> .px-switch) { --px-switch-h: 60px; }
+
+.px-switch {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 45;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: var(--ink);
+  color: #FFFFFF;
+  box-shadow: 0 -14px 28px -22px rgba(21, 20, 26, 0.9);
+}
+
+.px-switch__inner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--px-switch-h);
+  padding: 8px var(--px-gutter);
+}
+
+.px-switch__label {
+  flex: 0 0 auto;
+  max-width: none;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+/* .px-switch .px-switch__list: lebih kuat dari reset ol[class] (app.css) */
+.px-switch .px-switch__list {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.px-switch__item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.px-switch__link {
+  display: grid;
+  place-items: center;
+  height: 44px;
+  border-radius: 0;
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  font-size: 1rem;
+  font-weight: 800;
+  font-variant-numeric: lining-nums tabular-nums;
+  text-decoration: none;
+  transition: background-color 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.px-switch__link:hover { background: rgba(255, 255, 255, 0.24); }
+
+.px-switch__link[aria-current="page"] {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.px-switch__names { display: none; }
+
+.px-switch .px-switch__link:focus-visible {
+  outline: 2px solid #FFFFFF;
+  outline-offset: 2px;
+}
+
+/* ruang di dasar halaman agar bar HP tidak menutupi isi & footer */
+@media (max-width: 1023px) {
+  body:has(.px-switch) { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+}
+
+@media (min-width: 1024px) {
+  .px-switch {
+    position: sticky;
+    top: 0;
+    bottom: auto;
+    padding-bottom: 0;
+    box-shadow: 0 16px 28px -22px rgba(21, 20, 26, 0.9);
+  }
+
+  .px-switch__inner { gap: var(--space-6); }
+
+  .px-switch .px-switch__list { gap: var(--space-2); }
+
+  /* tab sama lebar: nomor kotak + nama ketua & wakil */
+  .px-switch__link {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--space-3);
+    padding-right: var(--space-3);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .px-switch__link:hover { background: rgba(255, 255, 255, 0.14); }
+
+  .px-switch__link[aria-current="page"] {
+    background: rgba(255, 255, 255, 0.16);
+    color: #FFFFFF;
+  }
+
+  .px-switch__no {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .px-switch__link[aria-current="page"] .px-switch__no {
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .px-switch__names {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .px-switch__link[aria-current="page"] .px-switch__names { color: #FFFFFF; }
+}
+
+/* ==========================================================================
    2. Navigasi bagian (Stage 21: latar gelap, teks terang, tanpa titik).
       HP/tablet: bar menempel di atas. Desktop: panel melayang di tepi kanan
       layar, menempel di tengah tinggi layar selama isi profil digulir.
@@ -346,10 +503,10 @@
      dan ikut tergulir pergi di ujung isi (tidak menimpa penutup) */
   .px-nav__rail {
     position: sticky;
-    top: 0;
+    top: var(--px-switch-h);
     display: flex;
     align-items: center;
-    height: 100vh;
+    height: calc(100vh - var(--px-switch-h));
   }
 
   .px-nav__inner {
@@ -487,6 +644,21 @@
   mask-size: 16px 16px;
 }
 
+.px-head--misi::after {
+  /* Stage 22: lapisan putih pekat buram di atas pola diagonal (di bawah
+     teks) agar pola tersamar */
+  content: '';
+  position: absolute;
+  top: 0;
+  right: calc(-1 * var(--px-pad-r, var(--px-gutter)));
+  bottom: 0;
+  left: calc(-1 * var(--px-pad-l, var(--px-gutter)));
+  z-index: -1;
+  background: rgba(255, 255, 255, 0.6);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+}
+
 .px-head--program::before {
   -webkit-mask-image: url('../img/patterns/px-waves.svg');
   mask-image: url('../img/patterns/px-waves.svg');
@@ -516,19 +688,32 @@
 }
 
 .px-head__title {
-  font-size: clamp(1.05rem, 2.4vw, 1.3rem);
+  /* Stage 22: HP 1,5x ukuran lama (1.05rem), desktop 3x (1.3rem) */
+  font-size: 1.575rem;
   font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: 0.08em;
+  line-height: 1.12;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
+  text-wrap: balance;
   color: var(--ink);
 }
 
 .px-head__sub {
   max-width: 52ch;
   font-size: 0.9rem;
+  font-style: italic;
   line-height: 1.45;
   color: var(--gray-700);
+}
+
+@media (min-width: 720px) {
+  .px-head__title { font-size: clamp(1.95rem, 4.2vw, 2.6rem); }
+  .px-head__sub { font-size: 1rem; }
+}
+
+@media (min-width: 1024px) {
+  .px-head__title { font-size: 3.9rem; letter-spacing: 0.05em; }
+  .px-head__sub { font-size: 1.0625rem; }
 }
 
 /* -- 3a. Kenali pasangan: dua kartu -- */
@@ -542,6 +727,7 @@
   grid-template-columns: minmax(96px, 36%) minmax(0, 1fr);
   align-items: start;
   gap: var(--space-4);
+  row-gap: var(--space-4);
   padding: var(--space-4);
   border-radius: var(--px-radius);
   background: var(--px-card);
@@ -611,6 +797,11 @@
   gap: var(--space-2);
 }
 
+/* Stage 22 (HP): kata karakter di bawah foto & teks, selebar kartu; pill
+   mengisi baris. >= 720 px: di kolom teks di bawah bio seperti sebelumnya. */
+.px-meet__card > .px-tags { grid-column: 1 / -1; }
+.px-meet__card > .px-tags li { flex: 1 1 auto; text-align: center; }
+
 .px-tags li {
   padding: 4px 12px;
   border-radius: 999px;
@@ -623,6 +814,16 @@
 
 @media (min-width: 720px) {
   .px-meet__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .px-meet__card:has(> .px-tags) {
+    grid-template-rows: auto minmax(0, 1fr);
+    row-gap: var(--space-3);
+  }
+
+  .px-meet__card:has(> .px-tags) .px-meet__photo { grid-row: span 2; }
+
+  .px-meet__card > .px-tags { grid-column: 2; align-self: start; }
+  .px-meet__card > .px-tags li { flex: 0 0 auto; }
 }
 
 /* -- 3b. Visi kami: satu pernyataan besar di panel tint -- */
@@ -716,25 +917,33 @@
   gap: var(--space-4);
 }
 
+/* Stage 22: nomor di kiri, sebaris (baseline) dengan judul; judul & teks
+   program di kolom kanan */
 .px-programs__item {
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-content: start;
-  gap: var(--space-2);
+  align-items: baseline;
+  gap: var(--space-2) var(--space-4);
   padding: var(--space-5);
   border-radius: var(--px-radius);
   background: var(--px-soft);
 }
 
 .px-programs__n {
-  font-size: 1.25rem;
+  grid-row: 1;
+  min-width: 2ch;
+  font-size: clamp(1.5rem, 3vw, 2rem);
   font-weight: 800;
   line-height: 1;
   font-variant-numeric: lining-nums tabular-nums;
   color: var(--accent-text);
 }
 
+.px-programs__text { grid-column: 2; }
+
 .px-programs__title {
-  margin-top: var(--space-2);
+  grid-column: 2;
   font-size: 1.0625rem;
   font-weight: 800;
   line-height: 1.3;
@@ -1110,6 +1319,32 @@
   text-wrap: balance;
 }
 
+/* Stage 22: nama dibagi maks. dua baris (CandidateTheme::nameLines()).
+   HP: baris boleh membungkus. Desktop: selebar penutup, tiap baris satu
+   baris utuh; ukuran mengikuti lebar kolom (--px-chars = baris terpanjang). */
+.px-finale__line { white-space: normal; }
+
+@media (min-width: 1024px) {
+  .px-close__inner { max-width: none; }
+
+  .px-finale__names {
+    width: 100%;
+    gap: var(--space-5);
+  }
+
+  .px-finale__person { container-type: inline-size; }
+
+  .px-finale__person strong {
+    font-size: min(4.5rem, 100cqi / (var(--px-chars, 12) * 0.64));
+    line-height: 1.04;
+    white-space: nowrap;
+  }
+
+  .px-finale__line { display: block; white-space: nowrap; }
+
+  .px-finale__actions { max-width: 960px; }
+}
+
 .px-finale__role {
   font-size: 0.75rem;
   font-weight: 600;
@@ -1164,51 +1399,107 @@
   .px-finale__actions .px-btn { width: 100%; }
 }
 
-/* deret nomor paslon: setara, urut nomor */
-.px-others {
-  display: flex;
-  flex-wrap: wrap;
+/* -- tombol "Pilih Paslon 0X" (Stage 22): tombol 3D tangan menekan, digambar
+   pick3d.js (three.js) di kanvas transparan. Sebelum/tanpa 3D (tanpa JS,
+   tanpa WebGL, gagal dimuat): tombol 2D timbul berwarna kertas + ikon tangan.
+   Seperti penutup lainnya: tanpa warna aksen. -- */
+/* tombol 3D satu baris sendiri, tombol lain di bawahnya */
+.px-finale__actions:has(.px-pick) {
+  flex-direction: column;
+  align-items: center;
+}
+
+.px-pick {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: min(100%, 600px);
+  color: var(--ink);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.px-pick__stage { display: none; }
+
+.px-pick__face {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-3) var(--space-4);
-  margin-top: clamp(40px, 7vw, 72px);
-}
-
-.px-others__label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.82);
-}
-
-.px-others__list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--space-2);
-}
-
-.px-others__link {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.16);
-  color: #FFFFFF;
-  font-size: 1rem;
-  font-weight: 800;
-  font-variant-numeric: lining-nums tabular-nums;
-  text-decoration: none;
-  transition: background-color 0.2s var(--ease), color 0.2s var(--ease);
-}
-
-.px-others__link:hover { background: rgba(255, 255, 255, 0.28); }
-
-.px-others__link[aria-current="page"] {
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 68px;
+  padding: 0 var(--space-6);
+  border-radius: 18px;
   background: var(--paper);
   color: var(--ink);
+  font-size: 1.125rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 6px 0 #9C978A, 0 22px 34px -18px rgba(0, 0, 0, 0.85);
+  transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
+}
+
+.px-pick:hover .px-pick__face {
+  transform: translateY(2px);
+  box-shadow: 0 4px 0 #9C978A, 0 18px 28px -18px rgba(0, 0, 0, 0.85);
+}
+
+.px-pick:active .px-pick__face {
+  transform: translateY(6px);
+  box-shadow: 0 0 0 #9C978A, 0 10px 20px -14px rgba(0, 0, 0, 0.85);
+}
+
+.px-pick__hand {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+}
+
+/* 3D siap (pick3d.js memasang .is-3d setelah frame pertama) */
+.px-pick.is-3d .px-pick__stage {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.2 / 1;
+}
+
+.px-pick.is-3d .px-pick__face {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.px-pick__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.px-pick:focus-visible { outline: none; }
+
+.px-pick:focus-visible .px-pick__face,
+.px-pick.is-3d:focus-visible .px-pick__stage {
+  outline: 2px solid var(--paper);
+  outline-offset: 4px;
+  border-radius: 20px;
+}
+
+@media (min-width: 720px) {
+  .px-pick.is-3d .px-pick__stage { aspect-ratio: 1.6 / 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .px-pick:not(.is-3d) .px-pick__hand { animation: px-tap 1.6s var(--ease) infinite; }
+}
+
+@keyframes px-tap {
+  0%, 60%, 100% { transform: none; }
+  30% { transform: translate(-2px, 3px) scale(0.92); }
 }
 
 .px-close :focus-visible {

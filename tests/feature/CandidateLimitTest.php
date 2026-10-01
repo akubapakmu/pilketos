@@ -223,16 +223,20 @@ final class CandidateLimitTest extends CIUnitTestCase
             ]);
         }
 
-        $booth = $this->withSession(['user_type' => 'student', 'student_id' => 1, 'isLoggedIn' => true])->get('siswa/coblos');
-        $html  = (string) $booth->getBody();
+        // Stage 22: Sekilas paslon & surat suara di halaman masing-masing.
+        $lineup = $this->withSession(['user_type' => 'student', 'student_id' => 1, 'isLoggedIn' => true])->get('siswa/sekilas-paslon');
+        $booth  = $this->withSession(['user_type' => 'student', 'student_id' => 1, 'isLoggedIn' => true])->get('siswa/bilik-suara');
+        $html   = (string) $lineup->getBody();
+        $ballot = (string) $booth->getBody();
 
         $this->assertSame(5, substr_count($html, 'class="pair-card"'));
-        $this->assertSame(5, substr_count($html, 'class="ballot-cell"'));
+        $this->assertSame(5, substr_count($ballot, 'class="ballot-cell"'));
         // 5 pasangan: 3 + 2 di layar lebar dan tablet.
-        $this->assertSame(2, substr_count($html, 'style="--cols: 3; --cols-md: 3;"'));
-        $booth->assertSee('Bandingkan semua pasangan, buka profil lengkapnya.');
-        $booth->assertDontSee('ketiga');
-        $booth->assertSee('href="' . site_url('siswa/paslon/05') . '"');
+        $this->assertSame(1, substr_count($html, 'style="--cols: 3; --cols-md: 3;"'));
+        $this->assertSame(1, substr_count($ballot, 'style="--cols: 3; --cols-md: 3;"'));
+        $lineup->assertDontSee('ketiga');
+        $lineup->assertSee('href="' . site_url('siswa/paslon/05') . '"');
+        $lineup->assertSee('Profil Lengkap Paslon 05');
 
         $this->withSession(['user_type' => 'student', 'student_id' => 1, 'isLoggedIn' => true])->get('siswa/paslon/05')->assertStatus(200);
     }

@@ -5,7 +5,7 @@ use CodeIgniter\Test\CIUnitTestCase;
 use Config\Minify;
 
 /**
- * Stage 20 & 22: minify ke browser + watermark view-source (Config\Minify).
+ * Stage 20 & 23: minify ke browser + watermark view-source (Config\Minify).
  * CSS/JS: sumber rapi di resources/assets, hasil build bernama sama di
  * public/assets (semua environment). HTML: hanya production.
  *

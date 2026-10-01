@@ -4,7 +4,7 @@ use App\Libraries\AssetMinifier;
 use CodeIgniter\Test\CIUnitTestCase;
 
 /**
- * Stage 22: CSS/JS yang dikirim ke browser (public/assets) adalah hasil build
+ * Stage 23: CSS/JS yang dikirim ke browser (public/assets) adalah hasil build
  * terbaru dari sumber rapi di resources/assets: ter-minify, ber-watermark,
  * tanpa komentar sumber. Gagal = lupa menjalankan "php spark osis:minify"
  * setelah mengedit resources/assets.
@@ -18,7 +18,7 @@ final class BuiltAssetsTest extends CIUnitTestCase
         $minifier = new AssetMinifier();
         $sources  = $minifier->sources();
 
-        $this->assertCount(21, $sources);
+        $this->assertCount(22, $sources);
         $this->assertTrue(AssetMinifier::available(), 'composer install (matthiasmullie/minify)');
         $this->assertSame([], $minifier->outdated(), 'jalankan php spark osis:minify');
 

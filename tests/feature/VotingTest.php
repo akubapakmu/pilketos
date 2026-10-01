@@ -148,21 +148,25 @@ final class VotingTest extends CIUnitTestCase
     // ------------------------------------------------------------------
     // 3-5. kandidat, tema per pasangan, markup visi-misi interaktif
     // Stage 15: visi-misi lengkap & tema per layout ada di halaman profil
-    // paslon (siswa/paslon/0X); bilik suara = pembuka, Sekilas paslon, surat suara.
+    // paslon (siswa/paslon/0X). Stage 22: pembuka (coblos), Sekilas paslon
+    // (sekilas-paslon), dan surat suara (bilik-suara) masing-masing halaman sendiri.
     // ------------------------------------------------------------------
 
     public function testBallotPageRendersAllActiveCandidatesWithVisiMisi(): void
     {
-        $result = $this->withSession($this->student())->get('siswa/coblos');
+        $result = $this->withSession($this->student())->get('siswa/sekilas-paslon');
 
         $result->assertStatus(200);
         foreach (['Arka Wibisana', 'Naya Kirana', 'Bagas Prayoga', 'Citra Maheswari', 'Dewi Anggraini', 'Fajar Nugroho'] as $name) {
             $result->assertSee($name);
         }
         $result->assertSee('Mewujudkan OSIS yang aktif, terbuka, dan dekat dengan seluruh siswa.');
-        $result->assertSee('Coblos Pasangan 01');
-        $result->assertSee('Coblos Pasangan 03');
-        $result->assertSee('href="' . site_url('siswa/coblos/yakin/2') . '"');
+
+        $booth = $this->withSession($this->student())->get('siswa/bilik-suara');
+        $booth->assertStatus(200);
+        $booth->assertSee('Coblos Pasangan 01');
+        $booth->assertSee('Coblos Pasangan 03');
+        $booth->assertSee('href="' . site_url('siswa/coblos/yakin/2') . '"');
 
         // Misi lengkap di profil: penomoran manual "1." dibuang, diganti nomor editorial.
         $profile = $this->withSession($this->student())->get('siswa/paslon/01');
@@ -172,29 +176,34 @@ final class VotingTest extends CIUnitTestCase
     }
 
     /**
-     * Stage 7: "Sekilas paslon" membandingkan semua pasangan; tombol "Pilih 0X"
-     * menuju kotak surat suara. Stage 15: "Profil lengkap" menuju halaman
-     * profil paslon, tanpa bab panjang di bilik suara.
+     * Stage 7: "Sekilas paslon" membandingkan semua pasangan. Stage 15:
+     * profil lengkap di halaman profil paslon. Stage 22: halaman sendiri
+     * (sekilas-paslon) tanpa tombol "Pilih 0X": satu tombol "Profil Lengkap
+     * Paslon 0X" per kartu; kotak coblos-0X ada di bilik suara.
      */
-    public function testLineupComparesPairsAndLinksStraightToBallotBox(): void
+    public function testLineupComparesPairsAndLinksToEachProfile(): void
     {
-        $result = $this->withSession($this->student())->get('siswa/coblos');
+        $result = $this->withSession($this->student())->get('siswa/sekilas-paslon');
         $html   = (string) $result->response()->getBody();
 
         $result->assertSee('Sekilas paslon');
-        // Stage 8: pembuka tanpa sapaan "Halo, {nama} · Bilik suara siswa".
+        // Stage 8: tanpa sapaan "Halo, {nama} · Bilik suara siswa".
         $result->assertDontSee('Halo, Ahmad Fauzan');
         foreach (['01', '02', '03'] as $label) {
             $result->assertSee('href="' . site_url('siswa/paslon/' . $label) . '"');
-            $result->assertSee('id="coblos-' . $label . '"');
-            $result->assertSee('href="#coblos-' . $label . '" data-pick');
+            $result->assertSee('Profil Lengkap Paslon ' . $label);
         }
         $this->assertSame(3, substr_count($html, 'class="pair-card"'));
-        // Stage 15: tidak ada lagi bab pasangan & navigasi bab di bilik suara.
+        $result->assertDontSee('data-pick');
+        $result->assertDontSee('#coblos-');
+        // Stage 15: tidak ada lagi bab pasangan & navigasi bab.
         $result->assertDontSee('id="pasangan-01"');
         $result->assertDontSee('data-chapter');
-        // Kartu tampil sebelum surat suara.
-        $this->assertLessThan(strpos($html, 'id="surat-suara"'), strpos($html, 'class="lineup"'));
+
+        $booth = $this->withSession($this->student())->get('siswa/bilik-suara');
+        foreach (['01', '02', '03'] as $label) {
+            $booth->assertSee('id="coblos-' . $label . '"');
+        }
     }
 
     public function testLineupHasNoPickLinksWhenVotingIsClosed(): void
@@ -202,18 +211,17 @@ final class VotingTest extends CIUnitTestCase
         foreach (['2026-09-30 08:00:00', '2026-10-02 00:00:00'] as $now) {
             $this->scheduleAt($now);
 
-            $result = $this->withSession($this->student())->get('siswa/coblos');
+            $result = $this->withSession($this->student())->get('siswa/sekilas-paslon');
             $result->assertSee('Sekilas paslon');
             $result->assertSee('href="' . site_url('siswa/paslon/01') . '"');
             $result->assertDontSee('data-pick');
-            $result->assertDontSee('href="#coblos-');
-            $result->assertSee('href="#surat-suara"');
+            $result->assertDontSee('#coblos-');
         }
     }
 
     public function testEachCandidateHasItsOwnThemeWithOneLayout(): void
     {
-        $result = $this->withSession($this->student())->get('siswa/coblos');
+        $result = $this->withSession($this->student())->get('siswa/sekilas-paslon');
 
         $result->assertSee('--accent: #C4432B;');
         $result->assertSee('--accent: #2F5D50;');
@@ -253,8 +261,8 @@ final class VotingTest extends CIUnitTestCase
         // Aksen terang: teks di atas aksen memakai ink, teks aksen di atas kertas jatuh ke ink.
         $result->assertSee('--accent: #F2D14B; --accent-ink: #15141A; --accent-text: #15141A; --accent-soft: #FDF9E9;');
 
-        // Sekilas paslon di bilik suara memakai potret yang sama.
-        $booth = $this->withSession($this->student())->get('siswa/coblos');
+        // Sekilas paslon memakai potret yang sama.
+        $booth = $this->withSession($this->student())->get('siswa/sekilas-paslon');
         $booth->assertSee(base_url('uploads/candidates/ketua-01.webp'));
         $booth->assertSee(base_url('uploads/candidates/wakil-01.webp'));
     }
@@ -266,7 +274,7 @@ final class VotingTest extends CIUnitTestCase
             'visi'       => '"><img src=x onerror=alert(1)>',
         ]);
 
-        $result = $this->withSession($this->student())->get('siswa/coblos');
+        $result = $this->withSession($this->student())->get('siswa/sekilas-paslon');
 
         $body = $result->getBody();
         $this->assertStringNotContainsString('<script>alert(1)', $body);
@@ -290,8 +298,8 @@ final class VotingTest extends CIUnitTestCase
         $result->assertSee('assets/css/paslon.css');
         $result->assertSee('assets/css/voting.css');
 
-        // Bilik suara tetap memuat skrip langkah memilih & Sekilas paslon.
-        $this->withSession($this->student())->get('siswa/coblos')->assertSee('assets/js/candidates.js');
+        // Stage 22: pembuka memuat skrip langkah memilih (efek mengetik).
+        $this->withSession($this->student())->get('siswa/coblos')->assertSee('assets/js/booth-steps.js');
     }
 
     // ------------------------------------------------------------------
@@ -300,7 +308,7 @@ final class VotingTest extends CIUnitTestCase
 
     public function testBallotLoadsInteractiveScriptsWithLazyWebglAndFallbacks(): void
     {
-        $result = $this->withSession($this->student())->get('siswa/coblos');
+        $result = $this->withSession($this->student())->get('siswa/bilik-suara');
 
         $result->assertSee('assets/js/ballot.js');
         // WebGL tidak dimuat langsung; ballot.js memuatnya malas bila mode 3D.
@@ -338,9 +346,9 @@ final class VotingTest extends CIUnitTestCase
         $this->db->table('candidates')->where('id', 3)->update(['status_aktif' => 0]);
 
         $this->withSession($this->student())->get('siswa/coblos/yakin/3')
-            ->assertRedirectTo(site_url('siswa/coblos'));
+            ->assertRedirectTo(site_url('siswa/bilik-suara'));
         $this->withSession($this->student())->get('siswa/coblos/yakin/99')
-            ->assertRedirectTo(site_url('siswa/coblos'));
+            ->assertRedirectTo(site_url('siswa/bilik-suara'));
     }
 
     // ------------------------------------------------------------------
@@ -571,17 +579,20 @@ final class VotingTest extends CIUnitTestCase
     {
         $this->scheduleAt('2026-09-30 08:00:00');
 
-        $result = $this->withSession($this->student())->get('siswa/coblos');
+        $this->withSession($this->student())->get('siswa/coblos')
+            ->assertSee('Pencoblosan belum dibuka');
+
+        $result = $this->withSession($this->student())->get('siswa/bilik-suara');
 
         $result->assertStatus(200);
         $result->assertSee('Arka Wibisana');
-        $result->assertSee('Pencoblosan belum dibuka');
+        $result->assertSee('Surat suara dapat dicoblos mulai');
         $result->assertDontSee('data-coblos');
         $result->assertDontSee('assets/js/ballot.js');
         $result->assertDontSee('id="vote-confirm"');
 
         $this->withSession($this->student())->get('siswa/coblos/yakin/1')
-            ->assertRedirectTo(site_url('siswa/coblos'));
+            ->assertRedirectTo(site_url('siswa/bilik-suara'));
 
         $this->withSession($this->student())->get('siswa')
             ->assertSee('Pencoblosan dibuka pada');

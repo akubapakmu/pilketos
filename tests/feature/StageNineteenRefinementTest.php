@@ -469,7 +469,7 @@ final class StageNineteenRefinementTest extends CIUnitTestCase
             'screen'         => '412x915',
             'timezone'       => 'Asia/Jakarta',
             'touch_points'   => 5,
-            'current_path'   => 'siswa/coblos',
+            'current_path'   => 'siswa/bilik-suara',
             'client_hints'   => json_encode(['sec-ch-ua-model' => '"SM-A546E"']),
         ]);
         $this->visitor();

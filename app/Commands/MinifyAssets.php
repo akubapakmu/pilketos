@@ -10,7 +10,7 @@ use CodeIgniter\CLI\CLI;
 /**
  * php spark osis:minify [--clean]
  *
- * Stage 22: membangun ulang semua public/assets/css/*.css dan
+ * Stage 23: membangun ulang semua public/assets/css/*.css dan
  * public/assets/js/*.js (ter-minify + watermark, Config\Minify) dari kode
  * sumber rapi di resources/assets/. Jalankan setiap selesai mengedit file di
  * resources/assets/, lalu commit sumber & hasilnya bersama. Sisa file

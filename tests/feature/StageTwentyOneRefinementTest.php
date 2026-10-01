@@ -474,7 +474,8 @@ final class StageTwentyOneRefinementTest extends CIUnitTestCase
 
         $desktop = substr($css, strpos($css, '.px-nav__progress-fill {'), strpos($css, '3. Bagian isi') - strpos($css, '.px-nav__progress-fill {'));
         $this->assertMatchesRegularExpression('/\.px-nav \{[^}]*right: var\(--px-nav-edge\);/', $desktop);
-        $this->assertMatchesRegularExpression('/\.px-nav__rail \{[^}]*position: sticky;[^}]*align-items: center;[^}]*height: 100vh;/', $desktop);
+        // Stage 22: rail di bawah bar pemilih paslon (--px-switch-h).
+        $this->assertMatchesRegularExpression('/\.px-nav__rail \{[^}]*position: sticky;[^}]*align-items: center;[^}]*height: calc\(100vh - var\(--px-switch-h\)\);/', $desktop);
         $this->assertMatchesRegularExpression('/\.px-nav__inner \{[^}]*border-radius: 22px;[^}]*background: rgba\(21, 20, 26, 0\.95\);/', $desktop);
 
         // Selebar layar: tanpa batas 1240 px; ruang kanan untuk panel navigasi.

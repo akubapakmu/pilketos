@@ -20,9 +20,12 @@ use CodeIgniter\HTTP\ResponseInterface;
  * teacherauth. Identitas pemilih selalu dari sesi ("<role>_id"), tidak pernah
  * dari input, sehingga tidak ada IDOR: tidak ada parameter id pemilih/suara.
  *
- * Halaman:
- * - index     : pembuka + "Sekilas paslon" + surat suara (paku/coblos);
- * - candidate : profil lengkap satu paslon aktif (Stage 15, siswa|guru/paslon/0X);
+ * Halaman (Stage 22: bilik suara dipecah menjadi tiga halaman berurutan):
+ * - index     : pembuka multi-langkah (coblos) -> tombol "Selanjutnya";
+ * - lineup    : "Sekilas paslon" (sekilas-paslon), kartu -> profil lengkap;
+ * - candidate : profil lengkap satu paslon aktif (Stage 15, siswa|guru/paslon/0X),
+ *               tombol 3D "Pilih Paslon 0X" -> bilik-suara#coblos-0X;
+ * - booth     : bilik suara (bilik-suara): surat suara + paku + konfirmasi;
  * - confirm   : konfirmasi tanpa JavaScript (fallback terakhir);
  * - submit    : simpan suara (AJAX JSON atau form POST biasa);
  * - myVote    : pilihan milik pemilih sendiri (setelah memilih / login ulang).
@@ -53,25 +56,31 @@ abstract class VotingController extends BaseController
 
     /**
      * GET <siswa|guru>/coblos
+     * Stage 22: pembuka multi-langkah (Kenali Calonmu -> Pilih Pasanganmu ->
+     * Cek Lagi Pilihanmu), lalu "Selanjutnya" ke Sekilas paslon.
      */
     public function index()
     {
-        $type  = $this->voterType();
-        $state = service('voting')->ballotState($type, $this->voterId());
+        return $this->boothPage('voting/index', 'Langkah Memilih');
+    }
 
-        if ($state['vote'] !== null) {
-            // Sudah memilih: tidak ada form voting lagi.
-            return redirect()->to($type->path('pilihanku'));
-        }
+    /**
+     * GET <siswa|guru>/sekilas-paslon
+     * Stage 22: "Sekilas paslon" menjadi halaman sendiri (dulu bagian coblos).
+     */
+    public function lineup()
+    {
+        return $this->boothPage('voting/sekilas', 'Sekilas Paslon');
+    }
 
-        return view('voting/index', [
-            'title'      => 'Kandidat & Surat Suara',
-            'type'       => $type,
-            'voter'      => $this->voter(),
-            'election'   => $state['election'],
-            'canVote'    => $state['canVote'],
-            'candidates' => CandidateTheme::presentAll(model(CandidateModel::class)->getActiveCandidates()),
-        ]);
+    /**
+     * GET <siswa|guru>/bilik-suara
+     * Stage 22: surat suara + paku coblos menjadi halaman sendiri; tujuan
+     * tombol "Pilih Paslon 0X" di profil paslon (bilik-suara#coblos-0X).
+     */
+    public function booth()
+    {
+        return $this->boothPage('voting/booth', 'Bilik Suara');
     }
 
     /**
@@ -117,7 +126,7 @@ abstract class VotingController extends BaseController
 
     /**
      * GET <siswa|guru>/coblos/yakin/{candidateId}
-     * Konfirmasi tanpa JavaScript. Versi JS memakai modal di halaman index.
+     * Konfirmasi tanpa JavaScript. Versi JS memakai modal di bilik suara.
      */
     public function confirm($candidateId = null)
     {
@@ -129,7 +138,7 @@ abstract class VotingController extends BaseController
         }
 
         if (! $state['canVote']) {
-            return redirect()->to($type->path('coblos'))
+            return redirect()->to($type->path('bilik-suara'))
                 ->with('error', VoteResult::rejected(VoteResult::VOTING_CLOSED, $state['status'])->message());
         }
 
@@ -138,7 +147,7 @@ abstract class VotingController extends BaseController
             : null;
 
         if ($candidate === null) {
-            return redirect()->to($type->path('coblos'))
+            return redirect()->to($type->path('bilik-suara'))
                 ->with('error', VoteResult::rejected(VoteResult::INVALID_CANDIDATE)->message());
         }
 
@@ -204,6 +213,29 @@ abstract class VotingController extends BaseController
     }
 
     /**
+     * Halaman alur memilih (pembuka, Sekilas paslon, bilik suara). Pemilih yang
+     * sudah memilih selalu dialihkan ke pilihanku (tidak ada form voting lagi).
+     */
+    private function boothPage(string $view, string $title): RedirectResponse|string
+    {
+        $type  = $this->voterType();
+        $state = service('voting')->ballotState($type, $this->voterId());
+
+        if ($state['vote'] !== null) {
+            return redirect()->to($type->path('pilihanku'));
+        }
+
+        return view($view, [
+            'title'      => $title,
+            'type'       => $type,
+            'voter'      => $this->voter(),
+            'election'   => $state['election'],
+            'canVote'    => $state['canVote'],
+            'candidates' => CandidateTheme::presentAll(model(CandidateModel::class)->getActiveCandidates()),
+        ]);
+    }
+
+    /**
      * candidate_id dari body JSON (ballot.js) atau form POST (fallback tanpa JS).
      * Field lain (mis. student_id) sengaja diabaikan.
      */
@@ -257,7 +289,7 @@ abstract class VotingController extends BaseController
                 ->with('success', 'SUARA BERHASIL DISIMPAN. Hak suara Anda telah dikunci.');
         }
 
-        $target = $result->status === VoteResult::ALREADY_VOTED ? 'pilihanku' : 'coblos';
+        $target = $result->status === VoteResult::ALREADY_VOTED ? 'pilihanku' : 'bilik-suara';
 
         return redirect()->to($type->path($target))->with('error', $result->message());
     }
@@ -273,7 +305,7 @@ abstract class VotingController extends BaseController
                 ->setJSON(['status' => 'throttled', 'message' => $message]);
         }
 
-        return redirect()->to($this->voterType()->path('coblos'))->with('error', $message);
+        return redirect()->to($this->voterType()->path('bilik-suara'))->with('error', $message);
     }
 
     private function wantsJson(): bool

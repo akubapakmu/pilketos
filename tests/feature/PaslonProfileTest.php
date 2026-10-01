@@ -258,10 +258,12 @@ final class PaslonProfileTest extends CIUnitTestCase
 
         $page = $this->withSession(self::STUDENT)->get('siswa/paslon/02');
 
-        $page->assertSee('href="' . site_url('siswa/coblos') . '#coblos-02"');
+        // Stage 22: tombol 3D menuju kotaknya di bilik suara; daftar paslon =
+        // halaman Sekilas paslon.
+        $page->assertSee('<a class="px-pick" href="' . site_url('siswa/bilik-suara') . '#coblos-02" data-px-pick>');
         $page->assertSee('Pilih Paslon 02');
-        $page->assertSee('href="' . site_url('siswa/coblos') . '#sekilas"');
-        // Deret nomor setara, paslon yang dibuka ditandai.
+        $page->assertSee('href="' . site_url('siswa/sekilas-paslon') . '"');
+        // Bar pemilih paslon setara, paslon yang dibuka ditandai.
         foreach (['01', '02', '03'] as $label) {
             $page->assertSee('href="' . site_url('siswa/paslon/' . $label) . '"');
         }
@@ -276,7 +278,9 @@ final class PaslonProfileTest extends CIUnitTestCase
             $page = $this->withSession(self::TEACHER)->get('guru/paslon/01');
             $page->assertDontSee('Pilih Paslon');
             $page->assertDontSee('#coblos-01');
-            $page->assertSee('href="' . site_url('guru/coblos') . '#sekilas"');
+            $page->assertDontSee('data-px-pick');
+            $page->assertDontSee('pick3d.js');
+            $page->assertSee('href="' . site_url('guru/sekilas-paslon') . '"');
         }
     }
 
