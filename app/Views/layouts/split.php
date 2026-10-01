@@ -27,6 +27,7 @@
 <a class="skip-link" href="#main">Langsung ke konten</a>
 <?= $this->renderSection('content') ?>
 <script src="<?= asset_url('assets/js/app.js') ?>" defer></script>
+<?= $this->include('partials/presence') ?>
 <?= $this->renderSection('scripts') ?>
 </body>
 </html>

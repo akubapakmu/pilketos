@@ -277,9 +277,12 @@
 /* Stage 17: logo khusus header HP (PILKETOS Panel Admin), di tengah */
 .admin-top__logo { display: none; }
 
+/* Stage 19: tinggi dari Config\Homepage::$adminLogoMobileHeight */
 .admin-top__logo img {
   width: auto;
-  height: 34px;
+  height: var(--admin-logo-h, 34px);
+  max-width: min(60vw, 260px);
+  object-fit: contain;
 }
 
 /* Stage 12: judul topbar diganti breadcrumb (ikon + teks), mulai 720 px.
@@ -3049,6 +3052,177 @@ ul.check-list {
   margin-inline: auto;
 }
 
+/* -- pengunjung online (Stage 19) ------------------------------------------
+   Papan angka sama dengan Beranda; persentase kecil di samping angka.
+   Sebaran perangkat/browser/OS = daftar + garis tipis (tanpa grafik warna).
+   Tabel lembar kerja: online = titik tinta penuh, tidak aktif = lingkaran
+   kosong (status juga tertulis untuk pembaca layar), baris browser admin
+   ini bertanda "Anda". -- */
+.visitor-board { margin-bottom: var(--space-2); }
+
+.visitor-board .scoreboard__value {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-2);
+}
+
+.visitor-board__pct {
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--gray-700);
+}
+
+.visitor-updated {
+  margin: 0 0 var(--space-6);
+  font-size: 0.75rem;
+  color: var(--gray-700);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.visitor-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-5) var(--space-7);
+  margin: var(--space-5) 0 var(--space-6);
+}
+
+.visitor-split__title {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gray-700);
+}
+
+.visitor-split__list {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.visitor-split__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px var(--space-3);
+  font-size: 0.875rem;
+}
+
+.visitor-split__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visitor-split__count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.visitor-split__pct {
+  margin-left: 4px;
+  font-weight: 400;
+  color: var(--gray-700);
+}
+
+.visitor-split__bar {
+  grid-column: 1 / -1;
+  height: 3px;
+  background: var(--gray-200);
+  overflow: hidden;
+}
+
+.visitor-split__bar span {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+
+.visitor-split__empty {
+  font-size: 0.875rem;
+  color: var(--gray-700);
+}
+
+.data-table--visitors td { vertical-align: top; }
+
+.data-table--visitors .cell-sub + .cell-sub { margin-top: 1px; }
+
+.data-table--visitors tr.is-away td { color: var(--gray-700); }
+
+.data-table--visitors tr.is-mine td:first-child { box-shadow: inset 3px 0 0 var(--ink); }
+
+.visitor-who {
+  display: grid;
+  grid-template-columns: 8px minmax(9rem, 1fr);
+  gap: var(--space-2);
+  align-items: start;
+}
+
+.visitor-who .pill { margin-left: 4px; vertical-align: 1px; }
+
+.visitor-state {
+  width: 8px;
+  height: 8px;
+  margin-top: 0.45em;
+  border: 1.5px solid var(--gray-500);
+  border-radius: 50%;
+}
+
+tr.is-online .visitor-state {
+  border-color: var(--ink);
+  background: var(--ink);
+}
+
+.visitor-device {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.visitor-device__icon {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 0.15em;
+  color: var(--gray-700);
+}
+
+.visitor-ua summary {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.visitor-ua__list {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 16rem;
+  max-width: 26rem;
+  margin-top: var(--space-2);
+}
+
+.visitor-ua__list dt {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray-700);
+}
+
+.visitor-ua__list dd {
+  margin: 0;
+  font-size: 0.75rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 /* -- keadaan final di dasbor (Stage 4) --------------------------------------
    Stage 13: satu kolom rata tengah (nomor, teks, dan tombol di tengah) di
    semua lebar layar. -- */
@@ -3094,11 +3268,26 @@ ul.check-list {
 
 .final-banner__eyebrow .icon { width: 16px; height: 16px; }
 
+/* Stage 19: dua baris berhuruf kapital, nama ketua & wakil di baris kedua */
 .final-banner__title {
-  margin-top: var(--space-1);
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
   font-size: clamp(1.35rem, 2.8vw, 1.9rem);
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
   overflow-wrap: anywhere;
   text-wrap: balance;
+}
+
+.final-banner__lead,
+.final-banner__names { display: block; }
+
+.final-banner__names {
+  font-size: 0.72em;
+  font-weight: 500;
+  letter-spacing: 0.04em;
 }
 
 .final-banner__text {

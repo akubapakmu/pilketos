@@ -94,7 +94,8 @@ final class StageSeventeenRefinementTest extends CIUnitTestCase
         $html = $this->body($this->asAdmin()->get('admin'));
 
         $this->assertMatchesRegularExpression('#<button type="button" class="admin-top__menu"[^>]*data-admin-menu>\s*<svg[^>]*>.*?</svg><span class="visually-hidden">Menu</span>\s*</button>#s', $html);
-        $this->assertMatchesRegularExpression('#<a class="admin-top__logo" href="[^"]+/admin">\s*<img src="[^"]+assets/img/brand/logo-admin-mobile\.svg\?v=\d+" alt="PILKETOS Panel Admin: Beranda" width="246" height="64">#', $html);
+        // Stage 19: path, tinggi, dan alt diatur Config\Homepage; ukuran asli dibaca otomatis.
+        $this->assertMatchesRegularExpression('#<a class="admin-top__logo" href="[^"]+/admin" style="--admin-logo-h: 34px;">\s*<img src="[^"]+assets/img/brand/logo-admin-mobile\.svg\?v=\d+" alt="PILKETOS Panel Admin: Beranda"\s+width="246" height="64"#', html_entity_decode($html, ENT_QUOTES | ENT_HTML5));
 
         $svg = $this->asset('assets/img/brand/logo-admin-mobile.svg');
         $this->assertStringStartsWith('<svg xmlns="http://www.w3.org/2000/svg"', $svg);

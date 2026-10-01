@@ -34,6 +34,27 @@ class Homepage extends BaseConfig
     public string $logoOnLight = 'assets/img/brand/logo-dark.svg';
 
     /**
+     * Stage 19: logo header panel admin di HP (< 720 px, .admin-top__logo),
+     * diatur di sini seperti logo beranda. Ganti file di
+     * public/assets/img/brand/ lalu ubah path (atau .env
+     * homepage.adminLogoMobile). Disarankan SVG berlatar transparan untuk
+     * latar terang (tinta gelap), rasio lebar kira-kira 4:1. Ukuran asli
+     * dibaca otomatis (asset_size) untuk atribut width/height.
+     */
+    public string $adminLogoMobile = 'assets/img/brand/logo-admin-mobile.svg';
+
+    /**
+     * Tinggi tampil logo header admin HP dalam piksel (lebar mengikuti
+     * rasio gambar). Dibatasi 24-48 agar header tetap satu baris.
+     */
+    public int $adminLogoMobileHeight = 34;
+
+    /**
+     * Teks alternatif logo header admin HP (logo juga tautan ke Beranda admin).
+     */
+    public string $adminLogoMobileAlt = 'PILKETOS Panel Admin: Beranda';
+
+    /**
      * Lambang resmi SMP 1 DAWE (B01) dari sekolah: SVG, atau PNG >= 1024 px
      * berlatar transparan. Dipasang APA ADANYA di kiri lockup (navigasi &
      * layar pembuka), dipisah garis tipis; tidak digambar ulang, tidak
