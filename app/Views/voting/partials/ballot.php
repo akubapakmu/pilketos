@@ -13,6 +13,10 @@
  *   kartu Sekilas paslon & akhir bab); kotak tujuan disorot lewat :target.
  * - Stage 8: paku 3D selalu nyala (tombol "Efek 3D" dihapus); kertas bolong
  *   terlihat 3 detik sebelum modal konfirmasi.
+ * - Stage 22: halaman sendiri (voting/booth, GET bilik-suara): judul "Surat
+ *   Suara" = h1, tautan kembali ke Sekilas paslon, countdown terminal (dulu
+ *   di pembuka) di kolom kanan kepala. Tujuan "Pilih Paslon 0X" di profil
+ *   paslon = bilik-suara#coblos-0X.
  *
  * @var list<array>             $candidates Hasil CandidateTheme::presentAll()
  * @var bool                    $canVote
@@ -27,19 +31,35 @@ $status = $election['status'] ?? null;
          data-myvote-url="<?= esc(site_url($type->path('pilihanku')), 'attr') ?>"
          data-webgl-src="<?= esc(asset_url('assets/js/nail-webgl.js'), 'attr') ?>"<?php endif; ?>>
   <div class="container">
-    <header class="ballot__head">
-      <p class="ballot__kicker">Bilik suara digital &middot; <?= esc($type->label()) ?></p>
-      <h2 class="ballot__title" id="ballot-title">Surat Suara</h2>
-      <?php if ($canVote): ?>
-        <p class="ballot__hint" id="ballot-hint">Tekan <strong>Coblos</strong> di kotak pilihanmu, atau tahan paku lalu seret ke kotaknya.</p>
-      <?php elseif ($status === 'UPCOMING'): ?>
-        <p class="ballot__hint"><?= icon('clock') ?> Surat suara dapat dicoblos mulai <strong><?= esc(format_waktu($election['start_at'])) ?></strong>.</p>
-      <?php elseif ($status === 'FINISHED'): ?>
-        <p class="ballot__hint"><?= icon('lock') ?> Pemilihan telah ditutup. Surat suara tidak dapat dicoblos lagi.</p>
-      <?php else: ?>
-        <p class="ballot__hint">Jadwal pemilihan belum tersedia.</p>
+    <div class="ballot__top">
+      <header class="ballot__head">
+        <a class="ballot__back" href="<?= esc(site_url($type->path('sekilas-paslon')), 'attr') ?>"><?= icon('arrow-left') ?> Sekilas paslon</a>
+        <p class="ballot__kicker">Bilik suara digital &middot; <?= esc($type->label()) ?></p>
+        <h1 class="ballot__title" id="ballot-title">Surat Suara</h1>
+        <?php if ($canVote): ?>
+          <p class="ballot__hint" id="ballot-hint">Tekan <strong>Coblos</strong> di kotak pilihanmu, atau tahan paku lalu seret ke kotaknya.</p>
+        <?php elseif ($status === 'UPCOMING'): ?>
+          <p class="ballot__hint"><?= icon('clock') ?> Surat suara dapat dicoblos mulai <strong><?= esc(format_waktu($election['start_at'])) ?></strong>.</p>
+        <?php elseif ($status === 'FINISHED'): ?>
+          <p class="ballot__hint"><?= icon('lock') ?> Pemilihan telah ditutup. Surat suara tidak dapat dicoblos lagi.</p>
+        <?php else: ?>
+          <p class="ballot__hint">Jadwal pemilihan belum tersedia.</p>
+        <?php endif; ?>
+      </header>
+
+      <?php if ($election && in_array($status, ['UPCOMING', 'ONGOING'], true)): ?>
+        <div class="term ballot__term">
+          <span class="term__dots" aria-hidden="true"><span></span><span></span><span></span></span>
+          <div class="term__body">
+            <?= view('partials/countdown', ['election' => $election, 'variant' => 'terminal']) ?>
+            <p class="term__meta" aria-hidden="true">
+              <?= $status === 'ONGOING' ? 'selesai' : 'mulai' ?> <?= esc(format_waktu($status === 'ONGOING' ? $election['end_at'] : $election['start_at'])) ?>
+              <span class="term__cursor"></span>
+            </p>
+          </div>
+        </div>
       <?php endif; ?>
-    </header>
+    </div>
 
     <div class="ballot__sheet">
       <p class="ballot__sheet-title" aria-hidden="true">

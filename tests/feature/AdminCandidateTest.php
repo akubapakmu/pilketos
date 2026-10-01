@@ -188,8 +188,8 @@ final class AdminCandidateTest extends CIUnitTestCase
         $profile->assertDontSee($row['theme_asset']['hero']);
         $profile->assertSee('Poster kampanye pasangan 02');
 
-        // Sekilas paslon di bilik suara memakai foto yang sama dan menaut ke profil.
-        $ballot = $this->withSession(['user_type' => 'student', 'student_id' => 1, 'isLoggedIn' => true])->get('siswa/coblos');
+        // Sekilas paslon (Stage 22: halaman sendiri) memakai foto yang sama dan menaut ke profil.
+        $ballot = $this->withSession(['user_type' => 'student', 'student_id' => 1, 'isLoggedIn' => true])->get('siswa/sekilas-paslon');
         $ballot->assertSee(base_url('uploads/candidates/' . $row['foto_wakil']));
         $ballot->assertSee('href="' . site_url('siswa/paslon/02') . '"');
     }

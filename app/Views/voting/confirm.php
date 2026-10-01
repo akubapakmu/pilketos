@@ -41,7 +41,7 @@ $c = $candidate;
         <?= csrf_field() ?>
         <input type="hidden" name="candidate_id" value="<?= esc((string) $c['id'], 'attr') ?>">
         <button type="submit" class="btn btn--accent btn--lg" data-loading-text="MENYIMPAN SUARA...">KONFIRMASI PILIHAN</button>
-        <a class="btn btn--outline" href="<?= base_url($type->path('coblos')) ?>#surat-suara">Batal, pilih ulang</a>
+        <a class="btn btn--outline" href="<?= base_url($type->path('bilik-suara')) ?>#surat-suara">Batal, pilih ulang</a>
       </form>
     </div>
   </div>

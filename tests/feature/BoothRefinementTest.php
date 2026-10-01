@@ -12,7 +12,8 @@ use CodeIgniter\Test\FeatureTestTrait;
  * - navigasi HP ikon saja; kepala dasbor rata tengah, identitas "a / b / c"
  *   miring tanpa label terlihat; countdown pindah ke jam melayang di bawah;
  * - pembuka bilik suara tanpa sapaan, journey timeline, countdown terminal,
- *   tiap bagian satu layar di HP;
+ *   tiap bagian satu layar di HP (Stage 22: pembuka multi-langkah, countdown
+ *   di halaman bilik-suara);
  * - paku 3D selalu nyala (tanpa tombol), konfirmasi menunggu 3 detik;
  * - eyebrow bab tanpa teks kembar, modal konfirmasi rata tengah + latar buram.
  *
@@ -141,7 +142,12 @@ final class BoothRefinementTest extends CIUnitTestCase
     // pembuka bilik suara
     // ------------------------------------------------------------------
 
-    public function testBoothIntroIsCentredJourneyWithTerminalCountdown(): void
+    /**
+     * Stage 22: journey timeline & panel terminal di pembuka diganti pembuka
+     * multi-langkah (StageTwentyTwoRefinementTest); countdown terminal pindah
+     * ke kepala surat suara di halaman bilik-suara.
+     */
+    public function testBoothIntroStepsAndTerminalCountdownOnTheBallotPage(): void
     {
         $this->scheduleAt('2026-10-01 09:00:00');
 
@@ -149,54 +155,40 @@ final class BoothRefinementTest extends CIUnitTestCase
         $html = (string) $page->response()->getBody();
 
         $page->assertDontSee('Halo, ');
-        $page->assertDontSee('Bilik suara siswa');
-        $page->assertSee('Kenali, lalu <span class="booth-intro__verb">coblos</span>.');
+        $page->assertDontSee('data-journey');
+        $page->assertDontSee('class="term');
+        $page->assertSee('<section class="steps" aria-labelledby="steps-title" data-steps>');
+        $this->assertSame(3, substr_count($html, 'data-step>'));
 
-        $page->assertSee('<ol class="journey" aria-label="Langkah memilih" data-journey>');
-        $this->assertSame(3, substr_count($html, 'data-journey-step'));
-        $this->assertSame(1, substr_count($html, 'aria-current="step"'));
-        $page->assertSee('<a href="#sekilas" class="journey__item">');
-        $page->assertSee('<a href="#surat-suara" class="journey__item">');
-        foreach (['Kenali paslon', 'Coblos satu', 'Konfirmasi &amp; kunci'] as $step) {
-            $page->assertSee('<span class="journey__title">' . $step);
-        }
-
-        $page->assertSee('<div class="term">');
+        $booth = $this->withSession($this->student())->get('siswa/bilik-suara');
+        $booth->assertSee('<div class="term ballot__term">');
         // Stage 9: tanpa bilah judul & baris perintah (StageNineRefinementTest).
-        $page->assertDontSee('sisa-waktu --tutup');
-        $page->assertSee('countdown countdown--terminal countdown--ongoing');
-        $page->assertSee('Ditutup dalam');
-        $this->assertLessThan(strpos($html, 'class="lineup"'), strpos($html, 'class="term"'));
+        $booth->assertDontSee('sisa-waktu --tutup');
+        $booth->assertSee('countdown countdown--terminal countdown--ongoing');
+        $booth->assertSee('Ditutup dalam');
 
         $css = $this->asset('assets/css/voting.css');
-        $this->assertMatchesRegularExpression('/\.booth-intro \{[^}]*text-align: center;/', $css);
-        // HP: tiap bagian bilik suara setinggi satu layar (Stage 9: pembuka +
-        // Sekilas paslon berbagi layar pertama lewat .booth-open).
-        $this->assertMatchesRegularExpression(
-            '/@media \(max-width: 719px\) \{\s*\.booth-open \{[^}]*min-height: calc\(100svh - 65px\);/',
-            $css,
-        );
-        // Stage 15: bab pasangan pindah ke profil paslon; surat suara tetap satu layar.
-        $this->assertMatchesRegularExpression('/\n  \.ballot \{\s*display: flex;[^}]*min-height: 100svh;/', $css);
-        $this->assertStringNotContainsString('.chapter', $css);
+        $this->assertMatchesRegularExpression('/\.steps \{[^}]*text-align: center;/', $css);
+        // Aturan pembuka lama dihapus (nama kelas boleh tersisa di catatan riwayat).
+        $this->assertDoesNotMatchRegularExpression('/^\s*\.(?:booth-intro|booth-open|journey|chapter)\b[^{}]*\{/m', $css);
+        // Surat suara tetap setinggi satu layar (dikurangi navigasi situs).
+        $this->assertMatchesRegularExpression('/\.ballot \{[^}]*min-height: calc\(100svh - 65px\);/', $css);
         // Desktop: bagian lebih lebar dari kontainer bawaan (1080px).
-        $this->assertStringContainsString(".booth-intro,\n.lineup,\n.ballot { --container-w: 1360px; }", $css);
-
-        $js = $this->asset('assets/js/candidates.js');
-        $this->assertStringContainsString("document.addEventListener('osis:journey'", $js);
-        $this->assertStringContainsString("steps[i].setAttribute('aria-current', 'step')", $js);
+        $this->assertStringContainsString(".steps,\n.lineup,\n.ballot { --container-w: 1360px; }", $css);
+        $this->assertFileDoesNotExist(FCPATH . 'assets/js/candidates.js');
     }
 
-    public function testClosedBoothKeepsJourneyWithoutPickLinkOrCountdown(): void
+    public function testClosedBoothShowsNoticeWithoutPickLinkOrCountdown(): void
     {
         $this->scheduleAt('2026-10-02 00:00:00');
 
         $page = $this->withSession($this->student())->get('siswa/coblos');
-
-        $page->assertSee('data-journey');
-        $page->assertSee('Lihat surat suara dan kotak tiap pasangan.');
-        $page->assertDontSee('class="term"');
         $page->assertSee('Pemilihan telah ditutup');
+
+        $booth = $this->withSession($this->student())->get('siswa/bilik-suara');
+        $booth->assertDontSee('class="term');
+        $booth->assertDontSee('data-coblos');
+        $booth->assertSee('Pemilihan telah ditutup');
     }
 
     // ------------------------------------------------------------------
@@ -205,7 +197,7 @@ final class BoothRefinementTest extends CIUnitTestCase
 
     public function testNailIsAlways3dAndConfirmationWaitsForThePunchedPaper(): void
     {
-        $page = $this->withSession($this->student())->get('siswa/coblos');
+        $page = $this->withSession($this->student())->get('siswa/bilik-suara');
         $page->assertDontSee('data-fx-toggle');
         $page->assertDontSee('Efek 3D');
         $page->assertSee('data-nail3d');
@@ -245,7 +237,7 @@ final class BoothRefinementTest extends CIUnitTestCase
         $profile->assertDontSee('Deep Forest');
 
         // Sekilas paslon: tema isian admin tampil, tema kosong tidak ditulis ulang.
-        $booth = $this->withSession($this->student())->get('siswa/coblos');
+        $booth = $this->withSession($this->student())->get('siswa/sekilas-paslon');
         $booth->assertSee('<span>Deep Forest</span>');
         $booth->assertDontSee('<span>Pasangan 01</span>');
 
@@ -256,7 +248,7 @@ final class BoothRefinementTest extends CIUnitTestCase
 
     public function testConfirmDialogIsCentredOverABlurredBackdrop(): void
     {
-        $page = $this->withSession($this->student())->get('siswa/coblos');
+        $page = $this->withSession($this->student())->get('siswa/bilik-suara');
         $page->assertSee('id="vote-confirm"');
         $page->assertSee('class="confirm__warning" id="confirm-warning"');
 

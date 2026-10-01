@@ -15,217 +15,228 @@
    Sekilas paslon & surat suara mengikuti jumlah pasangan (batas admin).
    Dimuat di halaman voting (voting/index, confirm, my_vote) dan profil
    paslon (potret/monogram bersama).
+   Stage 22: alur dipecah menjadi halaman: pembuka multi-langkah (coblos,
+   .steps), Sekilas paslon (sekilas-paslon, .lineup: kartu bertumpuk/grid
+   maks. 3, tombol profil bermotif), bilik suara (bilik-suara, .ballot +
+   countdown terminal). Journey timeline & carousel dihapus.
 
    Aturan: tanpa gradient, tanpa emoji. Warna hanya dari token netral app.css
    dan --accent / --accent-ink / --accent-text milik tiap pasangan.
    Semua efek gerak mati dengan prefers-reduced-motion (app.css + ballot.js).
    ========================================================================== */
 
-/* Stage 8: bagian bilik suara lebih lebar di desktop (.container membaca
+/* Stage 8: bagian alur memilih lebih lebar di desktop (.container membaca
    --container-w dari bagian induknya) */
-.booth-intro,
+.steps,
 .lineup,
 .ballot { --container-w: 1360px; }
 
-/* -- pembuka bilik suara (Stage 8): rata tengah, journey timeline vertikal,
-   countdown dalam panel terminal lebar penuh -- */
-.booth-intro {
-  padding-block: var(--space-7);
-  border-bottom: 1px solid var(--line);
+/* -- Stage 22: pembuka alur memilih (GET coblos). Satu layar satu langkah,
+   tulisan besar di tengah layar diketik booth-steps.js (.steps--live).
+   Tanpa JS / reduced-motion / sudah ditonton: ketiga langkah bertumpuk. -- */
+.steps {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 65px);
+  min-height: calc(100svh - 65px);
   text-align: center;
 }
 
-.booth-intro__title {
-  font-size: clamp(2.5rem, 11vw, 4.6rem);
-  line-height: 0.98;
+.steps__inner {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-7);
+  padding-block: var(--space-7);
+}
+
+/* .steps: menang atas reset ol[class] di app.css */
+.steps .steps__list,
+.steps__stage {
+  display: grid;
+  gap: var(--space-7);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps__item {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  animation: steps-in 0.6s var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 0.12s);
+}
+
+.steps__count {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--gray-500);
+}
+
+.steps__count span { color: var(--ink); }
+
+.steps__title {
+  max-width: 14ch;
+  font-size: clamp(2.4rem, 9vw, 4rem);
+  line-height: 1;
   letter-spacing: -0.035em;
   text-wrap: balance;
 }
 
-/* "coblos" diberi bekas lubang tusuk kecil, referensi surat suara kertas */
-.booth-intro__verb {
-  position: relative;
-  white-space: nowrap;
+.steps__desc {
+  max-width: 36ch;
+  font-size: clamp(1.05rem, 2.4vw, 1.375rem);
+  line-height: 1.5;
+  color: var(--ink-soft);
+  text-wrap: balance;
 }
 
-.booth-intro__verb::after {
-  content: '';
-  position: absolute;
-  top: 0.14em;
-  right: -0.24em;
-  width: 0.15em;
-  height: 0.15em;
-  border-radius: 50%;
-  background: var(--ink);
-  box-shadow: 0 0 0 0.045em var(--paper), 0 0 0 0.07em var(--ink);
-}
+.steps__desc strong { font-weight: 800; color: var(--ink); }
 
-.booth-intro__panel {
+.steps__end {
   display: grid;
-  gap: var(--space-6);
-  margin-top: var(--space-6);
-}
-
-.booth-intro__status {
-  display: grid;
-  gap: var(--space-3);
-  text-align: left;
-}
-
-/* -- journey timeline: node bernomor di rel vertikal. Langkah muncul
-   bergiliran (CSS saja, tanpa JS tetap tampil); .is-current / .is-done
-   diperbarui candidates.js (surat suara tercapai) & ballot.js (konfirmasi).
-   .booth-intro: menang atas reset ol[class] di app.css -- */
-.booth-intro .journey {
-  display: grid;
-  width: 100%;
-  max-width: 400px;
-  margin-inline: auto;
-  text-align: left;
-}
-
-.journey__step {
-  --node: 44px;
-  position: relative;
-  padding-bottom: var(--space-6);
-  animation: journey-in 0.55s var(--ease) both;
-  animation-delay: calc(0.12s + var(--i, 0) * 0.16s);
-}
-
-.journey__step:last-child { padding-bottom: 0; }
-
-/* rel antarnode: abu-abu, terisi tinta saat langkah selesai */
-.journey__step:not(:last-child)::before,
-.journey__step:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  top: calc(var(--node) + 6px);
-  bottom: 6px;
-  left: calc(var(--node) / 2 - 1px);
-  width: 2px;
-  border-radius: 2px;
-  transform-origin: top center;
-}
-
-.journey__step:not(:last-child)::before {
-  background: var(--line-strong);
-  animation: journey-rail 0.5s var(--ease) both;
-  animation-delay: calc(0.36s + var(--i, 0) * 0.16s);
-}
-
-.journey__step:not(:last-child)::after {
-  background: var(--ink);
-  transform: scaleY(0);
-  transition: transform 0.6s var(--ease);
-}
-
-.journey__step.is-done::after { transform: none; }
-
-.journey__item {
-  display: grid;
-  grid-template-columns: var(--node) minmax(0, 1fr);
+  justify-items: center;
   gap: var(--space-4);
-  align-items: start;
-  border-radius: var(--radius);
-  color: inherit;
-  text-decoration: none;
+  width: 100%;
+  max-width: 460px;
 }
 
-.journey__node {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: var(--node);
-  height: var(--node);
-  border: 2px solid var(--line-strong);
-  border-radius: 50%;
-  background: var(--paper);
-  color: var(--gray-700);
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  transition: background-color 0.3s var(--ease), border-color 0.3s var(--ease), color 0.3s var(--ease), transform 0.3s var(--ease);
+.steps__next {
+  min-width: min(100%, 260px);
+  min-height: 58px;
+  border-radius: 999px;
+  font-size: 1.0625rem;
 }
 
-.journey__check {
-  display: none;
-  width: 20px;
-  height: 20px;
-  stroke-width: 2.5;
+.steps__next .icon { transition: transform 0.25s var(--ease); }
+.steps__next:hover .icon { transform: translateX(3px); }
+
+.steps__notice { text-align: left; }
+
+/* -- mode animasi: semua langkah di sel grid yang sama, hanya satu terlihat.
+   Huruf yang belum diketik tetap mengisi ruang (.steps__rest transparan). -- */
+.steps--live .steps__stage { gap: 0; }
+
+.steps--live .steps__stage .steps__item {
+  grid-area: 1 / 1;
+  align-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  animation: none;
+  transition: opacity 0.38s var(--ease), transform 0.38s var(--ease), visibility 0s linear 0.38s;
 }
 
-.journey__step.is-current .journey__node,
-.journey__step.is-done .journey__node {
-  border-color: var(--ink);
+.steps--live .steps__stage .steps__item.is-active {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition-delay: 0s;
+}
+
+.steps--live .steps__stage .steps__item.is-leaving {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.steps--live .steps__title {
+  max-width: 12ch;
+  font-size: clamp(3rem, 13vw, 7rem);
+  line-height: 0.95;
+}
+
+.steps--live .steps__desc { font-size: clamp(1.125rem, 2.8vw, 1.625rem); }
+
+.steps__rest { color: transparent; }
+
+.steps__caret {
+  display: inline-block;
+  width: 0.07em;
+  min-width: 2px;
+  height: 0.95em;
+  margin-right: max(-0.07em, -2px);
+  vertical-align: -0.1em;
   background: var(--ink);
-  color: var(--paper);
+  animation: term-cursor 1.1s steps(1, end) infinite;
 }
 
-.journey__step.is-done .journey__no { display: none; }
-.journey__step.is-done .journey__check { display: block; }
-
-/* langkah aktif: cincin berdenyut */
-.journey__step.is-current .journey__node::after {
-  content: '';
-  position: absolute;
-  inset: -7px;
-  border: 1.5px solid var(--ink);
-  border-radius: 50%;
-  animation: journey-pulse 2.2s ease-out infinite;
+/* tombol Selanjutnya baru muncul setelah langkah terakhir */
+.steps--live .steps__end {
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(12px);
 }
 
-.journey__text {
-  display: grid;
-  gap: 2px;
-  padding-top: 9px;
+.steps--live.is-done .steps__end {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.5s var(--ease), transform 0.5s var(--ease);
 }
 
-.journey__title {
+.steps--live { cursor: pointer; }
+.steps--live.is-done { cursor: auto; }
+
+/* titik langkah + Lewati, di dasar layar */
+.steps__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: var(--container-w);
+  margin-inline: auto;
+  padding: 0 var(--space-4) var(--space-5);
+}
+
+.steps__bar[hidden] { display: none; }
+
+.steps__dots {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.steps__dot {
+  width: 28px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--gray-200);
+  transition: background-color 0.3s var(--ease), width 0.3s var(--ease);
+}
+
+.steps__dot.is-current { width: 44px; background: var(--ink); }
+.steps__dot.is-done { background: var(--gray-500); }
+
+.steps__skip {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  font-size: 1.0625rem;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.journey__title .icon {
-  width: 1em;
-  height: 1em;
-  color: var(--gray-500);
-  transition: transform 0.25s var(--ease), color 0.25s var(--ease);
-}
-
-.journey__desc {
-  font-size: 0.875rem;
-  line-height: 1.45;
+  gap: var(--space-1);
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
   color: var(--gray-700);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
-.journey__step:not(.is-current):not(.is-done) .journey__title { color: var(--gray-700); }
+.steps__skip:hover { color: var(--ink); background: var(--paper-dim); }
+.steps__skip .icon { width: 18px; height: 18px; }
+.steps__skip[hidden] { display: none; }
 
-a.journey__item:hover .journey__node,
-a.journey__item:focus-visible .journey__node { transform: scale(1.08); border-color: var(--ink); }
-
-a.journey__item:hover .journey__title .icon,
-a.journey__item:focus-visible .journey__title .icon { color: var(--ink); transform: translateY(2px); }
-
-a.journey__item:focus-visible { outline-offset: 6px; }
-
-@keyframes journey-in {
+@keyframes steps-in {
   from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: none; }
-}
-
-@keyframes journey-rail {
-  from { transform: scaleY(0); }
-  to { transform: none; }
-}
-
-@keyframes journey-pulse {
-  0% { opacity: 0.7; transform: scale(0.92); }
-  70%, 100% { opacity: 0; transform: scale(1.22); }
 }
 
 /* -- panel terminal: countdown "Ditutup dalam" rata tengah, lebar penuh.
@@ -317,165 +328,79 @@ a.journey__item:focus-visible { outline-offset: 6px; }
 
 .term .countdown__progress-fill { background: var(--paper); }
 
-.booth-intro .notice { text-align: left; }
-
 @media (min-width: 720px) {
-  .booth-intro { padding-block: var(--space-8); }
-  .booth-intro__panel { margin-top: var(--space-7); }
   .term__body { gap: var(--space-3); padding: var(--space-6); }
   .term .countdown--terminal { --term-size: clamp(2.5rem, 6vw, 3.75rem); gap: var(--space-2); }
   .term .countdown__progress { margin-top: var(--space-3); }
 }
 
-/* desktop: timeline & terminal berdampingan di bawah judul */
-@media (min-width: 960px) {
-  .booth-intro__panel {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
-    align-items: center;
-    gap: var(--space-8);
-    max-width: 1080px;
-    margin-inline: auto;
-  }
-
-  .booth-intro .journey { max-width: 420px; margin-inline: auto 0; }
-}
-
-/* HP: tiap bagian bilik suara setinggi satu layar. Stage 9: pembuka +
-   "Sekilas paslon" (.booth-open) berbagi layar pertama (dikurangi tinggi
-   navigasi situs); keduanya dipadatkan, sisa ruang untuk kartu paslon. */
 @media (max-width: 719px) {
-  .booth-open {
-    display: flex;
-    flex-direction: column;
-    min-height: calc(100vh - 65px);
-    min-height: calc(100svh - 65px);
-  }
-
-  .booth-intro { padding-block: var(--space-3); }
-  .booth-intro__title { font-size: clamp(1.75rem, 8.6vw, 2.5rem); }
-  .booth-intro__panel { gap: var(--space-3); margin-top: var(--space-3); }
-  .booth-intro .journey { max-width: none; }
-
-  .journey__step { --node: 32px; padding-bottom: 10px; }
-  .journey__step:not(:last-child)::before,
-  .journey__step:not(:last-child)::after { top: calc(var(--node) + 4px); bottom: 4px; }
-  .journey__item { gap: var(--space-3); }
-  .journey__node { font-size: 0.95rem; }
-  .journey__step.is-current .journey__node::after { inset: -5px; }
-  .journey__check { width: 16px; height: 16px; }
-  .journey__text { gap: 0; padding-top: 4px; }
-  .journey__title { font-size: 0.9375rem; }
-  .journey__desc { font-size: 0.8125rem; line-height: 1.35; }
-
   .term__body { gap: 6px; padding: 14px var(--space-3) var(--space-3); }
   .term .countdown__progress { margin-top: 6px; }
-
-  .booth-open > .lineup {
-    display: flex;
-    flex: 1 0 auto;
-    flex-direction: column;
-    justify-content: center;
-    padding-block: var(--space-2) 0; /* Stage 10: ruang bawah = panah */
-  }
-
-  .ballot {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-height: 100vh;
-    min-height: 100svh;
-  }
-
-  .ballot > .container {
-    display: flex;
-    flex: 1 0 auto;
-    flex-direction: column;
-    justify-content: center;
-  }
 }
 
-/* -- Sekilas paslon (Stage 7): bandingkan semua pasangan, lalu buka profil atau pilih -- */
+/* -- Sekilas paslon (Stage 7; Stage 22: halaman sendiri GET sekilas-paslon).
+   Desain kartu sama, tanpa petunjuk & tanpa tombol "Pilih"; satu tombol
+   "Profil Lengkap Paslon 0X" selebar kartu bermotif unik tiap paslon.
+   Tanpa geser otomatis: HP satu kartu per baris, >= 720 px dua, >= 1024 px
+   paling banyak tiga (--cols-md), baris terakhir rata tengah. -- */
 .lineup {
-  padding-block: var(--space-5) var(--space-6);
-  border-bottom: 1px solid var(--line);
+  min-height: calc(100vh - 65px);
+  min-height: calc(100svh - 65px);
+  padding-block: var(--space-6) var(--space-8);
   background: var(--paper-dim);
-  scroll-margin-top: 0;
 }
 
 .lineup__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-1) var(--space-4);
+  display: grid;
+  justify-items: center;
+  text-align: center;
 }
 
 .lineup__title {
-  font-size: clamp(1.5rem, 6vw, 2.2rem);
-  letter-spacing: -0.02em;
+  font-size: clamp(2.2rem, 8vw, 3.6rem);
+  letter-spacing: -0.03em;
 }
 
-.lineup__hint {
-  max-width: 46ch;
-  font-size: 0.875rem;
-  color: var(--gray-700);
-}
+.lineup__empty { margin-top: var(--space-5); }
 
-/* desktop (Stage 9): petunjuk satu baris sejajar judul, tidak turun ke bawah */
-@media (min-width: 960px) {
-  .lineup__head { flex-wrap: nowrap; }
-  .lineup__title { flex: 0 0 auto; }
-
-  .lineup__hint {
-    min-width: 0;
-    max-width: none;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
-}
-
-/* HP: kartu digeser, kartu berikutnya mengintip; tanpa JS tetap bisa digeser.
-   .lineup: menang atas reset ol[class] di app.css */
+/* .lineup: menang atas reset ol[class] di app.css */
 .lineup .lineup__list {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 84%;
-  gap: var(--space-3);
-  margin: var(--space-4) calc(var(--space-4) * -1) 0;
-  padding: 0 var(--space-4) var(--space-2);
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: var(--space-4);
-  scrollbar-width: thin;
+  --gap: var(--space-4);
+  --row: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--gap);
+  margin: var(--space-5) 0 0;
+  padding: 0;
 }
 
 .pair-card {
-  position: relative; /* teks visually-hidden ikut terpotong carousel */
+  position: relative;
   display: flex;
+  flex: 0 1 calc((100% - (var(--row) - 1) * var(--gap)) / var(--row));
   flex-direction: column;
   gap: var(--space-3);
   min-width: 0;
-  padding: var(--space-4);
+  padding: var(--space-5);
   border: 1px solid var(--line-strong);
   border-top: 6px solid var(--accent);
   border-radius: var(--radius);
   background: var(--paper);
-  scroll-snap-align: start;
 }
 
 .pair-card__band {
   display: grid;
-  grid-template-columns: auto minmax(0, 132px);
+  grid-template-columns: auto minmax(0, 210px);
   align-items: end;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .pair-card__no {
   font-family: var(--font-display);
-  font-size: 3.4rem;
+  font-size: clamp(3.6rem, 16vw, 4.4rem);
   font-weight: 600;
   line-height: 0.85;
   letter-spacing: -0.03em;
@@ -489,7 +414,7 @@ a.journey__item:focus-visible { outline-offset: 6px; }
   justify-content: space-between;
   min-height: 1.2em;
   gap: var(--space-1) var(--space-3);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -498,10 +423,9 @@ a.journey__item:focus-visible { outline-offset: 6px; }
 
 .pair-card__names {
   display: grid;
-  gap: 2px;
-  margin-top: calc(var(--space-2) * -1);
+  gap: 4px;
   font-family: var(--font-ui);
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 700;
   line-height: 1.3;
   letter-spacing: 0;
@@ -528,8 +452,8 @@ a.journey__item:focus-visible { outline-offset: 6px; }
   padding-left: var(--space-3);
   border-left: 2px solid var(--accent);
   font-family: var(--font-display);
-  font-size: 1.0625rem;
-  line-height: 1.35;
+  font-size: 1.125rem;
+  line-height: 1.4;
 }
 
 .pair-card__meta {
@@ -537,113 +461,145 @@ a.journey__item:focus-visible { outline-offset: 6px; }
   color: var(--gray-700);
 }
 
-.pair-card__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-3);
+.pair-card .portraits--sm .portrait__initials { font-size: clamp(1.6rem, 7vw, 2.25rem); }
+
+/* tombol "Profil Lengkap Paslon 0X": selebar kartu, teks rata tengah, motif
+   SVG unik tiap paslon (mask) berwarna --accent-ink di atas aksen */
+.pair-card__profile {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  min-height: 58px;
   margin-top: auto;
-  padding-top: var(--space-1);
-}
-
-.pair-card__read {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  font-weight: 700;
-  text-decoration: underline;
-  text-decoration-color: var(--accent);
-  text-decoration-thickness: 2px;
-  text-underline-offset: 0.3em;
-}
-
-.pair-card__pick {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  min-height: 48px;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius);
+  padding: var(--space-3) var(--space-4);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
   background: var(--accent);
   color: var(--accent-ink);
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  text-align: center;
   text-decoration: none;
+  transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
 }
 
-.pair-card__pick:hover { opacity: 0.88; }
-.pair-card__pick .icon { width: 1.1em; height: 1.1em; }
+.pair-card__profile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--accent-ink);
+  opacity: 0.2;
+  -webkit-mask-repeat: repeat;
+  mask-repeat: repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  transition: opacity 0.25s var(--ease);
+}
+
+.pair-card__profile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 24px -16px rgba(21, 20, 26, 0.7);
+}
+
+.pair-card__profile:hover::before { opacity: 0.32; }
+
+.pair-card__profile:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.pair-card__profile--diagonal::before {
+  -webkit-mask-image: url('../img/patterns/px-diagonal.svg');
+  mask-image: url('../img/patterns/px-diagonal.svg');
+  -webkit-mask-size: 16px 16px;
+  mask-size: 16px 16px;
+}
+
+.pair-card__profile--dots::before {
+  -webkit-mask-image: url('../img/patterns/px-dots.svg');
+  mask-image: url('../img/patterns/px-dots.svg');
+  -webkit-mask-size: 20px 20px;
+  mask-size: 20px 20px;
+}
+
+.pair-card__profile--waves::before {
+  -webkit-mask-image: url('../img/patterns/px-waves.svg');
+  mask-image: url('../img/patterns/px-waves.svg');
+  -webkit-mask-size: 40px 16px;
+  mask-size: 40px 16px;
+}
+
+.pair-card__profile--plus::before {
+  -webkit-mask-image: url('../img/patterns/px-plus.svg');
+  mask-image: url('../img/patterns/px-plus.svg');
+  -webkit-mask-size: 28px 28px;
+  mask-size: 28px 28px;
+}
+
+.pair-card__profile--zigzag::before {
+  -webkit-mask-image: url('../img/patterns/px-zigzag.svg');
+  mask-image: url('../img/patterns/px-zigzag.svg');
+  -webkit-mask-size: 24px 14px;
+  mask-size: 24px 14px;
+}
+
+.pair-card__profile--rings::before {
+  -webkit-mask-image: url('../img/patterns/px-rings.svg');
+  mask-image: url('../img/patterns/px-rings.svg');
+  -webkit-mask-size: 32px 32px;
+  mask-size: 32px 32px;
+}
+
+.pair-card__profile--triangles::before {
+  -webkit-mask-image: url('../img/patterns/px-triangles.svg');
+  mask-image: url('../img/patterns/px-triangles.svg');
+  -webkit-mask-size: 28px 28px;
+  mask-size: 28px 28px;
+}
+
+.pair-card__profile--grid::before {
+  -webkit-mask-image: url('../img/patterns/px-grid.svg');
+  mask-image: url('../img/patterns/px-grid.svg');
+  -webkit-mask-size: 18px 18px;
+  mask-size: 18px 18px;
+}
+
+.pair-card__profile--checker::before {
+  -webkit-mask-image: url('../img/patterns/px-checker.svg');
+  mask-image: url('../img/patterns/px-checker.svg');
+  -webkit-mask-size: 20px 20px;
+  mask-size: 20px 20px;
+}
+
+.pair-card__profile--cross::before {
+  -webkit-mask-image: url('../img/patterns/px-cross.svg');
+  mask-image: url('../img/patterns/px-cross.svg');
+  -webkit-mask-size: 22px 22px;
+  mask-size: 22px 22px;
+}
 
 @media (min-width: 720px) {
-  .lineup { padding-block: var(--space-6) var(--space-7); }
-
-  .lineup .lineup__list {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(var(--cols-md, 3), minmax(0, 1fr));
-    gap: var(--space-4);
-    margin-inline: 0;
-    padding: 0;
-    overflow: visible;
-  }
-
-  .pair-card { padding: var(--space-5); }
-  .pair-card__no { font-size: 4rem; }
+  .lineup { padding-block: var(--space-7) var(--space-8); }
+  .lineup .lineup__list { --gap: var(--space-5); --row: min(2, var(--cols-md, 2)); margin-top: var(--space-6); }
+  .pair-card { padding: var(--space-6); }
 }
 
-/* Stage 15: jumlah kolom mengikuti jumlah pasangan (CandidateTheme::gridStyle()) */
-@media (min-width: 1100px) {
-  .lineup .lineup__list { grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); }
+/* desktop: paling banyak tiga kartu per baris, lebih besar */
+@media (min-width: 1024px) {
+  .lineup .lineup__list { --row: var(--cols-md, 3); }
+  .pair-card { gap: var(--space-4); }
+  .pair-card__band { grid-template-columns: auto minmax(0, 250px); }
+  .pair-card__no { font-size: 5.25rem; }
+  .pair-card__names { font-size: 1.25rem; }
+  .pair-card__visi { font-size: 1.25rem; }
+  .pair-card__profile { min-height: 64px; font-size: 1.0625rem; }
 }
 
-/* HP (Stage 9): kartu dipadatkan agar muat bersama pembuka di layar pertama */
-@media (max-width: 719px) {
-  .lineup__title { font-size: 1.375rem; }
-  .lineup__hint { font-size: 0.8125rem; }
-  .lineup__hint { line-height: 1.4; }
-  /* Stage 10: sedikit lebih rapat agar panah .lineup__next ikut di layar pertama */
-  .lineup .lineup__list { margin-top: 8px; padding-bottom: 4px; }
-  .pair-card { gap: 4px; padding: var(--space-3) 14px; }
-  .pair-card__band { grid-template-columns: auto minmax(0, 88px); }
-  .pair-card__no { font-size: 2.5rem; }
-  .pair-card__names { margin-top: 0; font-size: 0.9375rem; }
-  .pair-card__visi { -webkit-line-clamp: 2; line-clamp: 2; font-size: 1rem; }
-  .pair-card__read,
-  .pair-card__pick { min-height: 44px; }
-}
-
-/* HP (Stage 10): panah halus di dasar "Sekilas paslon" -> surat suara
-   (Stage 15). Kartu bergeser sendiri lewat candidates.js ([data-lineup]). */
-.lineup__next { display: none; }
-
-@media (max-width: 719px) {
-  .lineup__next {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 32px;
-    margin: 2px auto 0;
-    border-radius: 999px;
-    color: var(--gray-500);
-    transition: color 0.2s var(--ease);
-  }
-
-  .lineup__next .icon {
-    width: 22px;
-    height: 22px;
-    stroke-width: 1.75;
-    animation: lineup-nudge 2.4s ease-in-out infinite;
-  }
-
-  .lineup__next:hover,
-  .lineup__next:focus-visible { color: var(--ink); }
-}
-
-@keyframes lineup-nudge {
-  0%, 100% { opacity: 0.55; transform: translateY(-2px); }
-  50% { opacity: 1; transform: translateY(3px); }
+@media (prefers-reduced-motion: reduce) {
+  .pair-card__profile:hover { transform: none; }
 }
 
 /* -- potret / monogram -- */
@@ -717,7 +673,9 @@ a.journey__item:focus-visible { outline-offset: 6px; }
 
 .ballot {
   position: relative;
-  padding-top: var(--space-6);
+  min-height: calc(100vh - 65px);
+  min-height: calc(100svh - 65px);
+  padding-top: var(--space-5);
   background: var(--ink);
   color: var(--paper);
   scroll-margin-top: 56px;
@@ -725,7 +683,49 @@ a.journey__item:focus-visible { outline-offset: 6px; }
 
 .ballot--closed { padding-bottom: var(--space-7); }
 
+/* Stage 22: kepala surat suara + countdown terminal (desktop berdampingan) */
+.ballot__top {
+  display: grid;
+  gap: var(--space-5);
+}
+
 .ballot__head { max-width: 640px; }
+
+.ballot__back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  margin-bottom: var(--space-2);
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ballot__back:hover { color: var(--paper); }
+.ballot__back .icon { width: 18px; height: 18px; }
+.ballot__back:focus-visible { outline-color: var(--paper); }
+
+/* panel terminal di atas latar gelap bilik suara */
+.ballot__term {
+  align-self: end;
+  background: var(--ink-2);
+  box-shadow: inset 0 0 0 1px var(--ink-line);
+}
+
+/* kolom sempit: angka countdown satu baris tanpa meluap */
+.ballot__term .countdown--terminal { --term-size: clamp(1.5rem, 7.4vw, 2.5rem); }
+
+@media (min-width: 960px) {
+  .ballot__term .countdown--terminal { --term-size: clamp(1.75rem, 2.6vw, 2.5rem); }
+
+  .ballot__top {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
+    align-items: end;
+    gap: var(--space-7);
+  }
+}
 
 .ballot__kicker {
   font-size: 0.75rem;

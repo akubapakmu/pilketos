@@ -3,6 +3,8 @@
  * dampak pada kotak -> modal konfirmasi -> POST JSON -> terkunci.
  * Stage 8: kertas bolong (lubang sobek besar + serpihan) dibiarkan terlihat
  * 3 detik sebelum modal konfirmasi muncul.
+ * Stage 22: surat suara di halaman sendiri (bilik-suara); kabar langkah
+ * "osis:journey" untuk timeline pembuka dihapus bersama timeline-nya.
  *
  * Efek visual TIDAK ikut menentukan keamanan: yang dikirim hanya
  * candidate_id; server memvalidasi ulang sesi, jadwal, kandidat, dan
@@ -169,16 +171,6 @@
         t.resolve();
       }
     }
-  }
-
-  /**
-   * Kabar untuk journey timeline di pembuka (candidates.js): 0 = kenali,
-   * 1 = coblos, 2 = konfirmasi & kunci.
-   */
-  function journey(step) {
-    try {
-      document.dispatchEvent(new CustomEvent('osis:journey', { detail: { step: step } }));
-    } catch (e) { /* browser lama tanpa CustomEvent: timeline tetap statis */ }
   }
 
   /* ------------------------------------------------------------------ */
@@ -571,7 +563,6 @@
    */
   function confirmLater(cell, hole) {
     phase = 'punched';
-    journey(2);
     say('Kotak pasangan ' + cell.getAttribute('data-number') + ' tercoblos. Konfirmasi muncul sebentar lagi.');
     window.setTimeout(function () {
       if (phase === 'punched') {
@@ -754,7 +745,6 @@
     cell.classList.remove('is-punched', 'is-hit');
     ballot.classList.remove('is-busy');
     phase = 'idle';
-    journey(1);
 
     var button = cell.querySelector('[data-coblos]');
     if (button) {
@@ -864,7 +854,8 @@
   }
 
   /* ------------------------------------------------------------------ */
-  /* "Pilih 0X" dari kartu Sekilas paslon / akhir bab (Stage 7)         */
+  /* "Pilih Paslon 0X" dari profil paslon (Stage 7; Stage 22: tombol 3D */
+  /* di halaman profil membuka bilik-suara#coblos-0X)                   */
   /* ------------------------------------------------------------------ */
 
   var pickedCell = null;
@@ -952,14 +943,6 @@
     // bisa dilepas saat pemilih mencoblos kotak lain.
     ballot.classList.add('ballot--picks');
     window.addEventListener('hashchange', pickFromHash);
-    Array.prototype.forEach.call(document.querySelectorAll('[data-pick]'), function (link) {
-      link.addEventListener('click', function () {
-        // Hash sama (klik ulang) tidak memicu hashchange.
-        if (link.getAttribute('href') === window.location.hash) {
-          window.setTimeout(pickFromHash, 0);
-        }
-      });
-    });
     pickFromHash();
 
     submitBtn.addEventListener('click', submit);
