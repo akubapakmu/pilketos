@@ -3,6 +3,10 @@
  * Keadaan final di dasbor (Stage 4): tampil hanya bila pemilihan FINISHED.
  * Tanpa confetti; perayaan hanya di halaman hasil akhir.
  *
+ * Stage 19: judul pemenang dua baris berhuruf kapital ("PASANGAN 0X
+ * TERPILIH" lalu nama ketua & wakil di baris kedua, kapital lewat CSS);
+ * kalimat "Pencoblosan ditolak server sejak waktu selesai; ..." dihapus.
+ *
  * @var array<string, mixed> $final FinalResult::build()
  */
 use App\Services\FinalResult;
@@ -19,19 +23,17 @@ $winner = $final['winner'];
     <p class="final-banner__eyebrow"><?= icon('lock') ?> Pemilihan selesai &middot; hasil akhir</p>
     <h2 class="final-banner__title" id="final-banner-title">
       <?php if ($final['state'] === FinalResult::WINNER): ?>
-        Pasangan <?= esc($winner['label']) ?> terpilih: <?= esc($winner['ketua']) ?> &amp; <?= esc($winner['wakil']) ?>
+        <span class="final-banner__lead">Pasangan <?= esc($winner['label']) ?> terpilih<span class="visually-hidden">:</span></span>
+        <span class="final-banner__names"><?= esc($winner['ketua']) ?> &amp; <?= esc($winner['wakil']) ?></span>
       <?php elseif ($final['state'] === FinalResult::TIE): ?>
         Perolehan suara tertinggi sama
       <?php else: ?>
         Pemilihan selesai tanpa suara sah
       <?php endif; ?>
     </h2>
-    <p class="final-banner__text">
-      <?php if ($winner !== null): ?>
-        <?= angka($winner['votes']) ?> suara (<?= persen($winner['percent']) ?> dari <?= angka($final['total_votes']) ?> suara sah).
-      <?php endif; ?>
-      Pencoblosan ditolak server sejak waktu selesai; angka di dasbor ini adalah hasil akhir.
-    </p>
+    <?php if ($winner !== null): ?>
+      <p class="final-banner__text"><?= angka($winner['votes']) ?> suara (<?= persen($winner['percent']) ?> dari <?= angka($final['total_votes']) ?> suara sah).</p>
+    <?php endif; ?>
   </div>
   <a class="btn final-banner__cta" href="<?= site_url('admin/hasil') ?>"><?= icon('award') ?> Buka hasil akhir</a>
 </section>

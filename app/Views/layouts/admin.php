@@ -63,6 +63,7 @@ $this->setVar('crumbs', $crumbs);
 </dialog>
 
 <script src="<?= asset_url('assets/js/app.js') ?>" defer></script>
+<?= $this->include('partials/presence') ?>
 <script src="<?= asset_url('assets/js/admin.js') ?>" defer></script>
 <?= $this->renderSection('scripts') ?>
 </body>

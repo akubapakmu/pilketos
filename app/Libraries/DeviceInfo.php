@@ -32,6 +32,12 @@ use Throwable;
  * Contoh hasil: device "HP / Android 14 / Samsung Galaxy A54 5G",
  * "HP / iOS 18 / Apple iPhone", "Komputer / Windows 11", "Komputer / ChromeOS";
  * browser "Chrome 140", "Samsung Internet 28", "Instagram (dalam aplikasi)".
+ *
+ * Stage 19: profile() mengembalikan hasil uraian yang sama per kolom (jenis,
+ * merek, model, OS + versi + arsitektur, browser + versi lengkap + jenis
+ * klien, mesin browser) untuk halaman Pengunjung online, termasuk penanda
+ * bot dan pustaka HTTP (curl, Python, ...) yang tidak dihitung sebagai
+ * pengunjung.
  */
 final class DeviceInfo
 {
@@ -103,6 +109,16 @@ final class DeviceInfo
      */
     public static function fromRequest(IncomingRequest $request): array
     {
+        return self::detect($request->getUserAgent()->getAgentString(), self::hints($request));
+    }
+
+    /**
+     * Header Client Hints yang dikirim browser (nama huruf kecil => nilai).
+     *
+     * @return array<string, string>
+     */
+    public static function hints(IncomingRequest $request): array
+    {
         $hints = [];
 
         foreach (self::HINT_HEADERS as $name) {
@@ -113,7 +129,84 @@ final class DeviceInfo
             }
         }
 
-        return self::detect($request->getUserAgent()->getAgentString(), $hints);
+        return $hints;
+    }
+
+    /**
+     * Stage 19: hasil uraian per kolom (null = tidak diketahui).
+     *
+     * @param array<string, string> $hints Header Client Hints (nama huruf kecil => nilai)
+     *
+     * @return array{
+     *     bot: string|null, client_type: string|null, device_type: string|null,
+     *     device_brand: string|null, device_model: string|null,
+     *     os_name: string|null, os_version: string|null, os_platform: string|null,
+     *     browser_name: string|null, browser_version: string|null,
+     *     engine: string|null, engine_version: string|null,
+     *     device: string, browser: string
+     * }
+     */
+    public static function profile(string $userAgent, array $hints = []): array
+    {
+        $userAgent = trim($userAgent);
+        $profile   = [
+            'bot'             => null,
+            'client_type'     => null,
+            'device_type'     => null,
+            'device_brand'    => null,
+            'device_model'    => null,
+            'os_name'         => null,
+            'os_version'      => null,
+            'os_platform'     => null,
+            'browser_name'    => null,
+            'browser_version' => null,
+            'engine'          => null,
+            'engine_version'  => null,
+            'device'          => self::UNKNOWN,
+            'browser'         => self::UNKNOWN,
+        ];
+
+        $detector = self::parse($userAgent, $hints);
+
+        if ($detector === null) {
+            return $profile;
+        }
+
+        if ($detector->isBot()) {
+            $bot = $detector->getBot();
+
+            $profile['bot']     = self::clip(is_array($bot) && ($bot['name'] ?? '') !== '' ? (string) $bot['name'] : 'Bot', 64);
+            $profile['device']  = 'Bot';
+            $profile['browser'] = $profile['bot'];
+
+            return $profile;
+        }
+
+        $category = self::category($detector);
+        [$osName, $osVersion] = self::osParts($detector, $userAgent, $hints);
+        $client = $detector->getClient();
+        $client = is_array($client) ? $client : [];
+        $name   = (string) ($client['name'] ?? '');
+
+        $profile['client_type']  = self::value($client['type'] ?? null, 32);
+        $profile['device_type']  = $category;
+        $profile['device_brand'] = self::value($detector->getBrandName(), 64);
+        $profile['device_model'] = self::value($detector->getModel(), 100);
+        $profile['os_name']      = self::value($osName, 64);
+        $profile['os_version']   = self::value($osVersion, 32);
+        $profile['os_platform']  = self::value($detector->getOs('platform'), 16);
+
+        if ($name !== '' && $name !== DeviceDetector::UNKNOWN) {
+            $profile['browser_name']    = self::value(self::BROWSER_NAMES[$name] ?? $name, 64);
+            $profile['browser_version'] = self::value($client['version'] ?? null, 32);
+            $profile['engine']          = self::value($client['engine'] ?? null, 64);
+            $profile['engine_version']  = self::value($client['engine_version'] ?? null, 32);
+        }
+
+        $profile['device']  = self::device($detector, $userAgent, $hints);
+        $profile['browser'] = self::browser($detector);
+
+        return $profile;
     }
 
     /**
@@ -125,16 +218,9 @@ final class DeviceInfo
     {
         $userAgent = trim($userAgent);
         $unknown   = ['device' => self::UNKNOWN, 'browser' => self::UNKNOWN];
+        $detector  = self::parse($userAgent, $hints);
 
-        if ($userAgent === '') {
-            return $unknown;
-        }
-
-        try {
-            $detector = new DeviceDetector($userAgent, ClientHints::factory($hints));
-            $detector->setCache(self::cache());
-            $detector->parse();
-        } catch (Throwable) {
+        if ($detector === null) {
             return $unknown;
         }
 
@@ -153,15 +239,34 @@ final class DeviceInfo
         ];
     }
 
+    private static function parse(string $userAgent, array $hints): ?DeviceDetector
+    {
+        if ($userAgent === '') {
+            return null;
+        }
+
+        try {
+            $detector = new DeviceDetector($userAgent, ClientHints::factory($hints));
+            $detector->setCache(self::cache());
+            $detector->parse();
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $detector;
+    }
+
+    private static function category(DeviceDetector $detector): ?string
+    {
+        $category = self::CATEGORIES[$detector->getDeviceName()] ?? null;
+
+        // Jenis tidak dikenali (mis. Opera Mini): tebak dari OS & browser.
+        return $category ?? ($detector->isDesktop() ? 'Komputer' : ($detector->isMobile() ? 'HP' : null));
+    }
+
     private static function device(DeviceDetector $detector, string $userAgent, array $hints): string
     {
-        $type     = $detector->getDeviceName();
-        $category = self::CATEGORIES[$type] ?? null;
-
-        if ($category === null) {
-            // Jenis tidak dikenali (mis. Opera Mini): tebak dari OS & browser.
-            $category = $detector->isDesktop() ? 'Komputer' : ($detector->isMobile() ? 'HP' : null);
-        }
+        $category = self::category($detector);
 
         $parts = array_filter(
             [$category, self::os($detector, $userAgent, $hints), self::model($detector, $category)],
@@ -173,10 +278,22 @@ final class DeviceInfo
 
     private static function os(DeviceDetector $detector, string $userAgent, array $hints): ?string
     {
+        [$name, $version] = self::osParts($detector, $userAgent, $hints);
+
+        return $name === null ? null : trim($name . ' ' . $version);
+    }
+
+    /**
+     * [nama tampilan, versi rilis ('' bila tidak dapat dipercaya)].
+     *
+     * @return array{0: string|null, 1: string}
+     */
+    private static function osParts(DeviceDetector $detector, string $userAgent, array $hints): array
+    {
         $name = (string) $detector->getOs('name');
 
         if ($name === '' || $name === DeviceDetector::UNKNOWN) {
-            return null;
+            return [null, ''];
         }
 
         $version = (string) $detector->getOs('version');
@@ -201,7 +318,7 @@ final class DeviceInfo
 
         $version = (string) preg_replace('/(\.0)+$/', '', $version);
 
-        return trim((self::OS_NAMES[$name] ?? $name) . ' ' . ($version === DeviceDetector::UNKNOWN ? '' : $version));
+        return [self::OS_NAMES[$name] ?? $name, $version === DeviceDetector::UNKNOWN ? '' : $version];
     }
 
     private static function model(DeviceDetector $detector, ?string $category): ?string
@@ -253,8 +370,18 @@ final class DeviceInfo
         return preg_match('/^\d+/', $version, $match) === 1 ? $match[0] : '';
     }
 
-    private static function clip(string $value): string
+    private static function clip(string $value, int $length = 255): string
     {
-        return mb_substr($value, 0, 255);
+        return mb_substr($value, 0, $length);
+    }
+
+    /**
+     * Nilai kolom profil: teks dipangkas, kosong / "UNK" menjadi null.
+     */
+    private static function value(mixed $value, int $length): ?string
+    {
+        $value = is_scalar($value) ? trim((string) $value) : '';
+
+        return $value === '' || $value === DeviceDetector::UNKNOWN ? null : self::clip($value, $length);
     }
 }

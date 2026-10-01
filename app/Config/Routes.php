@@ -23,6 +23,10 @@ $routes->get('jam-server', 'ElectionController::clock');
 // partisipasi, tanpa identitas/rincian. Rincian tetap di admin/hitung-suara.
 $routes->get('hitung-suara', 'Home::liveCount');
 
+// Stage 19: detak pengunjung online (presence.js, POST + CSRF). Balasan hanya
+// angka ringkas tamu & pengguna login online, tanpa identitas siapa pun.
+$routes->post('kunjungan/detak', 'PresenceController::heartbeat');
+
 $routes->get('siswa/masuk', 'Student\AuthController::loginForm');
 $routes->post('siswa/masuk', 'Student\AuthController::attemptLogin');
 
@@ -142,6 +146,9 @@ $routes->group('admin', ['filter' => 'adminauth'], static function (RouteCollect
     $routes->get('buka-kunci/guru/(:num)', 'Admin\UnlockController::form/teacher/$1');
     $routes->post('buka-kunci/guru/(:num)', 'Admin\UnlockController::unlock/teacher/$1');
     $routes->get('riwayat', 'Admin\AuditController::index');
+
+    // Stage 19: pengunjung online (tamu & pengguna login), perangkat & browser
+    $routes->get('pengunjung', 'Admin\VisitorController::index');
 
     // Stage 13: akun admin yang sedang masuk (ganti nama pengguna & kata sandi)
     $routes->get('akun', 'Admin\AccountController::index');

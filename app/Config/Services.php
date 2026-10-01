@@ -5,7 +5,9 @@ namespace Config;
 use App\Libraries\CandidateAssets;
 use App\Services\AnalyticsService;
 use App\Services\Import\ImportStore;
+use App\Services\OnlineVisitors;
 use App\Services\UnlockService;
+use App\Services\VisitorTracker;
 use App\Services\VoterDirectory;
 use App\Services\VoterEditor;
 use App\Services\VoteService;
@@ -121,5 +123,29 @@ class Services extends BaseService
         }
 
         return new ImportStore();
+    }
+
+    /**
+     * Pencatat pengunjung online (Stage 19): halaman dibuka & detak presence.js.
+     */
+    public static function visitorTracker(bool $getShared = true): VisitorTracker
+    {
+        if ($getShared) {
+            return static::getSharedInstance('visitorTracker');
+        }
+
+        return new VisitorTracker();
+    }
+
+    /**
+     * Angka & daftar pengunjung online (Stage 19).
+     */
+    public static function onlineVisitors(bool $getShared = true): OnlineVisitors
+    {
+        if ($getShared) {
+            return static::getSharedInstance('onlineVisitors');
+        }
+
+        return new OnlineVisitors();
     }
 }

@@ -132,10 +132,11 @@ $accents = array_values(array_unique(array_merge(
             <span class="victor__person-name"><span class="victor__role">Ketua OSIS</span> <?= esc($winner['ketua']) ?></span>
             <span class="victor__person-name"><span class="victor__role">Wakil Ketua OSIS</span> <?= esc($winner['wakil']) ?></span>
           </h3>
+          <?php /* Stage 19: dua baris (perolehan, lalu selisih dengan peringkat 2) */ ?>
           <p class="victor__tally">
-            <strong><?= angka($winner['votes']) ?></strong> suara &middot; <strong><?= persen($winner['percent']) ?></strong> dari suara sah
+            <span class="victor__tally-line"><strong><?= angka($winner['votes']) ?></strong> suara &middot; <strong><?= persen($winner['percent']) ?></strong> dari suara sah</span>
             <?php if ($result['margin'] > 0 && count($result['ranking']) > 1): ?>
-              &middot; unggul <?= angka($result['margin']) ?> suara dari peringkat 2
+              <span class="victor__tally-line">unggul <?= angka($result['margin']) ?> suara dari peringkat 2</span>
             <?php endif; ?>
           </p>
         </section>
@@ -225,8 +226,9 @@ $accents = array_values(array_unique(array_merge(
         ]) ?>
       </section>
 
+      <?php /* Stage 19: miring, rata kiri, diawali tanda bintang */ ?>
       <footer class="final__foot">
-        <p><?= esc(FinalResult::footnote($snapshot['generated_at'])) ?></p>
+        <p><span class="final__star" aria-hidden="true">*</span><?= esc(FinalResult::footnote($snapshot['generated_at'])) ?></p>
       </footer>
     </article>
 
