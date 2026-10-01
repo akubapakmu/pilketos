@@ -24,6 +24,9 @@
  *    14 px, tombol 3 px; desktop saja), canvas "embun / lubang
  *    coblos" yang hanya terlihat di sekitar pointer dan saat diketuk; portal
  *    Siswa/Guru yang mengikuti pointer.
+ * 5. Stage 21: foto pasangan di scene perolehan suara dapat diklik untuk
+ *    tampil ukuran penuh (<dialog>) dengan tautan "Lihat profil pasangan"
+ *    bagi pengunjung yang login.
  *
  * Semua gerak mengikuti prefers-reduced-motion. Teks dari server hanya
  * lewat textContent. Tanpa JavaScript beranda tetap halaman bergulir biasa.
@@ -545,7 +548,9 @@
     var touch = null;
 
     window.addEventListener('touchstart', function (event) {
-      if (event.touches.length !== 1 || self.locked) {
+      // Stage 21: foto pasangan ukuran penuh terbuka: geser = gulir dialog,
+      // bukan pindah scene.
+      if (event.touches.length !== 1 || self.locked || document.querySelector('dialog[open]')) {
         touch = null;
         return;
       }
@@ -1458,6 +1463,53 @@
     });
   }
 
+  /* -- Stage 21: foto pasangan ukuran penuh (<dialog>, home/partials/pair_view)
+     Tombol di atas foto (button.pair__zoom) membuka dialog pasangan itu lewat
+     showModal(): fokus terkunci di dalam, Escape menutup (bawaan), klik latar
+     gelap & tombol tutup juga menutup, fokus kembali ke foto yang diklik.
+     Tanpa dukungan <dialog>, tombol disembunyikan (foto tetap tampil). -- */
+  function initPairViews() {
+    toArray(document.querySelectorAll('[data-pair-zoom]')).forEach(function (button) {
+      var dialog = document.getElementById(button.getAttribute('data-pair-zoom'));
+
+      if (!dialog || typeof dialog.showModal !== 'function') {
+        button.hidden = true;
+        return;
+      }
+
+      button.addEventListener('click', function () {
+        if (!dialog.open) {
+          dialog.showModal();
+        }
+      });
+
+      if (dialog.hasAttribute('data-pair-ready')) {
+        return;
+      }
+      dialog.setAttribute('data-pair-ready', '');
+
+      var close = dialog.querySelector('[data-pair-close]');
+      if (close) {
+        close.addEventListener('click', function () {
+          dialog.close();
+        });
+      }
+
+      // Klik di latar gelap (di luar foto & teks) menutup.
+      dialog.addEventListener('click', function (event) {
+        if (event.target === dialog || event.target.classList.contains('pair-view__inner') || event.target.classList.contains('pair-view__photo')) {
+          dialog.close();
+        }
+      });
+
+      dialog.addEventListener('close', function () {
+        if (document.activeElement === document.body || dialog.contains(document.activeElement)) {
+          button.focus({ preventScroll: true });
+        }
+      });
+    });
+  }
+
   /* ==========================================================================
      Mulai
      ========================================================================== */
@@ -1489,6 +1541,7 @@
     }
 
     initPortals();
+    initPairViews();
 
     // Muat ulang oleh hitung mundur (countdown.js) karena status berubah:
     // sama dengan live count, layar pembuka tidak diulang.

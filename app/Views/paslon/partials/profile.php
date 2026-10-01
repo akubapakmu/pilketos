@@ -18,11 +18,19 @@
  * Navigasi bagian: bar menempel di HP/tablet, kolom kanan dengan semua label
  * terlihat di desktop (paslon.css).
  *
+ * Stage 21: halaman selebar layar; kepala bagian tanpa ikon, rata tengah,
+ * di atas pita latar selebar layar berpola khas per bagian (px-head--{key},
+ * pola SVG berwarna aksen di paslon.css); navigasi gelap tanpa titik (desktop:
+ * panel melayang di tepi kanan, menempel di tengah layar, garis progres baca);
+ * poster dengan ikon unduh (kiri bawah) & layar penuh (kanan bawah); kutipan
+ * pesan miring dengan avatar sebaris nama; video tanpa bilah keterangan.
+ *
  * Interaksi (paslon.js, progressive enhancement; tanpa JS semua konten tetap
  * tampil utuh dan tautan tetap berfungsi):
  * - [data-px-nav]    : penanda bagian aktif;
  * - [data-px-reveal] : muncul bertahap saat masuk layar;
  * - [data-px-zoom]   : poster dibuka di lightbox (<dialog>);
+ * - [data-px-progress]: garis progres baca di navigasi (disembunyikan tanpa JS);
  * - [data-px-video]  : thumbnail asli YouTube + tombol putar; iframe baru dibuat
  *                      setelah diklik (tanpa JS: tautan ke YouTube).
  *
@@ -50,13 +58,12 @@ $sections = array_filter([
 $cta  = isset($sections['visi']) ? ['visi', 'Lihat Visi & Misi'] : ['profil', 'Kenali lebih dekat'];
 $long = static fn (string $name): bool => mb_strlen($name) > 24;
 $id   = static fn (string $key): string => 'px-' . $key . '-' . $c['id'];
-// Kepala bagian: ikon (warna aksen) + judul (dikapitalkan CSS) + subjudul.
-$head = static fn (string $key, string $icon, string $title, string $sub = ''): string => '<div class="px-head">'
-    . '<span class="px-head__icon">' . icon($icon) . '</span>'
-    . '<div class="px-head__text">'
+// Kepala bagian (Stage 21): judul (dikapitalkan CSS) + subjudul, rata tengah,
+// tanpa ikon; px-head--{key} memilih pola latar khas bagian itu (paslon.css).
+$head = static fn (string $key, string $title, string $sub = ''): string => '<div class="px-head px-head--' . esc($key, 'attr') . '">'
     . '<h2 class="px-head__title" id="' . esc($id($key), 'attr') . '">' . esc($title) . '</h2>'
     . ($sub === '' ? '' : '<p class="px-head__sub">' . esc($sub) . '</p>')
-    . '</div></div>';
+    . '</div>';
 ?>
 <article class="paslon" style="<?= esc($c['style'], 'attr') ?>" data-paslon aria-labelledby="<?= esc($id('title'), 'attr') ?>">
   <div class="px-shell<?= count($sections) > 1 ? ' px-shell--nav' : '' ?>">
@@ -70,7 +77,7 @@ $head = static fn (string $key, string $icon, string $title, string $sub = ''): 
         <h1 class="visually-hidden" id="<?= esc($id('title'), 'attr') ?>">Paslon <?= esc($c['label']) ?>: <?= esc($c['ketua']) ?> dan <?= esc($c['wakil']) ?></h1>
         <img class="px-cover__img" src="<?= esc($c['banner'], 'attr') ?>"
              alt="Gambar pembuka pasangan <?= esc($c['label'], 'attr') ?><?= $c['slogan'] !== '' ? ': &ldquo;' . esc($c['slogan'], 'attr') . '&rdquo;' : '' ?>"
-             <?= $c['banner_size'] !== null ? 'width="' . (int) $c['banner_size'][0] . '" height="' . (int) $c['banner_size'][1] . '" ' : '' ?>fetchpriority="high" decoding="async">
+             <?= $c['banner_size'] !== null ? 'width="' . (int) $c['banner_size'][0] . '" height="' . (int) $c['banner_size'][1] . '" style="--px-cover-ratio: ' . round($c['banner_size'][0] / $c['banner_size'][1], 4) . ';" ' : '' ?>fetchpriority="high" decoding="async">
       <?php else: ?>
         <div class="px-cover__plain">
           <p class="px-cover__no">Paslon <strong><?= esc($c['label']) ?></strong></p>
@@ -97,25 +104,27 @@ $head = static fn (string $key, string $icon, string $title, string $sub = ''): 
     <?php /* ---------------------------------------------- navigasi bagian */ ?>
     <?php if (count($sections) > 1): ?>
       <nav class="px-nav" aria-label="Bagian profil paslon <?= esc($c['label'], 'attr') ?>" data-px-nav>
-        <div class="px-nav__inner">
-          <p class="px-nav__title" aria-hidden="true">Paslon <strong><?= esc($c['label']) ?></strong></p>
-          <ol class="px-nav__list">
-            <?php foreach ($sections as $key => $label): ?>
-              <li class="px-nav__item">
-                <a class="px-nav__link" href="#<?= esc($key, 'attr') ?>" data-px-nav-link>
-                  <span class="px-nav__dot" aria-hidden="true"></span>
-                  <span class="px-nav__label"><?= esc($label) ?></span>
-                </a>
-              </li>
-            <?php endforeach; ?>
-          </ol>
+        <div class="px-nav__rail">
+          <div class="px-nav__inner">
+            <p class="px-nav__title" aria-hidden="true">Paslon <strong><?= esc($c['label']) ?></strong></p>
+            <ol class="px-nav__list">
+              <?php foreach ($sections as $key => $label): ?>
+                <li class="px-nav__item">
+                  <a class="px-nav__link" href="#<?= esc($key, 'attr') ?>" data-px-nav-link>
+                    <span class="px-nav__label"><?= esc($label) ?></span>
+                  </a>
+                </li>
+              <?php endforeach; ?>
+            </ol>
+            <span class="px-nav__progress" aria-hidden="true" data-px-progress hidden><span class="px-nav__progress-fill"></span></span>
+          </div>
         </div>
       </nav>
     <?php endif; ?>
 
     <?php /* ------------------------------------------------ kenali pasangan */ ?>
     <section class="px-section px-meet" id="profil" aria-labelledby="<?= esc($id('profil'), 'attr') ?>" data-px-section>
-      <?= $head('profil', 'users', 'Kenali pasangan', 'Dua individu, satu tujuan untuk SMP 1 DAWE.') ?>
+      <?= $head('profil', 'Kenali pasangan', 'Dua individu, satu tujuan untuk SMP 1 DAWE.') ?>
       <div class="px-meet__grid">
         <?php foreach ($people as $key => $p): ?>
           <div class="px-meet__card px-meet__card--<?= esc($key, 'attr') ?>" data-px-reveal>
@@ -148,8 +157,8 @@ $head = static fn (string $key, string $icon, string $title, string $sub = ''): 
     <?php /* ------------------------------------------------------ visi kami */ ?>
     <?php if ($c['visi'] !== ''): ?>
       <section class="px-section px-visi" id="visi" aria-labelledby="<?= esc($id('visi'), 'attr') ?>" data-px-section>
+        <?= $head('visi', 'Visi kami') ?>
         <div class="px-visi__panel" data-px-reveal>
-          <?= $head('visi', 'eye', 'Visi kami') ?>
           <blockquote class="px-visi__text<?= mb_strlen($c['visi']) > 180 ? ' px-visi__text--long' : '' ?>">
             <p><?= esc($c['visi']) ?></p>
           </blockquote>
@@ -160,7 +169,7 @@ $head = static fn (string $key, string $icon, string $title, string $sub = ''): 
     <?php /* ------------------------------------------------------ misi kami */ ?>
     <?php if ($c['misi'] !== []): ?>
       <section class="px-section px-misi" id="misi" aria-labelledby="<?= esc($id('misi'), 'attr') ?>" data-px-section>
-        <?= $head('misi', 'target', 'Misi kami', 'Langkah nyata untuk mewujudkan visi kami.') ?>
+        <?= $head('misi', 'Misi kami', 'Langkah nyata untuk mewujudkan visi kami.') ?>
         <ol class="px-list" style="--rows: <?= (int) ceil(count($c['misi']) / 2) ?>;">
           <?php foreach ($c['misi'] as $i => $item): ?>
             <li class="px-list__item" style="--i: <?= (int) $i ?>;" data-px-reveal>
@@ -175,7 +184,7 @@ $head = static fn (string $key, string $icon, string $title, string $sub = ''): 
     <?php /* ----------------------------------------------- program unggulan */ ?>
     <?php if ($c['program'] !== []): ?>
       <section class="px-section px-program" id="program" aria-labelledby="<?= esc($id('program'), 'attr') ?>" data-px-section>
-        <?= $head('program', 'bulb', 'Program unggulan kami', 'Ide dan aksi untuk sekolah yang lebih baik.') ?>
+        <?= $head('program', 'Program unggulan kami', 'Ide dan aksi untuk sekolah yang lebih baik.') ?>
         <ol class="px-programs" style="<?= esc(CandidateTheme::gridStyle(count($c['program'])), 'attr') ?>">
           <?php foreach ($c['program'] as $i => $item): ?>
             <li class="px-programs__item" style="--i: <?= (int) $i ?>;" data-px-reveal>
@@ -193,13 +202,17 @@ $head = static fn (string $key, string $icon, string $title, string $sub = ''): 
     <?php /* ---------------------------------------------- poster kampanye */ ?>
     <?php if ($c['poster'] !== null): ?>
       <section class="px-section px-poster" id="poster" aria-labelledby="<?= esc($id('poster'), 'attr') ?>" data-px-section>
-        <?= $head('poster', 'image', 'Poster kampanye', 'Lihat lebih dekat poster kampanye kami.') ?>
+        <?= $head('poster', 'Poster kampanye', 'Lihat lebih dekat poster kampanye kami.') ?>
         <figure class="px-poster__figure" data-px-reveal>
-          <img class="px-poster__img" src="<?= esc($c['poster'], 'attr') ?>" alt="Poster kampanye pasangan <?= esc($c['label'], 'attr') ?>" loading="lazy" decoding="async" data-px-zoom>
-          <figcaption class="px-poster__bar">
-            <span class="visually-hidden">Poster kampanye pasangan <?= esc($c['label']) ?></span>
-            <a class="px-btn px-btn--dark" href="<?= esc($c['poster'], 'attr') ?>" target="_blank" rel="noopener" data-px-zoom><?= icon('expand') ?> Lihat fullscreen</a>
-          </figcaption>
+          <?php /* Stage 21: ikon tanpa teks di atas poster: unduh (kiri bawah,
+                   nama file paslon-osis-no-0X-spensada-2026) & layar penuh
+                   (kanan bawah, lightbox; tanpa JS membuka file poster). */ ?>
+          <div class="px-poster__frame">
+            <img class="px-poster__img" src="<?= esc($c['poster'], 'attr') ?>" alt="Poster kampanye pasangan <?= esc($c['label'], 'attr') ?>" loading="lazy" decoding="async" data-px-zoom>
+            <a class="px-poster__tool px-poster__tool--download" href="<?= esc($c['poster'], 'attr') ?>" download="<?= esc($c['poster_download'], 'attr') ?>" title="Unduh poster"><?= icon('download') ?><span class="visually-hidden">Unduh poster kampanye pasangan <?= esc($c['label']) ?></span></a>
+            <a class="px-poster__tool px-poster__tool--full" href="<?= esc($c['poster'], 'attr') ?>" target="_blank" rel="noopener" data-px-zoom title="Layar penuh"><?= icon('expand') ?><span class="visually-hidden">Lihat poster kampanye pasangan <?= esc($c['label']) ?> layar penuh</span></a>
+          </div>
+          <figcaption class="visually-hidden">Poster kampanye pasangan <?= esc($c['label']) ?></figcaption>
         </figure>
         <dialog class="px-lightbox" aria-label="Poster kampanye pasangan <?= esc($c['label'], 'attr') ?>" data-px-lightbox>
           <img class="px-lightbox__img" src="<?= esc($c['poster'], 'attr') ?>" alt="Poster kampanye pasangan <?= esc($c['label'], 'attr') ?>" loading="lazy" decoding="async">
@@ -211,14 +224,16 @@ $head = static fn (string $key, string $icon, string $title, string $sub = ''): 
     <?php /* ------------------------------------------------ pesan dari kami */ ?>
     <?php if ($hasPesan): ?>
       <section class="px-section px-pesan" id="pesan" aria-labelledby="<?= esc($id('pesan'), 'attr') ?>" data-px-section>
-        <?= $head('pesan', 'message', 'Pesan dari kami', 'Dengarkan langsung pesan kami untuk seluruh warga SMP 1 DAWE.') ?>
+        <?= $head('pesan', 'Pesan dari kami', 'Dengarkan langsung pesan kami untuk seluruh warga SMP 1 DAWE.') ?>
         <div class="px-quotes">
           <?php foreach ($people as $key => $p): ?>
             <?php if ($p['pesan'] !== ''): ?>
               <figure class="px-quote" data-px-reveal>
-                <?= view('paslon/partials/avatar', ['c' => $c, 'role' => $key]) ?>
                 <blockquote class="px-quote__text"><p>&ldquo;<?= esc($p['pesan']) ?>&rdquo;</p></blockquote>
-                <figcaption class="px-quote__who"><strong><?= esc($p['name']) ?></strong><span><?= esc($p['long']) ?></span></figcaption>
+                <figcaption class="px-quote__who">
+                  <?= view('paslon/partials/avatar', ['c' => $c, 'role' => $key]) ?>
+                  <span class="px-quote__id"><strong><?= esc($p['name']) ?></strong><span><?= esc($p['long']) ?></span></span>
+                </figcaption>
               </figure>
             <?php endif; ?>
           <?php endforeach; ?>
@@ -229,7 +244,7 @@ $head = static fn (string $key, string $icon, string $title, string $sub = ''): 
     <?php /* ------------------------------------------------ video kampanye */ ?>
     <?php if ($c['video'] !== null): ?>
       <section class="px-section px-media" id="video" aria-labelledby="<?= esc($id('video'), 'attr') ?>" data-px-section>
-        <?= $head('video', 'video', 'Video kampanye', 'Lihat lebih dekat perjalanan kami.') ?>
+        <?= $head('video', 'Video kampanye', 'Lihat lebih dekat perjalanan kami.') ?>
         <div class="px-video" data-px-reveal data-px-video
              data-embed="<?= esc($c['video_embed'], 'attr') ?>"
              data-title="Video kampanye pasangan <?= esc($c['label'], 'attr') ?>">
@@ -240,10 +255,6 @@ $head = static fn (string $key, string $icon, string $title, string $sub = ''): 
               <span class="visually-hidden">Putar video kampanye pasangan <?= esc($c['label']) ?></span>
             </a>
           </div>
-          <p class="px-video__bar">
-            <span>Video kampanye pasangan <?= esc($c['label']) ?></span>
-            <a class="px-btn px-btn--quiet" href="<?= esc($c['video_url'], 'attr') ?>" target="_blank" rel="noopener noreferrer"><?= icon('external') ?> Buka di YouTube</a>
-          </p>
         </div>
       </section>
     <?php endif; ?>

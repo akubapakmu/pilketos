@@ -34,10 +34,11 @@ final class RoleMatrixTest extends CIUnitTestCase
      * Satu-satunya route tanpa filter autentikasi (route matrix "public").
      * hitung-suara (redesign beranda): hanya persentase per pasangan + partisipasi.
      * kunjungan/detak (Stage 19): detak pengunjung online, balasan hanya angka
-     * ringkas tamu & pengguna login.
+     * ringkas tamu & pengguna login. kunjungan/online (Stage 21): angka yang
+     * sama, dibaca beranda tiap detik (GET, tanpa tulis).
      */
     private const PUBLIC_ROUTES = [
-        'GET'  => ['/', 'jam-server', 'hitung-suara', 'siswa/masuk', 'guru/masuk', 'admin/masuk'],
+        'GET'  => ['/', 'jam-server', 'hitung-suara', 'kunjungan/online', 'siswa/masuk', 'guru/masuk', 'admin/masuk'],
         'POST' => ['kunjungan/detak', 'siswa/masuk', 'guru/masuk', 'admin/masuk'],
     ];
 

@@ -16,7 +16,8 @@
  * @var string|null                                  $mine      hash baris browser admin ini
  * @var int                                          $window    detik batas online
  * @var bool                                         $enabled
- * @var int                                          $refresh
+ * @var int                                          $refresh   detik, muat ulang daftar & sebaran
+ * @var int                                          $tick      detik, muat ulang papan angka (Stage 21)
  * @var \CodeIgniter\I18n\Time                       $updated
  */
 use App\Services\OnlineVisitors;
@@ -35,7 +36,8 @@ $deviceName = static function (?string $brand, ?string $model): string {
     return $brand === null || stripos($model, $brand) === 0 ? $model : $brand . ' ' . $model;
 };
 ?>
-<div class="admin-page visitors-page" data-visitors data-visitors-refresh="<?= (int) $refresh ?>">
+<div class="admin-page visitors-page" data-visitors data-visitors-refresh="<?= (int) $refresh ?>"
+     data-visitors-tick="<?= (int) $tick ?>" data-visitors-summary="<?= esc(site_url('admin/pengunjung/ringkas'), 'attr') ?>">
   <header class="admin-head">
     <div class="admin-head__text">
       <div class="admin-head__heading">
@@ -45,7 +47,8 @@ $deviceName = static function (?string $brand, ?string $model): string {
       <p class="admin-head__lede" id="admin-head-lede" data-lede>
         Tamu dan pengguna login yang membuka situs. Dihitung online bila aktif dalam <?= esc(durasi($window)) ?> terakhir;
         halaman yang terbuka mengirim detak setiap menit. Perangkat, sistem operasi, dan browser dibaca dari User-Agent
-        dan Client Hints, jadi hanya perkiraan. Halaman pemilih dicatat tanpa nomor paslon. Diperbarui otomatis setiap <?= (int) $refresh ?> detik.
+        dan Client Hints, jadi hanya perkiraan. Halaman pemilih dicatat tanpa nomor paslon. Angka ringkas diperbarui otomatis
+        <?= (int) $tick === 1 ? 'setiap detik' : 'setiap ' . (int) $tick . ' detik' ?>, daftar pengunjung setiap <?= (int) $refresh ?> detik.
       </p>
     </div>
   </header>
@@ -54,36 +57,7 @@ $deviceName = static function (?string $brand, ?string $model): string {
     <p class="notice"><?= icon('info') ?><span>Pencatatan pengunjung sedang dimatikan (<code>visitors.enabled = false</code>). Angka di bawah adalah catatan terakhir.</span></p>
   <?php endif; ?>
 
-  <div data-live-region="ringkas">
-    <dl class="scoreboard visitor-board">
-      <div class="scoreboard__cell">
-        <dt>Online sekarang</dt>
-        <dd class="scoreboard__value"><?= angka($summary['total']) ?></dd>
-        <dd class="scoreboard__sub"><?= angka($summary['devices']) ?> browser terbuka</dd>
-      </div>
-      <div class="scoreboard__cell">
-        <dt>Tamu</dt>
-        <dd class="scoreboard__value"><?= angka($summary['guests']) ?></dd>
-        <dd class="scoreboard__sub">belum login</dd>
-      </div>
-      <div class="scoreboard__cell scoreboard__cell--accent">
-        <dt>Pengguna login</dt>
-        <dd class="scoreboard__value"><?= angka($summary['users']) ?> <span class="visitor-board__pct"><?= persen($summary['percent']) ?></span></dd>
-        <dd class="scoreboard__sub">
-          dari <?= angka($summary['accounts']) ?> pengguna sistem
-          <span class="meter" aria-hidden="true"><span class="meter__fill" style="width: <?= esc(number_format(min(100, $summary['percent']), 2, '.', ''), 'attr') ?>%;"></span></span>
-        </dd>
-      </div>
-      <?php foreach ($summary['roles'] as $type => $role): ?>
-        <div class="scoreboard__cell">
-          <dt><?= esc($role['label']) ?></dt>
-          <dd class="scoreboard__value"><?= angka($role['online']) ?> <span class="visitor-board__pct"><?= persen($role['percent']) ?></span></dd>
-          <dd class="scoreboard__sub">dari <?= angka($role['accounts']) ?> <?= esc(strtolower($role['label'])) ?><?= $type === 'admin' ? '' : ' aktif' ?></dd>
-        </div>
-      <?php endforeach; ?>
-    </dl>
-    <p class="visitor-updated">Diperbarui <time datetime="<?= esc($updated->toDateTimeString(), 'attr') ?>"><?= esc(format_waktu($updated->toDateTimeString(), 'HH.mm.ss')) ?></time></p>
-  </div>
+  <?= view('admin/visitors/summary', ['summary' => $summary, 'updated' => $updated]) ?>
 
   <form class="filters" method="get" action="<?= site_url('admin/pengunjung') ?>" role="search" data-autosubmit data-live-search>
     <div class="field filters__search">

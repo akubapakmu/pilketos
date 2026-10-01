@@ -5,6 +5,10 @@
  * berdampingan; foto yang belum diunggah diganti monogram inisial di atas
  * warna aksen pasangan (tetap punya nama untuk pembaca layar).
  *
+ * Stage 21: seluruh foto adalah tombol (button.pair__zoom menutupi foto) yang
+ * membuka foto ukuran penuh (home/partials/pair_view, <dialog>, home.js).
+ * Tanpa JavaScript tombol disembunyikan; foto tetap tampil seperti biasa.
+ *
  * @var array $pair CandidateTheme::present()
  */
 $pairPeople = [
@@ -32,4 +36,8 @@ $pairPeople = [
     <?php endforeach; ?>
   <?php endif; ?>
   <span class="pair__no" aria-hidden="true"><?= esc($pair['label']) ?></span>
+  <button type="button" class="pair__zoom" data-pair-zoom="pair-view-<?= (int) $pair['id'] ?>" aria-haspopup="dialog" aria-controls="pair-view-<?= (int) $pair['id'] ?>">
+    <span class="visually-hidden">Lihat foto pasangan <?= esc($pair['label']) ?> ukuran penuh</span>
+    <span class="pair__zoom-icon" aria-hidden="true"><?= icon('expand') ?></span>
+  </button>
 </div>

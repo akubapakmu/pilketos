@@ -24,14 +24,17 @@ class Home extends BaseController
     {
         $config   = config(Homepage::class);
         $election = model(ElectionModel::class)->getCurrentElection();
+        $viewer   = session()->get('user_type');
         $themes   = [];
         $active   = [];
 
         foreach (model(CandidateModel::class)->getAllOrdered() as $row) {
             $theme                = CandidateTheme::present($row);
+            $isActive             = (int) $row['status_aktif'] === 1;
+            $theme['profile']     = self::profileUrl($theme, $isActive, is_string($viewer) ? $viewer : null);
             $themes[$theme['id']] = $theme;
 
-            if ((int) $row['status_aktif'] === 1) {
+            if ($isActive) {
                 $active[] = $theme;
             }
         }
@@ -70,6 +73,25 @@ class Home extends BaseController
         service('renderer')->resetData();
 
         return $html;
+    }
+
+    /**
+     * Stage 21: tautan "Lihat profil pasangan" di foto pasangan layar penuh,
+     * menuju profil paslon di panel pengguna yang sedang login (sama dengan
+     * cara header membaca sesi):
+     * - siswa  -> siswa/paslon/0X, guru -> guru/paslon/0X (hanya paslon aktif;
+     *   paslon nonaktif yang masih dihitung tidak punya halaman profil);
+     * - admin  -> pratinjau admin/paslon/{id}/intip (aktif maupun nonaktif);
+     * - tamu   -> null (tautan tidak ditampilkan).
+     */
+    public static function profileUrl(array $theme, bool $active, ?string $viewer): ?string
+    {
+        return match ($viewer) {
+            'student' => $active ? site_url('siswa/paslon/' . $theme['label']) : null,
+            'teacher' => $active ? site_url('guru/paslon/' . $theme['label']) : null,
+            'admin'   => site_url('admin/paslon/' . $theme['id'] . '/intip'),
+            default   => null,
+        };
     }
 
     /**

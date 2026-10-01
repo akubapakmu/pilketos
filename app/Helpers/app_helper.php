@@ -302,11 +302,6 @@ if (! function_exists('icon')) {
             'eye-off' => '<path d="M4 4l16 16"/><path d="M10.6 5.6A10 10 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.6 3.4"/><path d="M6.6 6.9C3.9 8.6 2.5 12 2.5 12S6 18.5 12 18.5a9.6 9.6 0 0 0 4.4-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
             // Stage 15: putar video kampanye (profil paslon)
             'play'    => '<path d="M8 5.5v13l10.5-6.5Z" fill="currentColor"/>',
-            // Stage 16: kepala bagian profil paslon (misi, program, pesan, video)
-            'target'  => '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.75"/><circle cx="12" cy="12" r="1.25" fill="currentColor"/>',
-            'bulb'    => '<path d="M9.5 17.5h5"/><path d="M10.5 20.5h3"/><path d="M12 3.5a5.75 5.75 0 0 0-3.4 10.4c.6.45.9 1.1.9 1.85v.25h5v-.25c0-.75.3-1.4.9-1.85A5.75 5.75 0 0 0 12 3.5Z"/>',
-            'message' => '<path d="M5.5 4.5h13A1.5 1.5 0 0 1 20 6v9a1.5 1.5 0 0 1-1.5 1.5H11l-4.5 3.5v-3.5h-1A1.5 1.5 0 0 1 4 15V6a1.5 1.5 0 0 1 1.5-1.5Z"/><path d="M8.5 9h7"/><path d="M8.5 12h4.5"/>',
-            'video'   => '<rect x="3.5" y="6.5" width="12" height="11" rx="1.5"/><path d="m15.5 10.5 5-3v9l-5-3"/>',
         ];
 
         if (! isset($paths[$name])) {

@@ -11,6 +11,12 @@
  * dipakai untuk memperbarui setiap [data-online-count="total|guests|users"]
  * di halaman (beranda). Tab tersembunyi tidak mengirim detak; 401/403/404
  * (sesi habis, fitur dimatikan) menghentikan detak sampai halaman dimuat ulang.
+ *
+ * Stage 21: halaman yang menampilkan angka online ([data-online-count],
+ * beranda) juga membaca GET kunjungan/online tiap data-online-refresh detik
+ * (bawaan 1) tanpa muat ulang halaman. Satu permintaan pada satu waktu,
+ * berhenti saat tab tersembunyi (langsung dibaca lagi saat terlihat), jeda
+ * 5 detik setelah galat jaringan, berhenti pada 404 (angka publik dimatikan).
  */
 (function () {
   'use strict';
@@ -78,7 +84,11 @@
     document.querySelectorAll('[data-online-count]').forEach(function (node) {
       var value = online[node.getAttribute('data-online-count')];
       if (typeof value === 'number') {
-        node.textContent = format ? format.format(value) : String(value);
+        var text = format ? format.format(value) : String(value);
+        // tulis hanya bila berubah: dibaca tiap detik, layar tidak perlu dilukis ulang
+        if (node.textContent !== text) {
+          node.textContent = text;
+        }
       }
     });
   }
@@ -136,4 +146,66 @@
 
   // detak pertama segera setelah halaman tampil (membawa ukuran layar dst.)
   window.setTimeout(beat, 1500);
+
+  /* ---------- Stage 21: angka online tiap detik (beranda) ---------- */
+
+  var countUrl = script.getAttribute('data-online-url');
+  var refresh = Math.max(1, parseInt(script.getAttribute('data-online-refresh'), 10) || 1) * 1000;
+  var countTimer = null;
+  var counting = false;
+  var countStopped = !countUrl || !document.querySelector('[data-online-count]');
+
+  function scheduleCount(delay) {
+    window.clearTimeout(countTimer);
+    if (!countStopped && document.visibilityState !== 'hidden') {
+      countTimer = window.setTimeout(count, delay);
+    }
+  }
+
+  function count() {
+    if (countStopped || counting || document.visibilityState === 'hidden') {
+      return;
+    }
+
+    counting = true;
+    var delay = refresh;
+
+    window.fetch(countUrl, {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+    }).then(function (response) {
+      if (response.status === 404) {
+        countStopped = true;
+        return null;
+      }
+      if (!response.ok) {
+        delay = 5000;
+        return null;
+      }
+      return response.json();
+    }).then(function (data) {
+      if (data && data.online) {
+        render(data.online);
+      }
+    }).catch(function () {
+      delay = 5000; // jaringan putus sesaat: coba lagi sebentar lagi
+    }).then(function () {
+      counting = false;
+      scheduleCount(delay);
+    });
+  }
+
+  if (!countStopped) {
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') {
+        scheduleCount(0);
+      } else {
+        window.clearTimeout(countTimer);
+      }
+    });
+
+    scheduleCount(refresh);
+  }
 })();

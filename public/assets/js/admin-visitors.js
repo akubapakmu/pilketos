@@ -8,6 +8,12 @@
  * dari balasan, sama seperti live search (admin.js). Rincian User-Agent yang
  * sedang dibuka tetap terbuka. Tidak memuat ulang saat tab tersembunyi,
  * saat live search sedang berjalan, atau saat kursor sedang di kolom saring.
+ *
+ * Stage 21: papan angka (region "ringkas") dibaca tiap data-visitors-tick
+ * detik (bawaan 1) dari GET admin/pengunjung/ringkas (fragmen saja). Kotak
+ * angka hanya diganti bila isinya berubah; jam "Diperbarui" selalu
+ * diperbarui. Kolom saring yang sedang diketik tidak terganggu (papan angka
+ * tidak bergantung saringan); dilewati saat tab tersembunyi.
  */
 (function () {
   'use strict';
@@ -86,11 +92,84 @@
     timer = window.setTimeout(refresh, seconds * 1000);
   }
 
+  /* ---------- Stage 21: papan angka tiap detik ---------- */
+
+  var summaryUrl = page.getAttribute('data-visitors-summary');
+  var tick = Math.max(1, parseInt(page.getAttribute('data-visitors-tick'), 10) || 1) * 1000;
+  var tickTimer = null;
+  var ticking = false;
+
+  function scheduleTick(delay) {
+    window.clearTimeout(tickTimer);
+    if (summaryUrl && document.visibilityState !== 'hidden') {
+      tickTimer = window.setTimeout(readSummary, delay);
+    }
+  }
+
+  function applySummary(fresh) {
+    var region = document.querySelector('[data-live-region="ringkas"]');
+    if (!region || region.hasAttribute('aria-busy')) {
+      return;
+    }
+
+    var board = region.querySelector('dl');
+    var freshBoard = fresh.querySelector('dl');
+    if (board && freshBoard && board.innerHTML !== freshBoard.innerHTML) {
+      region.replaceChild(document.importNode(freshBoard, true), board);
+    }
+
+    var time = region.querySelector('.visitor-updated time');
+    var freshTime = fresh.querySelector('.visitor-updated time');
+    if (time && freshTime) {
+      time.setAttribute('datetime', freshTime.getAttribute('datetime') || '');
+      time.textContent = freshTime.textContent;
+    }
+  }
+
+  function readSummary() {
+    if (ticking || document.visibilityState === 'hidden') {
+      return;
+    }
+
+    ticking = true;
+    var delay = tick;
+
+    window.fetch(summaryUrl, {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' }
+    }).then(function (response) {
+      if (!response.ok || response.redirected) {
+        delay = 5000; // sesi habis / galat server: jangan membanjiri server
+        return null;
+      }
+      return response.text();
+    }).then(function (html) {
+      if (!html) {
+        return;
+      }
+      var fresh = new DOMParser().parseFromString(html, 'text/html').querySelector('[data-live-region="ringkas"]');
+      if (fresh) {
+        applySummary(fresh);
+      }
+    }).catch(function () {
+      delay = 5000; // jaringan putus sesaat
+    }).then(function () {
+      ticking = false;
+      scheduleTick(delay);
+    });
+  }
+
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible') {
       refresh();
+      scheduleTick(0);
+    } else {
+      window.clearTimeout(tickTimer);
     }
   });
 
   schedule();
+  scheduleTick(tick);
 })();

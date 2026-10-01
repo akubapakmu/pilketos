@@ -26,6 +26,8 @@ $routes->get('hitung-suara', 'Home::liveCount');
 // Stage 19: detak pengunjung online (presence.js, POST + CSRF). Balasan hanya
 // angka ringkas tamu & pengguna login online, tanpa identitas siapa pun.
 $routes->post('kunjungan/detak', 'PresenceController::heartbeat');
+// Stage 21: angka online yang sama, dibaca beranda tiap detik (GET, hanya baca).
+$routes->get('kunjungan/online', 'PresenceController::online');
 
 $routes->get('siswa/masuk', 'Student\AuthController::loginForm');
 $routes->post('siswa/masuk', 'Student\AuthController::attemptLogin');
@@ -149,6 +151,8 @@ $routes->group('admin', ['filter' => 'adminauth'], static function (RouteCollect
 
     // Stage 19: pengunjung online (tamu & pengguna login), perangkat & browser
     $routes->get('pengunjung', 'Admin\VisitorController::index');
+    // Stage 21: papan angka saja (fragmen), dimuat ulang tiap detik
+    $routes->get('pengunjung/ringkas', 'Admin\VisitorController::summary');
 
     // Stage 13: akun admin yang sedang masuk (ganti nama pengguna & kata sandi)
     $routes->get('akun', 'Admin\AccountController::index');
