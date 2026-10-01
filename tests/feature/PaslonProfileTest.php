@@ -7,6 +7,7 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
+use Tests\Support\AssetSource;
 
 /**
  * Stage 15: halaman profil paslon (siswa|guru/paslon/0X) dan pratinjau admin
@@ -399,7 +400,7 @@ final class PaslonProfileTest extends CIUnitTestCase
 
     public function testClosingStylesNeverUseTheAccentColor(): void
     {
-        $css = (string) file_get_contents(FCPATH . 'assets/css/paslon.css');
+        $css = AssetSource::read('assets/css/paslon.css');
 
         preg_match_all('/([^{}]*\.px-(?:close|finale|others)[^{}]*)\{([^}]*)\}/', $css, $rules, PREG_SET_ORDER);
         $this->assertGreaterThan(10, count($rules));

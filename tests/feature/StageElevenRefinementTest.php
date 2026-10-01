@@ -8,6 +8,7 @@ use CodeIgniter\I18n\Time;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\AssetSource;
 
 /**
  * Stage 11: analitik pill section header + bagian dimuat lewat fetch, detail
@@ -63,7 +64,7 @@ final class StageElevenRefinementTest extends CIUnitTestCase
 
     private function asset(string $path): string
     {
-        return (string) file_get_contents(FCPATH . $path);
+        return AssetSource::read($path);
     }
 
     private function scheduleAt(string $now, string $start = '2026-10-01 07:00:00', string $end = '2026-10-01 12:00:00'): void

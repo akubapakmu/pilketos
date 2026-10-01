@@ -123,9 +123,12 @@ app/Services/        VoteService, UnlockService, AnalyticsService, PublicLiveCou
 app/Views/           layouts, home (+ partials: splash, dock, pair_photo), student, teacher,
                      voting, admin/**, errors
 public/              index.php, .htaccess, assets/{css,js,fonts,img}, uploads/candidates/
+                     (assets/css & assets/js: hasil build ter-minify + watermark, Stage 23)
                      (img/brand: lockup acara + logo SMP 1 DAWE, img/home: latar hero & layar
                      pembuka, kontur, perforasi, ilustrasi pintu masuk; img/auth: foto login
                      admin; img/results: stempel hasil akhir)
+resources/           assets/css, assets/js: kode sumber CSS/JS rapi & berkomentar (Stage 23),
+                     tidak dapat dibuka browser; edit di sini lalu php spark osis:minify
 tests/               unit, database, feature (PHPUnit)
 writable/            cache (+ cache/dompdf: metrik font PDF), logs, session, uploads/imports (pratinjau impor)
 ```
@@ -313,9 +316,8 @@ php spark osis:check
 
 Folder yang harus dapat ditulis PHP: `writable/` (cache, logs, session,
 uploads) dan `public/uploads/candidates/` (di Windows biasanya sudah).
-Disarankan juga `public/assets/css/` dan `public/assets/js/` agar file
-minify dibuat otomatis (bagian 7.6). Bila tidak, jalankan `php spark osis:minify`
-setiap selesai update.
+CSS/JS di `public/assets/` sudah ter-minify dan ikut di-commit (bagian 7.6),
+jadi folder itu tidak perlu dapat ditulis dan server tidak butuh library minify.
 
 ### 7.3 Virtual host & akses dari HP
 
@@ -342,7 +344,7 @@ Lapisan pengaman web server (diuji pada Apache 2.4; nginx tidak membaca
 `.htaccess`, padanannya ada di bagian 7.4):
 
 - `.htaccess` di root proyek: bila DocumentRoot terlanjur menunjuk folder
-  proyek/induknya, `.env`, `.git`, `app/`, `writable/`, `vendor/`,
+  proyek/induknya, `.env`, `.git`, `app/`, `resources/`, `writable/`, `vendor/`,
   `composer.*` tidak dapat diunduh (403/404) dan request diteruskan ke
   `public/`; tanpa mod_rewrite semuanya ditolak.
 - `public/uploads/.htaccess`: hanya gambar `jpg/jpeg/png/webp` bernama aman
@@ -482,27 +484,39 @@ foto kandidat, impor Excel, batas ukuran (40-50 MB pesan aplikasi, di atasnya
 Hari H: pantau **Beranda** panel admin (live count); bila perlu unlock, lihat bagian 14.
 Setelah waktu selesai: buka **Hasil akhir**, lalu backup lagi.
 
-### 7.6 Minify HTML/CSS/JS & watermark (Stage 20)
+### 7.6 Minify HTML/CSS/JS & watermark (Stage 20, Stage 23)
 
-Di production, browser menerima HTML, CSS, dan JS yang **sudah diperkecil**,
-sedangkan kode sumber di repo tetap asli. Di view-source, tepat setelah
-`<!DOCTYPE html>`, muncul banner **FAJAR / © SMP 1 DAWE 2026**. Banner yang
-sama ada di baris pertama setiap file `*.min.css` / `*.min.js`.
+Browser hanya menerima CSS dan JS yang **sudah diperkecil, tanpa komentar**,
+di semua environment (development maupun production). Baris pertama setiap
+file CSS/JS berisi banner **FAJAR / © SMP 1 DAWE 2026**. HTML juga diperkecil
+dengan banner yang sama tepat setelah `<!DOCTYPE html>`, tetapi khusus saat
+`CI_ENVIRONMENT = production`.
 
+- **Kode sumber rapi** (berkomentar) ada di `resources/assets/css/` dan
+  `resources/assets/js/`, di luar `public/`, jadi tidak dapat dibuka browser.
+  File bernama sama di `public/assets/css/` dan `public/assets/js/` adalah
+  **hasil build** dan ikut di-commit. Server tidak butuh library minify
+  maupun folder yang dapat ditulis.
+- **Mengubah CSS/JS**: edit file di `resources/assets/`, jalankan
+  `php spark osis:minify` (butuh `composer install`), lalu commit sumber dan
+  hasilnya bersama. Saat halaman dibuka, file yang sumbernya lebih baru juga
+  dibangun ulang otomatis bila library terpasang dan folder dapat ditulis.
+  Jangan mengedit `public/assets/css|js` langsung: hasilnya tertimpa build
+  berikutnya.
 - **Saklar ON/OFF**: `app/Config/Minify.php`. `$enabled` adalah saklar utama;
   `$html`, `$css`, `$js` untuk mematikan satu jenis bila bermasalah;
-  `$watermark` berisi teks banner (`''` = tanpa watermark). Bisa juga dimatikan
-  sementara lewat `.env`: `minify.enabled = false`.
-- Hanya aktif bila `CI_ENVIRONMENT = production`. Di development, DevTools
-  menampilkan kode asli.
-- CSS/JS disajikan sebagai `app.min.css`, `home.min.js`, dan seterusnya di
-  folder yang sama. File ini dibuat otomatis saat sumbernya berubah dan tidak
-  masuk git. Buat ulang semuanya (sekaligus melihat ukurannya):
-  `php spark osis:minify`. Hapus semuanya: `php spark osis:minify --clean`.
-- `php spark osis:check` memberi PERINGATAN bila ada file `.min` usang yang
-  tidak dapat dibuat karena folder aset tidak dapat ditulis.
+  `$watermark` berisi teks banner (`''` = tanpa watermark). CSS/JS yang
+  dimatikan disalin apa adanya dari `resources/` (beserta komentarnya) pada
+  build berikutnya. Mematikan lewat `.env` (`minify.enabled = false`) langsung
+  berlaku untuk HTML; untuk CSS/JS jalankan `php spark osis:minify` sesudahnya.
+- `php spark osis:check` memberi PERINGATAN bila isi file di `public/assets`
+  bukan hasil build terbaru dari `resources/assets`. Sisa file `*.min.css` /
+  `*.min.js` dari Stage 20 dihapus oleh `php spark osis:minify` (atau
+  `php spark osis:minify --clean`).
 
-Rincian aturan & verifikasi: [`STAGE20-NOTES.md`](docs/catatan-tahap/STAGE20-NOTES.md).
+Rincian: [`STAGE23-NOTES.md`](docs/catatan-tahap/STAGE23-NOTES.md) (sumber di
+`resources/`, build ter-commit) dan
+[`STAGE20-NOTES.md`](docs/catatan-tahap/STAGE20-NOTES.md) (aturan minify).
 
 ## 8. Admin
 
@@ -904,8 +918,8 @@ composer install
 composer test                 (atau vendor\bin\phpunit --no-coverage)
 ```
 
-Hasil terakhir (Stage 22): **535 test, 5.111 assertion, lulus** pada PHP
-8.3.6 dengan MariaDB 10.11.14 (Stage 21: 516 test, Stage 20: 499 test, Stage 19: 484 test, Stage 18: 468 test, Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
+Hasil terakhir (Stage 23): **541 test, 5.293 assertion, lulus** pada PHP
+8.3.6 dengan MariaDB 10.11.14 (Stage 22: 535 test, Stage 21: 516 test, Stage 20: 499 test, Stage 19: 484 test, Stage 18: 468 test, Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
 8.0.46; Stage 5 dan 6 tidak mengubah schema maupun query. Test paralel (race
 condition) memakai `pcntl_fork` sehingga di-skip di Windows. Rincian dan uji
 browser: [`STAGE4-NOTES.md`](docs/catatan-tahap/STAGE4-NOTES.md) bagian 9,
@@ -921,7 +935,7 @@ beserta ringkasan tiap dokumen: [`docs/README.md`](docs/README.md).
 |---|---|
 | [`docs/spesifikasi/`](docs/spesifikasi) | `00-MASTER-PROJECT.md` (spesifikasi utama, source of truth) dan brief Stage 1–5 (`01`–`05`) |
 | [`docs/desain/`](docs/desain) | Identitas visual SMP 1 DAWE, Stage 6 (`06`–`10`): arah visual, tipografi, spesifikasi aset, prompt gambar, sistem gerak |
-| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE22-NOTES.md`) |
+| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE23-NOTES.md`) |
 
 ## 21. Beranda imersif & aset visual
 

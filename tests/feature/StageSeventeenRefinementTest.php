@@ -5,6 +5,7 @@ use CodeIgniter\I18n\Time;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\AssetSource;
 
 /**
  * Stage 17: panel admin tanpa badge status "Sedang Berlangsung", topbar HP
@@ -52,7 +53,7 @@ final class StageSeventeenRefinementTest extends CIUnitTestCase
 
     private function asset(string $path): string
     {
-        return (string) file_get_contents(FCPATH . $path);
+        return AssetSource::read($path);
     }
 
     /** Isi satu aturan CSS (selektor persis, sampai kurung kurawal tutup pertama). */

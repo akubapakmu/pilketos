@@ -13,7 +13,8 @@
 !/writable/debugbar/index.html
 /public/uploads/candidates/*
 !/public/uploads/candidates/.gitkeep
-# Stage 20: hasil minify (dibuat otomatis di production, sumber tetap asli)
+# Sisa Stage 20 (*.min.*) & tulisan terputus. Stage 23: hasil build CSS/JS
+# bernama sama di public/assets ikut di-commit (sumber: resources/assets).
 /public/assets/**/*.min.css
 /public/assets/**/*.min.js
 /public/assets/**/*.tmp

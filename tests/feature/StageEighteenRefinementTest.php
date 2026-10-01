@@ -4,6 +4,7 @@ use App\Database\Seeds\DatabaseSeeder;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\AssetSource;
 
 /**
  * Stage 18: scene pertama beranda hanya gambar hero (desktop & HP) + tombol
@@ -100,7 +101,7 @@ final class StageEighteenRefinementTest extends CIUnitTestCase
             $this->assertFileDoesNotExist(FCPATH . 'assets/img/home/' . $file, $file);
         }
 
-        $css = (string) file_get_contents(FCPATH . 'assets/css/home.css');
+        $css = AssetSource::read('assets/css/home.css');
 
         foreach (['hero-contour', 'hero-perforation', 'hero-registration', '.hero-bg__contour', '.hero__perf', '.hero__kicker', '.hero__title', '.hero__support'] as $gone) {
             $this->assertStringNotContainsString($gone, $css, $gone);
@@ -120,7 +121,7 @@ final class StageEighteenRefinementTest extends CIUnitTestCase
         // Hanya sebagai nama tautan, tidak lagi sebagai teks.
         $this->assertSame(1, substr_count($html, 'Kembali ke awal'));
 
-        $css  = (string) file_get_contents(FCPATH . 'assets/css/home.css');
+        $css  = AssetSource::read('assets/css/home.css');
         $rule = $this->rule($css, '.scene-top');
         $this->assertStringContainsString('justify-content: center;', $rule);
         $this->assertStringContainsString('min-width: 40px;', $rule);

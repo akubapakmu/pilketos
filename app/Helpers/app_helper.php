@@ -72,10 +72,10 @@ if (! function_exists('asset_url')) {
      * penanda versi berubah otomatis setiap file diperbarui sehingga browser
      * tidak memakai CSS/JS lama setelah aplikasi di-update.
      *
-     * Stage 20: di production (Config\Minify) CSS/JS disajikan sebagai
-     * *.min.css / *.min.js di folder yang sama (dibuat otomatis oleh
-     * App\Libraries\AssetMinifier); penanda versi = waktu ubah file yang
-     * benar-benar disajikan.
+     * Stage 23: CSS/JS di public/assets adalah hasil build ter-minify +
+     * watermark dari resources/assets (App\Libraries\AssetMinifier, dibangun
+     * ulang otomatis bila sumbernya lebih baru); penanda versi = waktu ubah
+     * file yang benar-benar disajikan.
      */
     function asset_url(string $path): string
     {
