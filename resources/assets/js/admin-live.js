@@ -1,0 +1,546 @@
+/**
+ * SMP 1 DAWE — Pemilihan Ketua OSIS 2026
+ * Live count panel admin (Stage 3, MASTER section 15).
+ *
+ * Mengambil GET admin/hitung-suara (JSON) lalu memperbarui angka ringkasan,
+ * suara & persentase per pasangan, batang/donat, serta tabel rekap
+ * (jenis pemilih, jenis kelamin, jenjang, kelas) TANPA memuat ulang halaman.
+ *
+ * Irama polling ditentukan server (poll.interval): 10 detik saat pemilihan
+ * berlangsung, 60 detik sebelum dibuka, berhenti setelah selesai. Polling
+ * dijeda saat tab tidak aktif dan dilanjutkan (langsung diperbarui) saat tab
+ * aktif lagi. Gagal jaringan = coba lagi dengan jeda bertambah (maks 60 dtk).
+ * Sesi habis (401) = berhenti dan diarahkan ke halaman login.
+ * Semua teks dari server dimasukkan lewat textContent (bukan innerHTML).
+ */
+(function () {
+  'use strict';
+
+  var root = document.querySelector('[data-live]');
+  if (!root || !window.fetch || !window.Intl) {
+    return;
+  }
+
+  var endpoint = root.getAttribute('data-live-url');
+  var status = root.getAttribute('data-live-status') || '';
+  var interval = status === 'ONGOING' ? 10 : (status === 'UPCOMING' ? 60 : 0);
+  var failures = 0;
+  var timer = null;
+  var busy = false;
+  var stopped = false;
+  var finalReload = false;
+  var reduced = window.App && window.App.reducedMotion ? window.App.reducedMotion() : false;
+
+  var indicator = root.querySelector('[data-live-indicator]');
+  var stateText = root.querySelector('[data-live-state]');
+  var updated = root.querySelector('[data-live-updated]');
+  var announcer = root.querySelector('[data-live-announce]');
+  var refresh = root.querySelector('[data-live-refresh]');
+
+  var fmtInt = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
+  var fmtPct = new Intl.NumberFormat('id-ID', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+  function int(value) {
+    return fmtInt.format(Number(value) || 0);
+  }
+
+  function pct(value) {
+    return fmtPct.format(Number(value) || 0) + '%';
+  }
+
+  function get(object, path) {
+    return path.split('.').reduce(function (acc, key) {
+      return acc === null || acc === undefined ? undefined : acc[key];
+    }, object);
+  }
+
+  function clampPercent(value) {
+    return Math.max(0, Math.min(100, Number(value) || 0));
+  }
+
+  function make(tag, className, text) {
+    var el = document.createElement(tag);
+    if (className) {
+      el.className = className;
+    }
+    if (text !== undefined) {
+      el.textContent = text;
+    }
+    return el;
+  }
+
+  function setText(el, text) {
+    if (!el || el.textContent === text) {
+      return;
+    }
+    el.textContent = text;
+    if (!reduced) {
+      el.classList.remove('is-bump');
+      void el.offsetWidth;
+      el.classList.add('is-bump');
+    }
+  }
+
+  /* -- status indikator ----------------------------------------------------- */
+  var STATE_TEXT = {
+    ONGOING: 'Live',
+    UPCOMING: 'Menunggu dibuka',
+    FINISHED: 'Hasil akhir',
+    NONE: 'Belum ada jadwal',
+    paused: 'Dijeda (tab tidak aktif)',
+    error: 'Koneksi terputus, mencoba lagi',
+    ended: 'Sesi berakhir'
+  };
+
+  function setState(state) {
+    if (!indicator) {
+      return;
+    }
+    indicator.classList.remove('live--ongoing', 'live--upcoming', 'live--finished', 'live--none', 'is-paused', 'is-error');
+
+    if (state === 'paused' || state === 'error' || state === 'ended') {
+      indicator.classList.add('live--' + (status || 'none').toLowerCase(), state === 'error' ? 'is-error' : 'is-paused');
+    } else {
+      indicator.classList.add('live--' + (state || 'none').toLowerCase());
+    }
+
+    if (stateText) {
+      stateText.textContent = STATE_TEXT[state] || STATE_TEXT.NONE;
+    }
+  }
+
+  function announce(message) {
+    if (announcer) {
+      announcer.textContent = message;
+    }
+  }
+
+  /* -- render ---------------------------------------------------------------- */
+  function renderValues(data) {
+    document.querySelectorAll('[data-live-value]').forEach(function (el) {
+      var value = get(data, el.getAttribute('data-live-value'));
+      if (typeof value === 'number') {
+        setText(el, el.getAttribute('data-live-format') === 'percent' ? pct(value) : int(value));
+      }
+    });
+
+    document.querySelectorAll('[data-live-width]').forEach(function (el) {
+      var value = get(data, el.getAttribute('data-live-width'));
+      if (typeof value === 'number') {
+        el.style.width = clampPercent(value) + '%';
+      }
+    });
+  }
+
+  // Stage 17: struktur sama dengan admin/partials/pair_thumb.php (foto ketua |
+  // wakil dalam satu kotak persegi, inisial bila foto belum ada, nomor di atas).
+  function buildThumb(c) {
+    var thumb = make('span', 'pair-thumb result__thumb');
+    thumb.setAttribute('aria-hidden', 'true');
+    [['ketua', c.photo_ketua, c.ketua_initials], ['wakil', c.photo_wakil, c.wakil_initials]].forEach(function (part) {
+      var half = make('span', 'pair-thumb__half pair-thumb__half--' + part[0]);
+      if (part[1]) {
+        var img = make('img');
+        img.src = part[1];
+        img.alt = '';
+        img.width = 120;
+        img.height = 240;
+        img.decoding = 'async';
+        half.appendChild(img);
+      } else {
+        half.appendChild(make('span', 'pair-thumb__mono', part[2] || '?'));
+      }
+      thumb.appendChild(half);
+    });
+    thumb.appendChild(make('span', 'pair-thumb__no', c.label));
+    return thumb;
+  }
+
+  function buildResult(c) {
+    var li = make('li', 'result');
+    li.setAttribute('data-live-candidate', String(c.id));
+    li.style.setProperty('--accent', c.accent);
+    li.style.setProperty('--accent-ink', c.accent_ink);
+
+    li.appendChild(buildThumb(c));
+
+    var body = make('div', 'result__body');
+    var names = make('p', 'result__names');
+    names.appendChild(make('span', 'visually-hidden', 'Pasangan ' + c.label + ':'));
+    names.appendChild(make('strong', '', c.ketua));
+    names.appendChild(make('span', '', '& ' + c.wakil));
+    if (!c.active) {
+      names.appendChild(make('span', 'pill pill--muted', 'nonaktif'));
+    }
+    body.appendChild(names);
+
+    var track = make('span', 'result__track');
+    track.setAttribute('aria-hidden', 'true');
+    var fill = make('span', 'result__fill');
+    fill.setAttribute('data-live-bar', '');
+    track.appendChild(fill);
+    body.appendChild(track);
+
+    var split = make('p', 'result__split');
+    split.appendChild(document.createTextNode('Siswa '));
+    split.appendChild(make('span', '', '0')).setAttribute('data-live-field', 'student_votes');
+    split.appendChild(document.createTextNode(' · Guru '));
+    split.appendChild(make('span', '', '0')).setAttribute('data-live-field', 'teacher_votes');
+    body.appendChild(split);
+    li.appendChild(body);
+
+    var count = make('p', 'result__count');
+    var votes = make('span', 'result__votes');
+    votes.appendChild(make('span', '', '0')).setAttribute('data-live-field', 'votes');
+    votes.appendChild(make('span', 'visually-hidden', ' suara'));
+    count.appendChild(votes);
+    count.appendChild(make('span', 'result__pct', '0%')).setAttribute('data-live-field', 'percent');
+    li.appendChild(count);
+
+    return li;
+  }
+
+  function renderResults(data) {
+    var candidates = data.candidates || [];
+    var ids = candidates.map(function (c) { return String(c.id); }).join(',');
+
+    root.querySelectorAll('[data-live-results]').forEach(function (results) {
+      var list = results.querySelector('.results__list');
+      if (!list) {
+        return;
+      }
+
+      var current = Array.prototype.map.call(list.querySelectorAll('[data-live-candidate]'), function (li) {
+        return li.getAttribute('data-live-candidate');
+      }).join(',');
+
+      if (current !== ids) {
+        var fresh = make('ol', 'results__list');
+        candidates.forEach(function (c) {
+          fresh.appendChild(buildResult(c));
+        });
+        list.parentNode.replaceChild(fresh, list);
+        list = fresh;
+      }
+
+      candidates.forEach(function (c) {
+        var li = list.querySelector('[data-live-candidate="' + c.id + '"]');
+        if (!li) {
+          return;
+        }
+        setText(li.querySelector('[data-live-field="votes"]'), int(c.votes));
+        setText(li.querySelector('[data-live-field="percent"]'), pct(c.percent));
+        setText(li.querySelector('[data-live-field="student_votes"]'), int(c.student_votes));
+        setText(li.querySelector('[data-live-field="teacher_votes"]'), int(c.teacher_votes));
+        var bar = li.querySelector('[data-live-bar]');
+        if (bar) {
+          bar.style.width = clampPercent(c.percent) + '%';
+        }
+      });
+
+      var svg = results.querySelector('[data-live-donut]');
+      if (svg) {
+        renderDonut(svg, candidates, get(data, 'summary.all.voted') || 0);
+      }
+    });
+  }
+
+  function renderDonut(svg, candidates, total) {
+    var radius = parseFloat(svg.getAttribute('data-radius')) || 52;
+    var circumference = 2 * Math.PI * radius;
+    var offset = 0;
+    var keep = {};
+
+    candidates.forEach(function (c) {
+      var circle = svg.querySelector('[data-candidate="' + c.id + '"]');
+      if (!circle) {
+        circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('class', 'donut__seg');
+        circle.setAttribute('cx', '70');
+        circle.setAttribute('cy', '70');
+        circle.setAttribute('r', String(radius));
+        circle.setAttribute('data-candidate', String(c.id));
+        svg.appendChild(circle);
+      }
+      var length = total > 0 ? circumference * c.votes / total : 0;
+      circle.style.stroke = c.accent;
+      circle.setAttribute('stroke-dasharray', length.toFixed(3) + ' ' + (circumference - length).toFixed(3));
+      circle.setAttribute('stroke-dashoffset', (-offset).toFixed(3));
+      offset += length;
+      keep[String(c.id)] = true;
+    });
+
+    svg.querySelectorAll('[data-candidate]').forEach(function (circle) {
+      if (!keep[circle.getAttribute('data-candidate')]) {
+        circle.parentNode.removeChild(circle);
+      }
+    });
+  }
+
+  function headCell(text, className) {
+    var th = make('th', className, text);
+    th.setAttribute('scope', 'col');
+    return th;
+  }
+
+  function buildHead(table, candidates) {
+    var tr = make('tr');
+    tr.appendChild(headCell(table.getAttribute('data-live-label') || ''));
+    tr.appendChild(headCell('Total', 'num'));
+    tr.appendChild(headCell('Sudah', 'num'));
+    tr.appendChild(headCell('Belum', 'num'));
+    tr.appendChild(headCell('Partisipasi', 'num'));
+    candidates.forEach(function (c) {
+      var th = headCell('', 'num cand-col');
+      th.style.setProperty('--accent', c.accent);
+      th.style.setProperty('--accent-ink', c.accent_ink);
+      th.appendChild(make('span', 'cand-chip', c.label));
+      th.appendChild(make('span', 'visually-hidden', ' Pasangan ' + c.label));
+      tr.appendChild(th);
+    });
+    if (table.hasAttribute('data-live-bars')) {
+      tr.appendChild(headCell('Grafik', 'dist'));
+    }
+    var thead = make('thead');
+    thead.appendChild(tr);
+    table.replaceChild(thead, table.tHead);
+  }
+
+  function buildRow(table, group, candidates) {
+    var tr = make('tr');
+    var th = make('th');
+    th.setAttribute('scope', 'row');
+    var link = table.getAttribute('data-live-link');
+    if (link) {
+      var a = make('a', '', group.label);
+      a.href = link + encodeURIComponent(group.key);
+      th.appendChild(a);
+    } else {
+      th.textContent = group.label;
+    }
+    tr.appendChild(th);
+
+    ['total', 'voted', 'not_voted', 'participation'].forEach(function () {
+      tr.appendChild(make('td', 'num'));
+    });
+
+    candidates.forEach(function () {
+      var td = make('td', 'num');
+      td.appendChild(make('span', 'cell-n'));
+      td.appendChild(make('span', 'cell-pct'));
+      tr.appendChild(td);
+    });
+
+    if (table.hasAttribute('data-live-bars')) {
+      var dist = make('td', 'dist');
+      var bar = make('span', 'stackbar');
+      bar.setAttribute('aria-hidden', 'true');
+      candidates.forEach(function (c) {
+        var seg = make('span', 'stackbar__seg');
+        seg.style.background = c.accent;
+        bar.appendChild(seg);
+      });
+      dist.appendChild(bar);
+      tr.appendChild(dist);
+    }
+
+    return tr;
+  }
+
+  function fillRow(tr, group, candidates) {
+    var cells = tr.cells;
+    setText(cells[1], int(group.total));
+    setText(cells[2], int(group.voted));
+    setText(cells[3], int(group.not_voted));
+    setText(cells[4], pct(group.participation));
+
+    candidates.forEach(function (c, i) {
+      var cell = cells[5 + i];
+      setText(cell.querySelector('.cell-n'), int(group.votes[c.id] || 0));
+      setText(cell.querySelector('.cell-pct'), pct(group.shares[c.id] || 0));
+    });
+
+    var segments = tr.querySelectorAll('.stackbar__seg');
+    candidates.forEach(function (c, i) {
+      if (segments[i]) {
+        segments[i].style.width = (group.total > 0 ? clampPercent((group.votes[c.id] || 0) / group.total * 100) : 0) + '%';
+      }
+    });
+  }
+
+  function renderTables(data) {
+    var candidates = data.candidates || [];
+    var ids = candidates.map(function (c) { return String(c.id); }).join(',');
+
+    root.querySelectorAll('table[data-live-table]').forEach(function (table) {
+      var groups = get(data, 'groups.' + table.getAttribute('data-live-table')) || [];
+      var signature = ids + '|' + groups.map(function (g) { return g.key; }).join('\u0001');
+      var tbody = table.tBodies[0];
+
+      if (table.getAttribute('data-live-cands') !== ids) {
+        buildHead(table, candidates);
+        table.setAttribute('data-live-cands', ids);
+      }
+
+      // Struktur sama: perbarui sel di tempat (transisi batang tetap halus).
+      if (!tbody || tbody.getAttribute('data-live-sig') !== signature) {
+        var fresh = make('tbody');
+        if (groups.length === 0) {
+          var empty = make('tr');
+          var td = make('td', 'data-table__empty', 'Belum ada data.');
+          td.colSpan = 5 + candidates.length + (table.hasAttribute('data-live-bars') ? 1 : 0);
+          empty.appendChild(td);
+          fresh.appendChild(empty);
+        }
+        groups.forEach(function (g) {
+          fresh.appendChild(buildRow(table, g, candidates));
+        });
+        fresh.setAttribute('data-live-sig', signature);
+        if (tbody) {
+          table.replaceChild(fresh, tbody);
+        } else {
+          table.appendChild(fresh);
+        }
+        tbody = fresh;
+      }
+
+      groups.forEach(function (g, i) {
+        fillRow(tbody.rows[i], g, candidates);
+      });
+    });
+  }
+
+  function renderElection(data) {
+    var election = data.election;
+    var next = election ? election.status : '';
+
+    // Stage 17: badge status di topbar dihapus; status tampil di indikator live.
+    root.querySelectorAll('[data-live-results-title]').forEach(function (title) {
+      title.textContent = next === 'FINISHED' ? 'Hasil akhir' : (next === 'ONGOING' ? 'Hasil sementara' : 'Perolehan suara');
+    });
+
+    if (next !== status) {
+      if (next === 'FINISHED') {
+        announce('Pemilihan telah selesai. Halaman dimuat ulang untuk menampilkan hasil akhir.');
+        // Stage 4: keadaan final (pasangan terpilih, tautan hasil akhir) dirender server.
+        finalReload = status === 'ONGOING' || status === 'UPCOMING';
+      } else if (next === 'ONGOING') {
+        announce('Pemilihan dibuka. Live count berjalan.');
+      }
+      status = next;
+      root.setAttribute('data-live-status', status);
+    }
+  }
+
+  function render(data) {
+    renderElection(data);
+    renderValues(data);
+    renderResults(data);
+    renderTables(data);
+    if (updated && data.generated_label) {
+      updated.textContent = data.generated_label;
+    }
+  }
+
+  /* -- polling -------------------------------------------------------------- */
+  function schedule(seconds) {
+    window.clearTimeout(timer);
+    timer = null;
+    if (!stopped && seconds > 0 && !document.hidden) {
+      timer = window.setTimeout(tick, seconds * 1000);
+    }
+  }
+
+  function tick() {
+    if (busy || stopped) {
+      return;
+    }
+    busy = true;
+    if (indicator) {
+      indicator.classList.add('is-busy');
+    }
+
+    var controller = window.AbortController ? new AbortController() : null;
+    var abortTimer = window.setTimeout(function () {
+      if (controller) {
+        controller.abort();
+      }
+    }, 8000);
+
+    window.fetch(endpoint, {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      signal: controller ? controller.signal : undefined
+    }).then(function (response) {
+      if (response.status === 401) {
+        return response.json().catch(function () { return {}; }).then(function (body) {
+          stopped = true;
+          setState('ended');
+          if (body && body.redirect) {
+            window.location.assign(body.redirect);
+          }
+          return null;
+        });
+      }
+      if (!response.ok) {
+        throw new Error('HTTP ' + response.status);
+      }
+      return response.json();
+    }).then(function (data) {
+      if (!data) {
+        return;
+      }
+      failures = 0;
+      render(data);
+      interval = data.poll && typeof data.poll.interval === 'number' ? data.poll.interval : 0;
+      setState(status || 'NONE');
+      if (finalReload) {
+        stopped = true;
+        window.setTimeout(function () {
+          window.location.reload();
+        }, 1600);
+        return;
+      }
+      schedule(interval);
+    }).catch(function () {
+      failures++;
+      setState('error');
+      schedule(Math.min(60, Math.max(interval, 10) * Math.pow(2, Math.min(failures, 3))));
+    }).then(function () {
+      window.clearTimeout(abortTimer);
+      busy = false;
+      if (indicator) {
+        indicator.classList.remove('is-busy');
+      }
+    });
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (stopped) {
+      return;
+    }
+    if (document.hidden) {
+      window.clearTimeout(timer);
+      timer = null;
+      if (interval > 0) {
+        setState('paused');
+      }
+    } else if (interval > 0) {
+      tick();
+    }
+  });
+
+  if (refresh) {
+    refresh.addEventListener('click', function (event) {
+      event.preventDefault();
+      if (!stopped) {
+        tick();
+      }
+    });
+  }
+
+  setState(status || 'NONE');
+  schedule(interval);
+})();

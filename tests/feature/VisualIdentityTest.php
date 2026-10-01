@@ -5,6 +5,7 @@ use App\Database\Seeds\DatabaseSeeder;
 use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
+use Tests\Support\AssetSource;
 
 /**
  * Identitas visual SMP 1 DAWE (Stage 6, STAGE6-NOTES.md; dokumen 06-10):
@@ -59,7 +60,7 @@ final class VisualIdentityTest extends CIUnitTestCase
             $this->assertStringNotContainsString('inter-latin', $html, $page);
         }
 
-        $css = (string) file_get_contents(FCPATH . 'assets/css/app.css');
+        $css = AssetSource::read('assets/css/app.css');
         $this->assertStringContainsString("--font-ui: 'Plus Jakarta Sans'", $css);
         $this->assertFileExists(FCPATH . 'assets/fonts/plus-jakarta-sans-latin-wght-normal.woff2');
         $this->assertFileExists(FCPATH . 'assets/fonts/OFL-PlusJakartaSans.txt');
@@ -184,7 +185,7 @@ final class VisualIdentityTest extends CIUnitTestCase
         $this->assertStringContainsString("sessionStorage.getItem('osis2026.skipIntro') === '1'", $html);
         $this->assertStringContainsString("sessionStorage.removeItem('osis2026.skipIntro')", $html);
 
-        $js = (string) file_get_contents(FCPATH . 'assets/js/home.js');
+        $js = AssetSource::read('assets/js/home.js');
         $this->assertStringNotContainsString("'osis2026.intro'", $js);
         $this->assertStringContainsString('Intro.MIN = 1500;', $js);
         $this->assertStringContainsString('Intro.MAX = 5200;', $js);
@@ -213,7 +214,7 @@ final class VisualIdentityTest extends CIUnitTestCase
         $this->assertNull(Home::identityAccent($config, []));
 
         // Scene SUARA tidak memakai warna identitas sekolah.
-        $css  = (string) file_get_contents(FCPATH . 'assets/css/home.css');
+        $css  = AssetSource::read('assets/css/home.css');
         $uses = substr_count($css, 'var(--parijoto');
         $this->assertSame(1, $uses);
         $this->assertStringContainsString('background: var(--parijoto, var(--on-night));', $css);
@@ -276,7 +277,7 @@ final class VisualIdentityTest extends CIUnitTestCase
 
     public function testHomepageStylesUsePagiMuriaAndCalmerType(): void
     {
-        $css = (string) file_get_contents(FCPATH . 'assets/css/home.css');
+        $css = AssetSource::read('assets/css/home.css');
 
         foreach (['--night:       #101312', '--on-night:    #F2F1EC', '--motion-scene:  800ms'] as $token) {
             $this->assertStringContainsString($token, $css, $token);

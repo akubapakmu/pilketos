@@ -5,28 +5,29 @@ namespace Config;
 use CodeIgniter\Config\BaseConfig;
 
 /**
- * Minify keluaran ke browser + watermark view-source (Stage 20).
+ * Minify keluaran ke browser + watermark view-source (Stage 20, Stage 22).
  *
- * Kode sumber di repo TIDAK berubah (tetap rapi & berkomentar). Yang diperkecil
- * hanya yang diterima browser, dan HANYA bila CI_ENVIRONMENT = production
- * (development & testing selalu mengirim kode asli agar mudah di-debug):
- *
- * - HTML : dirapatkan saat respons dikirim (App\Filters\MinifyHtmlFilter).
- *          Isi <pre>/<textarea> & nilai atribut tidak disentuh.
- * - CSS/JS: asset_url('assets/css/app.css') menyajikan app.min.css di folder
- *          yang sama (url('../fonts/...') tetap benar). File *.min.* dibuat
- *          otomatis oleh App\Libraries\AssetMinifier saat sumber lebih baru,
- *          tidak masuk git (.gitignore). Buat ulang / hapus manual:
- *          php spark osis:minify   |   php spark osis:minify --clean
+ * - CSS/JS: kode sumber rapi & berkomentar ada di resources/assets/{css,js}/
+ *           (di luar public/, tidak pernah sampai ke browser). File bernama
+ *           sama di public/assets/{css,js}/ adalah HASIL BUILD: diperkecil +
+ *           watermark, ikut di-commit, berlaku di SEMUA environment. Setelah
+ *           mengedit sumber: php spark osis:minify, lalu commit keduanya
+ *           (App\Libraries\AssetMinifier juga membangun ulang otomatis bila
+ *           sumber lebih baru, library terpasang, dan folder dapat ditulis).
+ * - HTML  : dirapatkan saat respons dikirim (App\Filters\MinifyHtmlFilter),
+ *           HANYA bila CI_ENVIRONMENT = production. Isi <pre>/<textarea> &
+ *           nilai atribut tidak disentuh.
  *
  * Saklar ON/OFF cukup diubah di file ini (atau sementara lewat .env:
  * minify.enabled = false). Bila satu jenis bermasalah, matikan jenis itu saja.
+ * CSS/JS yang dimatikan disalin apa adanya dari resources/ (beserta
+ * komentarnya) pada build berikutnya.
  */
 class Minify extends BaseConfig
 {
     /**
-     * Saklar utama. true = HTML/CSS/JS dikirim ter-minify (production saja),
-     * false = browser menerima kode asli apa adanya.
+     * Saklar utama. true = CSS/JS dikirim ter-minify (semua environment) dan
+     * HTML ter-minify (production saja), false = browser menerima kode asli.
      */
     public bool $enabled = true;
 

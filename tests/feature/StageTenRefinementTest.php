@@ -6,6 +6,7 @@ use CodeIgniter\Test\CIUnitTestCase;
 use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Homepage;
+use Tests\Support\AssetSource;
 
 /**
  * Stage 10 (STAGE10-NOTES.md): rapikan tampilan HP bilik suara, dasbor,
@@ -80,7 +81,7 @@ final class StageTenRefinementTest extends CIUnitTestCase
 
     private function asset(string $path): string
     {
-        return (string) file_get_contents(FCPATH . $path);
+        return AssetSource::read($path);
     }
 
     // ------------------------------------------------------------------

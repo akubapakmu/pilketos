@@ -125,19 +125,29 @@ final class SystemCheck
 
         $this->add($app->CSPEnabled ? self::OK : self::WARN, 'Content-Security-Policy', $app->CSPEnabled ? 'aktif' : 'nonaktif (app.CSPEnabled = false)');
 
-        // Stage 20: *.min.css / *.min.js dibuat otomatis saat production; bila
-        // folder aset tidak dapat ditulis, file usang tidak pernah diperkecil.
-        if (! config(Minify::class)->enabled) {
+        // Stage 22: CSS/JS di public/assets adalah hasil build dari
+        // resources/assets (ikut di-commit); usang = belum dibangun ulang.
+        $minifier = new AssetMinifier();
+        $outdated = $minifier->outdated();
+        $minify   = config(Minify::class);
+
+        if ($outdated !== []) {
+            $this->add(
+                self::WARN,
+                'Minify HTML/CSS/JS',
+                count($outdated) . ' file CSS/JS di public/assets belum dibangun ulang dari resources/assets ('
+                    . implode(', ', array_map('basename', array_slice($outdated, 0, 3))) . (count($outdated) > 3 ? ', ...' : '')
+                    . '): jalankan php spark osis:minify' . (AssetMinifier::available() ? '' : ' (butuh composer install)'),
+            );
+        } elseif (! $minify->enabled) {
             $this->add(self::OK, 'Minify HTML/CSS/JS', 'nonaktif (Config\\Minify::$enabled = false): browser menerima kode asli');
         } else {
-            $stuck = (new AssetMinifier(null, 'production'))->unbuildable();
-            $this->add(
-                $stuck === [] ? self::OK : self::WARN,
-                'Minify HTML/CSS/JS',
-                $stuck !== []
-                    ? count($stuck) . ' file *.min.* belum dibuat / usang dan folder aset tidak dapat ditulis PHP: jalankan php spark osis:minify'
-                    : (ENVIRONMENT === 'production' ? 'aktif' : 'siap; aktif otomatis saat CI_ENVIRONMENT = production'),
-            );
+            $this->add(self::OK, 'Minify HTML/CSS/JS', sprintf(
+                'CSS/JS %s (semua environment), HTML %s%s',
+                $minifier->active('css') && $minifier->active('js') ? 'ter-minify' : 'sebagian ter-minify',
+                ! $minify->html ? 'nonaktif' : (ENVIRONMENT === 'production' ? 'ter-minify' : 'ter-minify saat CI_ENVIRONMENT = production'),
+                AssetMinifier::available() ? '' : '; library minify belum terpasang, build ulang butuh composer install',
+            ));
         }
 
         if (str_starts_with($baseURL, 'https://')) {

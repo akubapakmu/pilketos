@@ -11,6 +11,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Homepage;
 use Config\Visitors;
+use Tests\Support\AssetSource;
 
 /**
  * Stage 19: banner final dasbor dua baris kapital tanpa kalimat "Pencoblosan
@@ -73,7 +74,7 @@ final class StageNineteenRefinementTest extends CIUnitTestCase
 
     private function asset(string $path): string
     {
-        return (string) file_get_contents(FCPATH . $path);
+        return AssetSource::read($path);
     }
 
     /** Isi satu aturan CSS (selektor persis, sampai kurung kurawal tutup pertama). */

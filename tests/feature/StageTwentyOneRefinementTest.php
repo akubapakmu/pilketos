@@ -9,6 +9,7 @@ use CodeIgniter\Test\DatabaseTestTrait;
 use CodeIgniter\Test\FeatureTestTrait;
 use Config\Homepage;
 use Config\Visitors;
+use Tests\Support\AssetSource;
 
 /**
  * Stage 21: angka online beranda & papan angka admin diperbarui tiap detik
@@ -68,7 +69,7 @@ final class StageTwentyOneRefinementTest extends CIUnitTestCase
 
     private function asset(string $path): string
     {
-        return (string) file_get_contents(FCPATH . $path);
+        return AssetSource::read($path);
     }
 
     /** Isi satu aturan CSS (selektor persis, sampai kurung kurawal tutup pertama). */

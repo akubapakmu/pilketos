@@ -8,6 +8,7 @@ use CodeIgniter\Test\FeatureTestTrait;
 use Config\Services;
 use Tests\Support\SpreadsheetFactory;
 use Tests\Support\UploadFixture;
+use Tests\Support\AssetSource;
 
 /**
  * Stage 14: gambar layar pembuka tidak telat (preload di <head>, tampil tanpa
@@ -66,7 +67,7 @@ final class StageFourteenRefinementTest extends CIUnitTestCase
 
     private function asset(string $path): string
     {
-        return (string) file_get_contents(FCPATH . $path);
+        return AssetSource::read($path);
     }
 
     /** Isi satu aturan CSS (selektor persis, sampai kurung kurawal tutup pertama). */

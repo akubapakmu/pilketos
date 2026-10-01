@@ -6,78 +6,69 @@ use App\Libraries\AssetMinifier;
 use App\Libraries\CandidateAssets;
 use CodeIgniter\CLI\BaseCommand;
 use CodeIgniter\CLI\CLI;
-use Config\Minify;
 
 /**
  * php spark osis:minify [--clean]
  *
- * Stage 20: membuat ulang semua public/assets/css/*.min.css dan
- * public/assets/js/*.min.js dari sumbernya (Config\Minify). Di production file
- * ini juga dibuat otomatis saat sumber berubah; perintah ini dipakai setelah
- * update bila folder aset tidak dapat ditulis oleh web server, atau untuk
- * melihat hasilnya. --clean menghapus semua file *.min.* hasil buatan.
+ * Stage 22: membangun ulang semua public/assets/css/*.css dan
+ * public/assets/js/*.js (ter-minify + watermark, Config\Minify) dari kode
+ * sumber rapi di resources/assets/. Jalankan setiap selesai mengedit file di
+ * resources/assets/, lalu commit sumber & hasilnya bersama. Sisa file
+ * *.min.css / *.min.js Stage 20 ikut dihapus; --clean hanya menghapus sisa itu.
  */
 class MinifyAssets extends BaseCommand
 {
     protected $group       = 'Pemilihan OSIS';
     protected $name        = 'osis:minify';
-    protected $description = 'Membuat ulang file *.min.css / *.min.js (minify aset untuk production).';
+    protected $description = 'Membangun ulang CSS/JS di public/assets (minify + watermark) dari resources/assets.';
     protected $usage       = 'osis:minify [--clean]';
-    protected $options     = ['--clean' => 'Hapus semua file *.min.css / *.min.js hasil buatan.'];
+    protected $options     = ['--clean' => 'Hanya hapus sisa file *.min.css / *.min.js Stage 20.'];
 
     public function run(array $params)
     {
-        // Perintah eksplisit: berjalan di environment apa pun.
-        $minifier = new AssetMinifier(null, 'production');
+        $minifier = new AssetMinifier();
 
         if (array_key_exists('clean', $params) || CLI::getOption('clean') !== null) {
-            CLI::write('Dihapus ' . $minifier->clean() . ' file *.min.css / *.min.js.', 'green');
+            CLI::write('Dihapus ' . $minifier->clean() . ' file sisa *.min.css / *.min.js.', 'green');
 
             return EXIT_SUCCESS;
         }
 
-        $config = config(Minify::class);
+        if (! AssetMinifier::available() && ($minifier->active('css') || $minifier->active('js'))) {
+            CLI::error('Library minify belum terpasang: jalankan "composer install" lalu ulangi. File di public/assets tidak diubah.');
 
-        if (! $config->enabled) {
-            CLI::write('Minify nonaktif (Config\Minify::$enabled = false): browser menerima kode asli. Tidak ada yang dibuat.', 'yellow');
-
-            return EXIT_SUCCESS;
+            return EXIT_ERROR;
         }
 
         $failed = 0;
 
         foreach ($minifier->sources() as $path) {
-            $type = pathinfo($path, PATHINFO_EXTENSION);
-
-            if (! $config->{$type}) {
-                CLI::write(str_pad('[LEWATI]', 10) . $path . ' (Config\Minify::$' . $type . ' = false)', 'yellow');
-
-                continue;
-            }
-
+            $type   = pathinfo($path, PATHINFO_EXTENSION);
             $result = $minifier->build($path);
 
             if ($result === null) {
                 $failed++;
-                CLI::write(str_pad('[GAGAL]', 10) . $path . ': tidak dapat dibuat (lihat writable/logs), file asli tetap disajikan', 'red');
+                CLI::write(str_pad('[GAGAL]', 10) . $path . ': tidak dapat dibuat (lihat writable/logs), file lama tetap disajikan', 'red');
 
                 continue;
             }
 
             CLI::write(sprintf(
-                '%s%s -> %s  %s -> %s (-%d%%)',
-                str_pad('[OK]', 10),
+                '%s%s  %s -> %s%s',
+                str_pad($result['changed'] ? '[OK]' : '[SAMA]', 10),
                 $path,
-                basename($result['target']),
                 CandidateAssets::formatBytes($result['before']),
                 CandidateAssets::formatBytes($result['after']),
-                $result['before'] > 0 ? (int) round(100 - $result['after'] * 100 / $result['before']) : 0,
-            ), 'green');
+                $minifier->active($type)
+                    ? sprintf(' (-%d%%)', $result['before'] > 0 ? (int) round(100 - $result['after'] * 100 / $result['before']) : 0)
+                    : ' (minify ' . $type . ' nonaktif: salinan sumber)',
+            ), $minifier->active($type) ? 'green' : 'yellow');
         }
 
-        if (ENVIRONMENT !== 'production') {
-            CLI::newLine();
-            CLI::write('Catatan: CI_ENVIRONMENT = ' . ENVIRONMENT . '; file *.min.* baru disajikan ke browser saat production.', 'yellow');
+        $cleaned = $minifier->clean();
+
+        if ($cleaned > 0) {
+            CLI::write('Dihapus ' . $cleaned . ' file sisa *.min.css / *.min.js Stage 20.', 'green');
         }
 
         return $failed > 0 ? EXIT_ERROR : EXIT_SUCCESS;
