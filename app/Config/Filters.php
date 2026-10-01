@@ -3,6 +3,7 @@
 namespace Config;
 
 use App\Filters\AdminAuthFilter;
+use App\Filters\MinifyHtmlFilter;
 use App\Filters\PostSizeFilter;
 use App\Filters\SecurityHeadersFilter;
 use App\Filters\StudentAuthFilter;
@@ -42,6 +43,7 @@ class Filters extends BaseFilters
         'teacherauth'   => TeacherAuthFilter::class,
         'postsize'      => PostSizeFilter::class,
         'appheaders'    => SecurityHeadersFilter::class,
+        'minifyhtml'    => MinifyHtmlFilter::class,
     ];
 
     /**
@@ -69,6 +71,8 @@ class Filters extends BaseFilters
      * ukuran yang jelas, bukan pesan token kedaluwarsa. "appheaders"
      * (Stage 4) menambah Permissions-Policy, COOP/CORP, no-store, dan
      * menghapus X-Powered-By; CSP diatur Config\ContentSecurityPolicy.
+     * "minifyhtml" (Stage 19) memperkecil HTML + watermark view-source,
+     * hanya di production (saklar di Config\Minify).
      *
      * @var array{
      *     before: array<string, array{except: list<string>|string}>|list<string>,
@@ -84,6 +88,7 @@ class Filters extends BaseFilters
         'after' => [
             'secureheaders',
             'appheaders',
+            'minifyhtml',
         ],
     ];
 
