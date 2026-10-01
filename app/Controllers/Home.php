@@ -8,6 +8,8 @@ use App\Models\ElectionModel;
 use App\Services\PublicLiveCount;
 use CodeIgniter\Exceptions\PageNotFoundException;
 use Config\Homepage;
+use Config\Visitors;
+use Throwable;
 
 /**
  * Beranda imersif (redesign beranda, STAGE5-NOTES.md): layar pembuka, scene
@@ -50,6 +52,7 @@ class Home extends BaseController
         }
 
         $html = view('home/index', [
+            'online'     => $this->onlineCounts(),
             'election'   => $election,
             // Parijoto hanya dipakai bila tidak mirip warna pasangan mana pun.
             'identity'   => self::identityAccent($config, array_column($themes, 'accent')),
@@ -67,6 +70,39 @@ class Home extends BaseController
         service('renderer')->resetData();
 
         return $html;
+    }
+
+    /**
+     * Stage 19: angka online untuk beranda (pojok kanan hero di desktop &
+     * di atas footer scene perolehan suara), atau null bila dimatikan
+     * (Config\Visitors). Pengunjung yang baru pertama datang (belum punya
+     * cookie penanda) belum tercatat saat halaman dirender, jadi ikut
+     * dihitung di sini; detak presence.js memperbarui angkanya.
+     *
+     * @return array{total: int, guests: int, users: int}|null
+     */
+    private function onlineCounts(): ?array
+    {
+        $config = config(Visitors::class);
+
+        if (! $config->enabled || ! $config->publicCounter) {
+            return null;
+        }
+
+        try {
+            $online = service('onlineVisitors')->publicCounts();
+        } catch (Throwable $e) {
+            log_message('error', 'Angka pengunjung online gagal dihitung: {message}', ['message' => $e->getMessage()]);
+
+            return null;
+        }
+
+        if (service('visitorTracker')->currentHash($this->request) === null) {
+            $online[in_array(session()->get('user_type'), ['student', 'teacher', 'admin'], true) ? 'users' : 'guests']++;
+            $online['total']++;
+        }
+
+        return $online;
     }
 
     /**

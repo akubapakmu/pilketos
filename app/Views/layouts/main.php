@@ -43,6 +43,7 @@ try { if (window.sessionStorage.getItem('osis2026.skipIntro') === '1') { window.
 <?= $this->include('partials/footer') ?>
 <?php endif; ?>
 <script src="<?= asset_url('assets/js/app.js') ?>" defer></script>
+<?= $this->include('partials/presence') ?>
 <?= $this->renderSection('scripts') ?>
 </body>
 </html>

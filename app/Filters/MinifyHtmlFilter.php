@@ -10,7 +10,7 @@ use CodeIgniter\HTTP\ResponseInterface;
 
 /**
  * Minify HTML + watermark view-source untuk setiap respons text/html
- * (Stage 19, Config\Minify; hanya CI_ENVIRONMENT = production).
+ * (Stage 20, Config\Minify; hanya CI_ENVIRONMENT = production).
  *
  * Yang dilewati: JSON (live count, login fetch), unduhan (PDF, Excel),
  * redirect & respons kosong. Fragmen HTML (pane analitik lewat fetch) ikut

@@ -12,6 +12,8 @@
  * menjadi kelompok menu terakhir (paling bawah), bersama "Akun Admin"
  * (ganti nama pengguna & kata sandi). Kaki sidebar tinggal "Masuk sebagai".
  *
+ * Stage 19: menu "Pengunjung Online" (admin/pengunjung) di kelompok ketiga.
+ *
  * @var array  $admin
  * @var string $nav
  */
@@ -31,6 +33,7 @@ $groups = [
         'election' => ['admin/jadwal', 'calendar', 'Jadwal Pemilihan'],
         'unlock'   => ['admin/buka-kunci', 'unlock', 'Unlock Hak Suara'],
         'audit'    => ['admin/riwayat', 'file', 'Audit Log'],
+        'visitors' => ['admin/pengunjung', 'eye', 'Pengunjung Online'],
     ],
 ];
 ?>

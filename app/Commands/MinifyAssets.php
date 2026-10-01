@@ -11,7 +11,7 @@ use Config\Minify;
 /**
  * php spark osis:minify [--clean]
  *
- * Stage 19: membuat ulang semua public/assets/css/*.min.css dan
+ * Stage 20: membuat ulang semua public/assets/css/*.min.css dan
  * public/assets/js/*.min.js dari sumbernya (Config\Minify). Di production file
  * ini juga dibuat otomatis saat sumber berubah; perintah ini dipakai setelah
  * update bila folder aset tidak dapat ditulis oleh web server, atau untuk

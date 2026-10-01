@@ -7,7 +7,7 @@ use CodeIgniter\Test\CIUnitTestCase;
 use Config\Minify;
 
 /**
- * Stage 19: filter global "minifyhtml" hanya menyentuh respons text/html di
+ * Stage 20: filter global "minifyhtml" hanya menyentuh respons text/html di
  * production.
  *
  * @internal

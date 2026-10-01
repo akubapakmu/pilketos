@@ -5,7 +5,7 @@ namespace Config;
 use CodeIgniter\Config\BaseConfig;
 
 /**
- * Minify keluaran ke browser + watermark view-source (Stage 19).
+ * Minify keluaran ke browser + watermark view-source (Stage 20).
  *
  * Kode sumber di repo TIDAK berubah (tetap rapi & berkomentar). Yang diperkecil
  * hanya yang diterima browser, dan HANYA bila CI_ENVIRONMENT = production

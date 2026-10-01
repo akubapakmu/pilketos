@@ -13,7 +13,7 @@
 !/writable/debugbar/index.html
 /public/uploads/candidates/*
 !/public/uploads/candidates/.gitkeep
-# Stage 19: hasil minify (dibuat otomatis di production, sumber tetap asli)
+# Stage 20: hasil minify (dibuat otomatis di production, sumber tetap asli)
 /public/assets/**/*.min.css
 /public/assets/**/*.min.js
 /public/assets/**/*.tmp

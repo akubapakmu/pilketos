@@ -8,7 +8,7 @@ Dokumentasi pendukung aplikasi Pemilihan Ketua & Wakil Ketua OSIS SMP 1 DAWE
 docs/
 ├── spesifikasi/     brief & spesifikasi per tahap (00–05)
 ├── desain/          identitas visual, tipografi, aset, gerak (06–10)
-└── catatan-tahap/   catatan implementasi & handoff tiap tahap (STAGE1–18)
+└── catatan-tahap/   catatan implementasi & handoff tiap tahap (STAGE1–19)
 ```
 
 Dokumen di `spesifikasi/` dan `desain/` adalah **rencana** (apa yang harus
@@ -61,7 +61,8 @@ catatan tahap.
 | [`STAGE16-NOTES.md`](catatan-tahap/STAGE16-NOTES.md) | Stage 16: redesain halaman profil paslon mengikuti gambar referensi — satu gambar pembuka landscape buatan paslon + tombol Lihat Visi & Misi di bawahnya, navigasi bagian di kolom kanan dengan semua label (desktop), kepala bagian berikon, kartu & pill, Pesan terpisah dari penutup, video dengan thumbnail asli YouTube, penutup berlatar gambar khusus tanpa warna aksen; satu tampilan untuk semua pasangan (layout, latar panggung, artwork, tekstur/pola, dan garis dihapus; data & file lama dibersihkan migration) |
 | [`STAGE17-NOTES.md`](catatan-tahap/STAGE17-NOTES.md) | Stage 17: tampilan panel admin — badge "Sedang Berlangsung" dihapus, topbar HP ikon menu tanpa teks/garis + logo khusus PILKETOS Panel Admin, ikon "i" kecil di pojok kanan atas judul, tanpa garis atas/bawah (termasuk `.pills::after`), dua foto pasangan dalam satu kotak persegi dengan nomor semi transparan saat hover (Beranda, Analitik, Pasangan calon), hasil akhir terkunci rata tengah, countdown compact lebih lega tanpa garis, tabel bergaya lembar kerja (Excel) |
 | [`STAGE18-NOTES.md`](catatan-tahap/STAGE18-NOTES.md) | Stage 18: beranda — scene pertama hanya gambar hero (desktop & HP) + tombol **Masuk untuk memilih** / **Lihat perolehan suara** (kicker, judul terlihat, baris pendukung, kontur SVG, dan perforasi dihapus), "Kembali ke awal" di scene perolehan suara menjadi panah saja |
-| [`STAGE19-NOTES.md`](catatan-tahap/STAGE19-NOTES.md) | Stage 19: HTML/CSS/JS dikirim ter-minify ke browser hanya di production (kode sumber tetap asli; saklar hardcode `app/Config/Minify.php`, file `*.min.*` dibuat otomatis di folder yang sama, `php spark osis:minify [--clean]`), watermark banner ASCII FAJAR / © SMP 1 DAWE 2026 di view-source & file CSS/JS ter-minify |
+| [`STAGE19-NOTES.md`](catatan-tahap/STAGE19-NOTES.md) | Stage 19: banner final dasbor dua baris kapital (tanpa kalimat "Pencoblosan ditolak server"), panggung pemenang rata tengah dengan teks mengikuti aksen + tally dua baris + catatan kaki miring berbintang, logo header admin HP dari `Config\Homepage`, **pengunjung online** (tabel `visitors`, detak `presence.js`, `matomo/device-detector`, halaman admin dengan persentase pengguna online, angka ringkas di beranda) |
+| [`STAGE20-NOTES.md`](catatan-tahap/STAGE20-NOTES.md) | Stage 20: HTML/CSS/JS dikirim ter-minify ke browser hanya di production (kode sumber tetap asli; saklar hardcode `app/Config/Minify.php`, file `*.min.*` dibuat otomatis di folder yang sama, `php spark osis:minify [--clean]`), watermark banner ASCII FAJAR / © SMP 1 DAWE 2026 di view-source & file CSS/JS ter-minify |
 
 Catatan tahap adalah arsip: isinya menggambarkan kondisi proyek saat tahap itu
 selesai, termasuk letak file saat itu (sebelum dokumen dipindah ke `docs/`).

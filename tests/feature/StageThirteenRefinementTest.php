@@ -135,9 +135,9 @@ final class StageThirteenRefinementTest extends CIUnitTestCase
         $this->assertStringContainsString('text-align: center;', $this->rule($css, '.final__title'));
         $this->assertStringContainsString('display: none;', $this->rule($css, '.admin-head__logo'));
 
-        // catatan kaki: rata tengah, selebar lembar
+        // catatan kaki: selebar lembar (Stage 19: rata kiri & miring)
         $foot = $this->rule($css, '.final__foot');
-        $this->assertStringContainsString('text-align: center;', $foot);
+        $this->assertStringContainsString('text-align: left;', $foot);
         $this->assertStringContainsString('width: 100%;', $foot);
         $this->assertStringNotContainsString('max-width: 90ch', $foot);
         $this->assertStringContainsString('max-width: none;', $this->rule($css, '.final__foot p'));
@@ -148,7 +148,8 @@ final class StageThirteenRefinementTest extends CIUnitTestCase
         $this->finishedWithWinner();
 
         $html = $this->body($this->asAdmin()->get('admin/hasil'));
-        preg_match('#<footer class="final__foot">\s*<p>(.*?)</p>#s', $html, $match);
+        // Stage 19: diawali tanda bintang dekoratif (aria-hidden)
+        preg_match('#<footer class="final__foot">\s*<p><span class="final__star" aria-hidden="true">\*</span>(.*?)</p>#s', $html, $match);
         $foot = html_entity_decode($match[1] ?? '', ENT_QUOTES | ENT_HTML5);
 
         $this->assertStringContainsString('Dihitung pada 1 Oktober 2026 pukul 13.00 WIB.', $foot);

@@ -5,7 +5,7 @@ use CodeIgniter\Test\CIUnitTestCase;
 use Config\Minify;
 
 /**
- * Stage 19: minify HTML/CSS/JS ke browser + watermark view-source, tanpa
+ * Stage 20: minify HTML/CSS/JS ke browser + watermark view-source, tanpa
  * mengubah kode sumber (Config\Minify, hanya production).
  *
  * @internal

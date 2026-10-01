@@ -72,7 +72,7 @@ if (! function_exists('asset_url')) {
      * penanda versi berubah otomatis setiap file diperbarui sehingga browser
      * tidak memakai CSS/JS lama setelah aplikasi di-update.
      *
-     * Stage 19: di production (Config\Minify) CSS/JS disajikan sebagai
+     * Stage 20: di production (Config\Minify) CSS/JS disajikan sebagai
      * *.min.css / *.min.js di folder yang sama (dibuat otomatis oleh
      * App\Libraries\AssetMinifier); penanda versi = waktu ubah file yang
      * benar-benar disajikan.
@@ -153,6 +153,52 @@ if (! function_exists('persen')) {
     function persen(int|float|string|null $value, int $decimals = 1): string
     {
         return number_format((float) $value, $decimals, ',', '.') . '%';
+    }
+}
+
+if (! function_exists('durasi')) {
+    /**
+     * Lama waktu singkat (Stage 19), contoh 45 -> "45 detik",
+     * 1500 -> "25 menit", 7500 -> "2 jam 5 menit", 190000 -> "2 hari 4 jam".
+     */
+    function durasi(int $seconds): string
+    {
+        $seconds = max(0, $seconds);
+
+        if ($seconds < 60) {
+            return $seconds . ' detik';
+        }
+
+        $minutes = intdiv($seconds, 60);
+
+        if ($minutes < 60) {
+            return $minutes . ' menit';
+        }
+
+        $hours = intdiv($minutes, 60);
+
+        if ($hours < 24) {
+            return $hours . ' jam' . ($minutes % 60 > 0 ? ' ' . ($minutes % 60) . ' menit' : '');
+        }
+
+        return intdiv($hours, 24) . ' hari' . ($hours % 24 > 0 ? ' ' . ($hours % 24) . ' jam' : '');
+    }
+}
+
+if (! function_exists('waktu_lalu')) {
+    /**
+     * Waktu relatif dari jam server (Stage 19), contoh "baru saja",
+     * "12 detik lalu", "5 menit lalu", "2 jam 5 menit lalu".
+     */
+    function waktu_lalu(?string $datetime): string
+    {
+        if ($datetime === null || $datetime === '') {
+            return '-';
+        }
+
+        $seconds = \CodeIgniter\I18n\Time::now()->getTimestamp() - \CodeIgniter\I18n\Time::parse($datetime)->getTimestamp();
+
+        return $seconds < 5 ? 'baru saja' : durasi($seconds) . ' lalu';
     }
 }
 

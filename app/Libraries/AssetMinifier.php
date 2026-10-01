@@ -8,7 +8,7 @@ use MatthiasMullie\Minify\JS;
 use Throwable;
 
 /**
- * Minify keluaran ke browser + watermark view-source (Stage 19, Config\Minify).
+ * Minify keluaran ke browser + watermark view-source (Stage 20, Config\Minify).
  *
  * Kode sumber tidak pernah diubah:
  * - CSS/JS: assetPath('assets/css/app.css') membuat (bila perlu) lalu

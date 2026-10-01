@@ -125,7 +125,7 @@ final class SystemCheck
 
         $this->add($app->CSPEnabled ? self::OK : self::WARN, 'Content-Security-Policy', $app->CSPEnabled ? 'aktif' : 'nonaktif (app.CSPEnabled = false)');
 
-        // Stage 19: *.min.css / *.min.js dibuat otomatis saat production; bila
+        // Stage 20: *.min.css / *.min.js dibuat otomatis saat production; bila
         // folder aset tidak dapat ditulis, file usang tidak pernah diperkecil.
         if (! config(Minify::class)->enabled) {
             $this->add(self::OK, 'Minify HTML/CSS/JS', 'nonaktif (Config\\Minify::$enabled = false): browser menerima kode asli');

@@ -1,145 +1,251 @@
-# Stage 19 — Minify HTML/CSS/JS ke Browser + Watermark View-Source (hasil implementasi + handoff)
+# Stage 19 — Banner Final Dua Baris, Panggung Pemenang, Logo Admin HP dari Konfigurasi, Pengunjung Online (hasil implementasi + handoff)
 
 Dokumen ini adalah kontrak aktual Stage 19. Dibaca bersama
 `00-MASTER-PROJECT.md`, `STAGE1-NOTES.md` s.d. `STAGE18-NOTES.md`, dan
 `README.md`.
 
-Ringkasan Stage 19:
+Ringkasan Stage 19 (permintaan revisi panel admin, hasil akhir, dan beranda):
 
-- yang diterima **browser** (HTML, CSS, JS) dikirim **ter-minify**, sedangkan
-  **kode sumber di repo tetap asli** (rapi, berkomentar, tidak ada file build
-  yang di-commit);
-- saklar **hardcode ON/OFF** di `app/Config/Minify.php`, ditambah saklar per
-  jenis (`html`, `css`, `js`);
-- hanya aktif bila **`CI_ENVIRONMENT = production`**. Development dan testing
-  selalu mengirim kode asli agar mudah di-debug, dan test lama tidak berubah;
-- **watermark** banner ASCII di view-source (tepat setelah `<!DOCTYPE html>`)
-  dan di baris pertama setiap file CSS/JS ter-minify. Baris 1 **FAJAR**
-  memakai font figlet *ANSI Shadow*. Baris 2 **© SMP 1 DAWE 2026** lebih kecil,
-  memakai font figlet *Calvin S*. Font itu tidak punya glyph angka dan ©,
-  jadi `1`, `2026`, dan `©` digambar manual dengan gaya garis kotak yang sama.
+- **banner final dasbor** (`.final-banner--winner`): judul dua baris berhuruf
+  kapital, **PASANGAN 0X TERPILIH** lalu nama ketua & wakil di baris kedua;
+  kalimat "Pencoblosan ditolak server sejak waktu selesai; angka di dasbor
+  ini adalah hasil akhir." dihapus;
+- **panggung pemenang** (`section.victor`, halaman hasil akhir): rata tengah;
+  nama & peran mengikuti warna teks di atas aksen (putih/hitam) dan berhuruf
+  kapital; tally dua baris; di desktop label di tengah, nomor & foto sebaris,
+  nama di baris berikutnya, lalu tally; **catatan kaki** miring, rata kiri,
+  diawali tanda bintang;
+- **logo header admin HP** (`.admin-top__logo`) diatur di
+  `Config\Homepage` seperti logo beranda;
+- **pengunjung online**: pencatatan tamu & pengguna login (perangkat, OS,
+  browser, User-Agent, Client Hints, IP, bahasa, layar, zona waktu, halaman,
+  durasi) dengan pustaka Composer `matomo/device-detector`, halaman admin
+  **Pengunjung Online** dengan persentase pengguna online terhadap seluruh
+  pengguna sistem, angka ringkas di beranda (pojok kanan hero desktop & di
+  atas teks footer scene perolehan suara).
 
-Dependensi baru: `matthiasmullie/minify` ^1.3 (MIT, beserta
-`matthiasmullie/path-converter`). Tanpa migration, tanpa route baru.
+Satu migration baru (`visitors`), satu konfigurasi baru
+(`app/Config/Visitors.php`), tiga properti baru `Config\Homepage`. Tanpa
+dependensi Composer baru: `matomo/device-detector` sudah terpasang sejak
+Stage 11 dan dipakai ulang (pustaka paling lengkap untuk perangkat, OS,
+browser, mesin, dan bot).
 
-## 1. Alur
+"HP" = lebar < 720 px untuk panel admin, < 768 px untuk beranda (sama
+dengan Stage 8–18).
 
-| Jenis | Kapan | Di mana |
-|---|---|---|
-| CSS/JS | `asset_url('assets/css/app.css')` | `App\Libraries\AssetMinifier::assetPath()` mengembalikan `assets/css/app.min.css` **di folder yang sama**, sehingga `url('../fonts/...')` di CSS tetap benar. `?v=` = waktu ubah file yang disajikan (cache browser 30 hari tetap aman) |
-| HTML | setiap respons `text/html` | filter global `minifyhtml` (`App\Filters\MinifyHtmlFilter`, `Config\Filters::$globals['after']`) memanggil `AssetMinifier::page()` |
+## 1. Banner final dasbor
 
-File `*.min.css` / `*.min.js`:
-
-- dibuat **otomatis** saat belum ada, atau saat lebih tua dari sumbernya atau
-  dari `app/Config/Minify.php` (misalnya watermark diubah). Perbandingannya
-  memakai `>` (bukan `>=`), jadi sumber yang diedit pada detik yang sama tidak
-  tertinggal;
-- penulisan **atomik**: tulis ke `*.tmp` di folder yang sama, lalu `rename()`.
-  Ratusan request bersamaan tidak pernah menerima file setengah jadi;
-- bila folder tidak dapat ditulis PHP, **file asli** yang disajikan dan
-  `log_message('warning')` dicatat. File `.min` yang usang tidak pernah
-  disajikan;
-- tidak masuk git (`.gitignore`: `/public/assets/**/*.min.css`, `*.min.js`, `*.tmp`).
-
-`php spark osis:minify` membangun ulang semua file dan menampilkan ukuran
-sebelum/sesudah. `--clean` menghapus semua file buatan, yaitu file yang punya
-file sumber. `osis:check` punya baris **Minify HTML/CSS/JS**: PERINGATAN bila
-ada file `.min` yang belum dibuat atau usang padahal foldernya tidak dapat
-ditulis.
-
-## 2. Aturan minify
-
-**CSS**: hanya whitespace dan komentar yang dibuang. "Penghematan" nilai bawaan
-library **dimatikan** (subclass anonim) karena mengubah arti:
-
-| Bawaan library | Masalah |
-|---|---|
-| `flex: 1 1 0` menjadi `1 1 0%` | flex-basis persen berbeda di container yang tingginya/lebarnya tak tentu |
-| `var(--x, 0px)` menjadi `var(--x,0)` | `calc(var(--x) + 10px)` menjadi tidak valid |
-| `transparent` menjadi `#fff0` | warna lain (putih transparan, bukan hitam transparan) |
-| `#ffffff` menjadi `#fff`, `rgb()` menjadi hex | aman, tetapi ikut dimatikan agar aturannya sederhana |
-
-Gambar/font kecil juga tidak disisipkan sebagai `data:`, karena CSP
-`font-src 'self'`.
-
-**JS**: library bawaan (whitespace, komentar, `true` menjadi `!0`, `a['b']`
-menjadi `a.b`). Isi string dan template literal tidak disentuh.
-
-**HTML** (tokenizer regex satu lintasan, konservatif):
-
-- deret whitespace di teks menjadi **satu spasi**. Tampilannya identik untuk
-  `white-space: normal`, dan spasi antar-elemen inline (`<a>x</a> <a>y</a>`)
-  tetap ada. Whitespace di sekitar tag kepala dokumen (`<!DOCTYPE>`, `html`,
-  `head`, `body`, `meta`, `link`, `title`, `base`) dibuang;
-- di dalam tag, whitespace antar-atribut dirapatkan. **Nilai atribut tidak
-  disentuh** (nonce CSP, `data-*`, `title='x > y'`);
-- isi `<pre>` dan `<textarea>` utuh;
-- isi `<script>` inline diperkecil dengan JS minifier bila `js` aktif. Isi
-  `<style>` inline diperkecil dengan CSS minifier bila `css` aktif.
-  `<script type="application/json">` dan type non-JS lain dibiarkan;
-- komentar HTML dibuang;
-- watermark hanya untuk **dokumen penuh** (diawali `<!DOCTYPE`). Fragmen
-  lewat fetch (pane analitik) tidak diberi watermark;
-- yang tidak disentuh: JSON (live count, login fetch), unduhan (PDF, Excel),
-  redirect, dan respons kosong. Filter berjalan sebelum filter wajib
-  `performance` / `toolbar` / `pagecache`.
-
-## 3. Saklar
-
-```php
-// app/Config/Minify.php
-public bool $enabled = true;   // utama (production saja)
-public bool $html = true;      // per jenis
-public bool $css  = true;
-public bool $js   = true;
-public string $watermark = <<<'TXT' ... TXT;   // '' = tanpa watermark
+```
+h2.final-banner__title            grid, uppercase (CSS), jarak 8 px
+  span.final-banner__lead         "Pasangan 02 terpilih" + ":" visually-hidden
+  span.final-banner__names        "Bagas Prayoga & Citra Maheswari" (0.72em, 500)
+p.final-banner__text              "2 suara (50,0% dari 4 suara sah)." (hanya bila ada pemenang)
 ```
 
-Override sementara lewat `.env` (bawaan BaseConfig): `minify.enabled = false`,
-`minify.js = false`. Watermark yang memuat penutup komentar (`*/`, `-->`)
-ditolak dan dianggap kosong.
+- Kapital lewat `text-transform: uppercase` (HTML tetap huruf biasa: pembaca
+  layar tidak mengeja per huruf, test lama "Pasangan 02 terpilih" tetap
+  berlaku). Berlaku juga untuk judul seri/tanpa suara sah.
+- Kalimat "Pencoblosan ditolak server ..." dihapus; keadaan seri & tanpa suara
+  sah kini tanpa paragraf teks (judul + tombol saja).
 
-## 4. Test
+## 2. Panggung pemenang & catatan kaki (`results.css`)
 
-Baru:
+| Lebar | Susunan |
+|---|---|
+| < 900 px (HP & tablet) | satu kolom rata tengah: label, nomor, foto (di tengah), nama ketua lalu wakil, tally dua baris |
+| ≥ 900 px | `grid-template-areas: "label label" "no people" "names names" "tally tally"`, kolom `auto auto` di tengah: label di tengah, nomor besar & foto sebaris, nama ketua & wakil berdampingan di baris berikutnya, tally di bawahnya |
+| cetak | tetap ringkas satu baris (nomor, foto, nama) rata kiri |
 
-- `tests/unit/AssetMinifierTest.php` (12 test) memeriksa:
-  - hanya aktif di production, saklar utama dan per jenis;
-  - file `.min` di folder yang sama, ber-watermark, sumber tidak berubah,
-    tanpa sisa `.tmp`;
-  - nilai CSS tetap (`flex:1 1 0`, `transparent`, `var(--x,0px)`, `#ffffff`);
-  - dibangun ulang hanya bila sumber lebih baru, dan fallback ke path asli;
-  - watermark kosong atau tidak aman ditolak, dan `@charset` tetap pertama;
-  - `sources()`/`clean()` hanya menyentuh file buatan;
-  - aturan HTML (textarea, pre, atribut, nonce, JSON, inline, komentar);
-  - watermark hanya setelah DOCTYPE.
-- `tests/unit/MinifyHtmlFilterTest.php` (3 test): HTML diperkecil dengan
-  watermark. JSON dan redirect tidak berubah, dan filter mati di luar production.
+- **Warna**: `h1, h2, h3 { color: var(--ink) }` di app.css membuat
+  `h3.victor__names` tetap hitam di atas aksen gelap. Kini `.victor__names`,
+  `.victor__person-name`, `.victor__role` memakai `color: inherit` dari
+  `.victor` (`--accent-ink` = putih atau tinta, mana yang kontrasnya lebih
+  tinggi; `CandidateTheme::inkOn()`). Diuji di browser: aksen #1B3A6B → putih,
+  aksen #F2C94C → #15141A.
+- **Kapital**: nama (`.victor__names`, Newsreader, `letter-spacing: 0.01em`)
+  dan peran (sudah kapital).
+- **Tally** dua baris: `span.victor__tally-line` (perolehan "5 suara · 62,5%
+  dari suara sah"; selisih "unggul 3 suara dari peringkat 2" bila ada).
+- **Catatan kaki** (`.final__foot`): `font-style: italic`, `text-align: left`,
+  diawali `span.final__star[aria-hidden]` "*" (tegak). PDF (dompdf) dan
+  catatan kaki cetak browser (`@page`) tidak berubah.
 
-Diperbarui: `DeploymentToolsTest` (baris `Minify HTML/CSS/JS` di `osis:check`).
+## 3. Logo header admin HP
 
-Hasil: **483 test, 4.487 assertion, lulus** (PHP 8.3.6, MariaDB 10.11.14).
+`Config\Homepage` (bisa juga `.env`):
 
-Verifikasi tambahan:
+| Properti | Bawaan | Fungsi |
+|---|---|---|
+| `$adminLogoMobile` | `assets/img/brand/logo-admin-mobile.svg` | file logo (path relatif `public/`) |
+| `$adminLogoMobileHeight` | `34` | tinggi tampil (px), dibatasi 24–48 |
+| `$adminLogoMobileAlt` | `PILKETOS Panel Admin: Beranda` | teks alternatif (logo = tautan ke Beranda admin) |
 
-- **CSS**: CSSOM Chromium untuk 7 file sumber dibandingkan dengan versi
-  `.min`, aturan demi aturan. Tidak ada selisih makna; sisanya hanya spasi
-  di teks kondisi `@supports`.
-- **JS**: AST acorn untuk 12 file sumber dibandingkan dengan versi `.min`.
-  Hasilnya identik (setelah menormalkan `!0`/`!1` dan `a['b']`/`a.b`), dan
-  `node --check` lolos.
-- **Browser** (Chromium, production, 1440×900 dan 390×844 HP):
-  - halaman yang dibuka: beranda, login siswa/admin, dasbor siswa, bilik
-    suara, profil paslon, dasbor admin, analitik, hasil, daftar/pratinjau/ubah
-    paslon;
-  - minify ON dibandingkan OFF: teks halaman identik, dan 0 galat konsol
-    maupun HTTP;
-  - posisi dan ukuran semua elemen sama. Yang berbeda hanya elemen
-    bergantung jam (odometer hitung mundur, "diperbarui hh.mm.ss"), dan
-    selisih yang sama juga muncul antara dua run OFF.
-- **Ukuran**:
-  - CSS/JS turun 19–39% per file (sebelum gzip);
-  - HTML beranda turun dari 305 baris menjadi 13 baris (12 di antaranya
-    banner), dari 20,1 KB menjadi 18,2 KB, sudah termasuk banner sekitar 1,5 KB;
-  - mengedit sumber mengubah `?v=` pada request berikutnya.
+`admin/partials/topbar.php` membaca ukuran asli lewat `asset_size()` (atribut
+width/height), tinggi lewat `style="--admin-logo-h: 34px"`; CSS
+`height: var(--admin-logo-h, 34px)`, `max-width: min(60vw, 260px)`,
+`object-fit: contain`.
+
+## 4. Pengunjung online
+
+### 4.1 Data (`visitors`, migration `2026-10-01-000001_CreateVisitorsTable`)
+
+Satu baris per browser. Kunci: `visitor_hash` = SHA-256 cookie
+`osis_visitor` (32 heksadesimal acak, HttpOnly, SameSite=Lax, 30 hari).
+Kolom: `user_type` (student/teacher/admin, NULL = tamu) + `user_id`, IP,
+User-Agent (512), `ua_hash`, Client Hints (JSON), jenis/merek/model
+perangkat, nama/versi/arsitektur OS, nama/versi/jenis browser, mesin + versi,
+bahasa (3 teratas Accept-Language), layar, jendela, rasio piksel, zona waktu,
+titik sentuh, jaringan (effectiveType), tema, situs asal (tanpa query),
+halaman pertama, halaman sekarang, jumlah halaman, `first_seen_at`,
+`last_seen_at` (indeks), indeks `(user_type, user_id)`. Tanpa foreign key
+(akun boleh dihapus; nama digabung saat ditampilkan, tidak disalin).
+
+### 4.2 Pencatatan (`App\Services\VisitorTracker`)
+
+- **Halaman** (`VisitorFilter`, filter global `visitors` setelah
+  `appheaders`): GET berstatus 200, isi `text/html`, bukan fetch/AJAX
+  (`X-Requested-With`). JSON (live count, jam server), fragmen analitik, live
+  search, PDF, dan templat Excel tidak dihitung.
+- **Detak** (`POST kunjungan/detak`, `PresenceController`, `presence.js`
+  di ketiga layout setelah app.js): 1,5 detik setelah halaman tampil, lalu
+  tiap `heartbeatSeconds` (60) selama tab terlihat; tab tersembunyi berhenti,
+  kembali terlihat = detak segera. CSRF lewat header `X-CSRF-TOKEN`
+  (token sesi tidak diregenerasi, Stage 4). 401/403/404 menghentikan detak.
+  Isi detak divalidasi ketat (`clientInfo()`: pola `WxH`, rasio 0,25–8, zona
+  `Area/Kota`, sentuh 0–255, jaringan slow-2g/2g/3g/4g, tema dark/light);
+  nilai lain dibuang. Detak tanpa cookie tidak membuat baris.
+- **Identitas dari sesi**: `user_type` + `<role>_id`. Sesi siswa/guru yang
+  sudah melewati batas idle 15 menit (AuthFilter) dihitung tamu. Masuk/keluar
+  di browser yang sama memindahkan baris yang sama (komputer lab).
+- **Urai User-Agent** (`DeviceInfo::profile()`, baru): hanya saat baris baru
+  atau `ua_hash` berubah. Bot (`isBot`) dan pustaka HTTP (jenis klien
+  `library`: curl, Python, Go) serta User-Agent kosong tidak dicatat.
+- **Hemat tulis**: detak dalam 15 detik dari tulisan terakhir tanpa perubahan
+  (akun, User-Agent, data layar) tidak menulis ulang; detak pertama setelah
+  halaman dibuka tetap ditulis karena membawa data layar.
+- **Kerahasiaan pilihan**: path pemilih (`siswa/*`, `guru/*`) dibuang segmen
+  angkanya (`siswa/coblos/yakin/2` → `siswa/coblos/yakin`, `guru/paslon/03` →
+  `guru/paslon`); query string tidak pernah disimpan.
+- **Bersih otomatis**: peluang 1:50 setiap pengunjung baru, baris yang tidak
+  aktif > `retentionDays` (7) dihapus.
+- **Tidak pernah menggagalkan halaman**: semua galat (tabel belum dimigrasi,
+  database sibuk) ditangkap dan dicatat di log; insert ganda (dua request
+  pertama bersamaan) jatuh ke update.
+
+### 4.3 Angka (`App\Services\OnlineVisitors`)
+
+- online = `last_seen_at` dalam `onlineSeconds` (180) terakhir;
+- tamu = baris online tanpa akun; pengguna = akun berbeda yang online (satu
+  akun di dua perangkat = satu); total = tamu + pengguna;
+- persentase = pengguna online / (siswa aktif + guru aktif + admin), juga per
+  peran;
+- cache `countCacheSeconds` (5) untuk angka publik & balasan detak; halaman
+  admin selalu dihitung langsung.
+
+### 4.4 Halaman admin (`/admin/pengunjung`, menu **Pengunjung Online**, ikon mata)
+
+```
+header: Pengunjung online (+ keterangan di balik ikon "i")
+[data-live-region="ringkas"]  papan angka: Online sekarang | Tamu | Pengguna login (x%, meter, "dari N pengguna sistem") | Siswa | Guru | Admin
+form.filters (live search)    Cari (nama, NISN/NIP, IP, browser, perangkat) | Waktu (online / hari ini / 7 hari) | Pengunjung (semua / tamu / login / siswa / guru / admin)
+[data-live-region="pengunjung"]
+  section.visitor-split       sebaran Perangkat | Browser | Sistem operasi (5 teratas + Lainnya, garis 3 px)
+  p.result-count
+  table.data-table--visitors  Pengunjung | Halaman | Perangkat | Sistem · browser | Jaringan · lokal | Aktivitas | User-Agent (details "Lihat")
+  pager (50 per halaman)
+```
+
+- Status online: titik tinta penuh; tidak aktif (cakupan hari ini/7 hari):
+  lingkaran kosong + teks abu-abu; status tertulis untuk pembaca layar.
+- Baris browser admin ini bertanda **Anda** (garis kiri tinta). Kunjungan
+  halaman ini dicatat sebelum daftar dibuat (VisitorFilter tidak mencatat
+  ulang request yang sama), jadi baris itu sudah berisi akun & halaman ini.
+- **Lihat**: User-Agent lengkap, Client Hints, halaman pertama, situs asal,
+  tema perangkat, waktu terakhir aktif.
+- `admin-visitors.js`: muat ulang kedua region tiap 20 detik lewat fetch
+  (tidak dihitung kunjungan), rincian yang terbuka tetap terbuka; dilewati
+  saat tab tersembunyi, live search berjalan, atau kursor di kolom saring.
+
+### 4.5 Beranda
+
+| Tempat | Tampilan |
+|---|---|
+| hero, pojok kanan bawah (≥ 768 px, bukan layar pendek miring) | `p.hero-online`: "**7** online │ **3** login" — JetBrains Mono 0.75rem, angka terang, label `--on-night-2`, pemisah garis 1 px; tinggi 52 px = sebaris tengah dengan tombol **Masuk untuk memilih**. `div.hero-bar` (flex) membungkus `.hero` (CTA kiri) + angka (kanan) |
+| scene 03, di atas `.site-footer__text` | `p.site-footer__online`: "ONLINE **4** belum login **3** sudah login" (mono 0.6875rem) |
+
+- Tanpa titik berdenyut, badge, glow, gradient, atau animasi khusus (hanya
+  ikut reveal scene, jeda 320 ms setelah CTA).
+- Angka dirender server (`Home::onlineCounts()`; pengunjung yang belum punya
+  cookie ikut dihitung) dan diperbarui `presence.js` dari balasan detak
+  (`[data-online-count="total|guests|users"]`, format id-ID).
+- `visitors.publicCounter = false` menyembunyikan keduanya; balasan detak
+  tanpa angka.
+
+## 5. Konfigurasi (`app/Config/Visitors.php`, `.env` `visitors.*`)
+
+| Properti | Bawaan | Fungsi |
+|---|---|---|
+| `$enabled` | `true` | `false` = tanpa pencatatan, detak (404), presence.js, dan angka online |
+| `$onlineSeconds` | `180` | batas online (min 30) |
+| `$heartbeatSeconds` | `60` | irama detak (min 30) |
+| `$retentionDays` | `7` | umur baris tidak aktif |
+| `$cookieName`, `$cookieDays` | `osis_visitor`, `30` | cookie penanda browser |
+| `$publicCounter` | `true` | angka online di beranda |
+| `$countCacheSeconds` | `5` | cache angka online |
+
+## 6. Route
+
+| Method | URL | Akses |
+|---|---|---|
+| POST | `kunjungan/detak` | publik (CSRF); balasan `{ok, tracked, interval, online:{total, guests, users}}` tanpa identitas |
+| GET | `admin/pengunjung?waktu=&siapa=&q=&page=` | adminauth |
+
+`RoleMatrixTest`: `kunjungan/detak` ditambahkan ke daftar route publik.
+
+## 7. Test
+
+Baru: `tests/feature/StageNineteenRefinementTest.php` (16 test): banner final
+dua baris kapital tanpa kalimat server; tally dua baris + catatan kaki
+berbintang miring rata kiri; aturan CSS victor (warna inherit, kapital, rata
+tengah, susunan desktop); logo admin HP dari `Config\Homepage` (tinggi
+dibatasi, ukuran asli); kunjungan membuat satu baris per browser dengan
+perangkat lengkap + cookie HttpOnly, kunjungan kedua menambah jumlah halaman;
+bot, curl, User-Agent kosong, AJAX, dan JSON tidak dihitung; identitas dari
+sesi, keluar = tamu, path pemilih tanpa nomor, label halaman; sesi pemilih
+idle = tamu; detak menyimpan data layar tervalidasi & hanya membalas angka;
+nilai detak tak terduga dibuang; detak tanpa cookie tidak tercatat, fitur
+mati = 404 & tanpa presence.js; angka online (akun berbeda, persentase
+16 pengguna, saringan, sebaran); halaman admin hanya untuk admin; halaman
+admin menampilkan pengunjung, tracker, Client Hints, dan baris "Anda";
+angka beranda (hero & footer) + CSS minimal + `publicCounter = false`;
+`DeviceInfo::profile()` (bot, library, Windows 10/11 x64) & `durasi()`.
+
+Diperbarui: `StageThirteenRefinementTest` (catatan kaki rata kiri, diawali
+bintang), `StageSeventeenRefinementTest` (markup logo HP dengan
+`--admin-logo-h`), `StageEighteenRefinementTest` (teks hero terlihat = dua
+tombol + angka online), `RoleMatrixTest` (route publik `kunjungan/detak`).
+
+Hasil: **484 test, 4.591 assertion, lulus** (PHP 8.3.6, MariaDB 10.11.14).
+
+Uji browser (Playwright/Chromium, `spark serve`, data seeder): enam konteks
+bersamaan (tamu desktop, tamu iPhone 13, siswa login di Galaxy S9+, guru login
+di iPad, admin desktop, admin Pixel 7):
+- beranda 1440 × 900: "7 online │ 3 login" di pojok kanan bawah sebaris dengan
+  tombol masuk; scene perolehan suara: "ONLINE 4 belum login 3 sudah login"
+  di atas teks footer (desktop & HP); hero HP tanpa angka;
+- `/admin/pengunjung` desktop & HP: papan angka (18,8% dari 16 pengguna),
+  sebaran, tabel dengan perangkat/OS/browser/layar/zona waktu, rincian
+  User-Agent & Client Hints, baris **Anda**;
+- detak menyimpan layar, jendela, rasio piksel, zona waktu, jaringan, tema;
+  tanpa token CSRF = 403;
+- banner final & panggung pemenang (aksen gelap #1B3A6B: teks putih; aksen
+  terang #F2C94C: teks #15141A), catatan kaki miring berbintang rata kiri;
+- logo header admin HP; konsol tanpa error JavaScript.
+
+Screenshot: `shots/beranda-online-desktop.png`,
+`shots/beranda-perolehan-online-desktop.png`,
+`shots/beranda-perolehan-online-hp.png`, `shots/beranda-hero-online-hp.png`,
+`shots/admin-pengunjung-desktop.png`, `shots/admin-pengunjung-hp.png`,
+`shots/admin-banner-final-desktop.png`, `shots/admin-banner-final-hp.png`,
+`shots/hasil-pemenang-desktop.png`, `shots/hasil-pemenang-hp.png`. Semua
+pengunjung pada screenshot adalah browser uji (Headless Chrome, IP 127.0.0.1).

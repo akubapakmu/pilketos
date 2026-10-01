@@ -8,6 +8,7 @@ use App\Filters\PostSizeFilter;
 use App\Filters\SecurityHeadersFilter;
 use App\Filters\StudentAuthFilter;
 use App\Filters\TeacherAuthFilter;
+use App\Filters\VisitorFilter;
 use CodeIgniter\Config\Filters as BaseFilters;
 use CodeIgniter\Filters\Cors;
 use CodeIgniter\Filters\CSRF;
@@ -43,6 +44,7 @@ class Filters extends BaseFilters
         'teacherauth'   => TeacherAuthFilter::class,
         'postsize'      => PostSizeFilter::class,
         'appheaders'    => SecurityHeadersFilter::class,
+        'visitors'      => VisitorFilter::class,
         'minifyhtml'    => MinifyHtmlFilter::class,
     ];
 
@@ -71,8 +73,10 @@ class Filters extends BaseFilters
      * ukuran yang jelas, bukan pesan token kedaluwarsa. "appheaders"
      * (Stage 4) menambah Permissions-Policy, COOP/CORP, no-store, dan
      * menghapus X-Powered-By; CSP diatur Config\ContentSecurityPolicy.
-     * "minifyhtml" (Stage 19) memperkecil HTML + watermark view-source,
-     * hanya di production (saklar di Config\Minify).
+     * "visitors" (Stage 19) mencatat halaman HTML yang dibuka untuk halaman
+     * Pengunjung online (Config\Visitors). "minifyhtml" (Stage 20, paling
+     * akhir) memperkecil HTML + watermark view-source, hanya di production
+     * (saklar di Config\Minify).
      *
      * @var array{
      *     before: array<string, array{except: list<string>|string}>|list<string>,
@@ -88,6 +92,7 @@ class Filters extends BaseFilters
         'after' => [
             'secureheaders',
             'appheaders',
+            'visitors',
             'minifyhtml',
         ],
     ];

@@ -103,7 +103,7 @@ final class DeploymentToolsTest extends CIUnitTestCase
         $this->assertSame(SystemCheck::OK, $byItem['Akun admin']['status']);
         $this->assertSame(SystemCheck::OK, $byItem['Pasangan calon aktif']['status']);
 
-        // Stage 19: minify siap (folder aset dapat ditulis), aktif saat production.
+        // Stage 20: minify siap (folder aset dapat ditulis), aktif saat production.
         $this->assertSame(SystemCheck::OK, $byItem['Minify HTML/CSS/JS']['status'], $byItem['Minify HTML/CSS/JS']['detail']);
         $this->assertStringContainsString('production', $byItem['Minify HTML/CSS/JS']['detail']);
 

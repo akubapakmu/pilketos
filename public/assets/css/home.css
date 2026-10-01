@@ -554,6 +554,44 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   transform: translate3d(calc(var(--mx, 0) * -3px), calc(var(--my, 0) * -3px), 0);
 }
 
+/* Stage 19: baris bawah hero = CTA (kiri) + angka online (kanan, desktop) */
+.hero-bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px 32px;
+  width: 100%;
+  margin-top: auto;
+}
+
+/* angka online: teks mono kecil, setinggi tombol agar sebaris di tengahnya */
+.hero-online {
+  display: flex;
+  flex: none;
+  align-items: center;
+  min-height: 52px;
+  margin: 0;
+  color: var(--on-night-2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.hero-online__item + .hero-online__item {
+  margin-left: 14px;
+  padding-left: 14px;
+  box-shadow: inset 1px 0 0 var(--night-line-2);
+}
+
+.hero-online__num {
+  color: var(--on-night);
+  font-weight: 600;
+}
+
+.js.is-ready .scene--hero.is-shown .hero-online { transition-delay: 320ms; }
+
 /* urutan reveal hero (10-MOTION §4): latar 0 -> depan 120 -> CTA 240 */
 .js.is-ready .scene--hero.is-shown .hero__actions { transition-delay: 240ms; }
 
@@ -1221,6 +1259,30 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   font-size: 0.75rem;
 }
 
+/* Stage 19: pengunjung online (belum login / sudah login) di atas teks footer */
+.site-footer__online {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 14px;
+  margin: 0 0 6px;
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.site-footer__online-label {
+  color: var(--on-night-2);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.site-footer__num {
+  color: var(--on-night);
+  font-weight: 600;
+}
+
 /* ==========================================================================
    Navigasi scene (tombol lompat antar-bagian)
    ========================================================================== */
@@ -1484,6 +1546,9 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   /* lapisan depan boleh hilang di HP tegak bila membuat sesak */
   .hero-bg__fore { display: none; }
 
+  /* Stage 19: angka online di hero hanya untuk desktop */
+  .hero-online { display: none; }
+
   .entry__title { font-size: clamp(1.75rem, 8vw, 2.5rem); }
 
   /* pintu masuk bertumpuk: dua portal lebar, masing-masing setengah layar */
@@ -1627,6 +1692,7 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   .scene-next { display: none; }
   .hero__actions { display: flex; width: auto; }
   .hbtn { width: auto; min-height: 44px; }
+  .hero-online { display: none; }
 
   .entry__title { font-size: clamp(1.5rem, 7vh, 2rem); }
   .entry__portals { flex-direction: row; }

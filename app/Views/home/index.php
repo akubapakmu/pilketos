@@ -48,7 +48,12 @@ $firstScreen = [
  *
  * @var array|null       $election
  * @var list<array>      $candidates Pasangan aktif (CandidateTheme::present())
+ * Stage 19: angka online ringkas ($online) di pojok kanan bawah hero, sebaris
+ * dengan tombol masuk (desktop saja), dan di atas teks footer scene SUARA
+ * (belum login & sudah login). presence.js memperbarui [data-online-count].
+ *
  * @var array|null       $live       PublicLiveCount::build() + pairs; null = live count publik mati
+ * @var array|null       $online     OnlineVisitors::publicCounts() (+ pengunjung ini); null = dimatikan
  * @var \Config\Homepage $home
  * @var string|null      $identity   Warna parijoto bila netral terhadap semua pasangan
  */
@@ -86,14 +91,23 @@ $entries = [
     </div>
     <canvas class="field" data-field aria-hidden="true"></canvas>
     <div class="scene__inner" data-scene-scroll>
-      <div class="hero">
-        <?php /* Stage 18: tanpa teks terlihat di atas gambar; judul tetap ada
-                 untuk pembaca layar (nama scene & satu-satunya <h1>). */ ?>
-        <h1 class="visually-hidden" id="hero-title">Pemilihan Ketua &amp; Wakil Ketua OSIS SMP 1 DAWE 2026</h1>
-        <div class="hero__actions" data-reveal>
-          <a class="hbtn hbtn--primary" href="#masuk" data-scene-link>Masuk untuk memilih <?= icon('arrow-right') ?></a>
-          <a class="hlink" href="#<?= esc($liveId, 'attr') ?>" data-scene-link><?= esc($live !== null ? 'Lihat perolehan suara' : 'Kenali pasangan calon') ?></a>
+      <div class="hero-bar">
+        <div class="hero">
+          <?php /* Stage 18: tanpa teks terlihat di atas gambar; judul tetap ada
+                   untuk pembaca layar (nama scene & satu-satunya <h1>). */ ?>
+          <h1 class="visually-hidden" id="hero-title">Pemilihan Ketua &amp; Wakil Ketua OSIS SMP 1 DAWE 2026</h1>
+          <div class="hero__actions" data-reveal>
+            <a class="hbtn hbtn--primary" href="#masuk" data-scene-link>Masuk untuk memilih <?= icon('arrow-right') ?></a>
+            <a class="hlink" href="#<?= esc($liveId, 'attr') ?>" data-scene-link><?= esc($live !== null ? 'Lihat perolehan suara' : 'Kenali pasangan calon') ?></a>
+          </div>
         </div>
+        <?php if ($online !== null): ?>
+          <?php /* Stage 19: pojok kanan, sebaris dengan tombol masuk (desktop) */ ?>
+          <p class="hero-online" data-reveal>
+            <span class="hero-online__item"><span class="hero-online__num" data-online-count="total"><?= angka($online['total']) ?></span> online</span>
+            <span class="hero-online__item"><span class="hero-online__num" data-online-count="users"><?= angka($online['users']) ?></span> <span class="visually-hidden">pengguna </span>login</span>
+          </p>
+        <?php endif; ?>
       </div>
     </div>
   </section>
@@ -196,7 +210,7 @@ $entries = [
 
       <div class="scene__end">
         <a class="scene-top" href="#beranda" data-scene-link aria-label="Kembali ke awal"><?= icon('arrow-up') ?></a>
-        <?= view('partials/footer', ['footerInScene' => true]) ?>
+        <?= view('partials/footer', ['footerInScene' => true, 'online' => $online]) ?>
       </div>
     </div>
   </section>
