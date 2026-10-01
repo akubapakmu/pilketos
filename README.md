@@ -312,6 +312,9 @@ php spark osis:check
 
 Folder yang harus dapat ditulis PHP: `writable/` (cache, logs, session,
 uploads) dan `public/uploads/candidates/` (di Windows biasanya sudah).
+Disarankan juga `public/assets/css/` dan `public/assets/js/` agar file
+minify dibuat otomatis (bagian 7.6). Bila tidak, jalankan `php spark osis:minify`
+setiap selesai update.
 
 ### 7.3 Virtual host & akses dari HP
 
@@ -477,6 +480,28 @@ foto kandidat, impor Excel, batas ukuran (40-50 MB pesan aplikasi, di atasnya
 
 Hari H: pantau **Beranda** panel admin (live count); bila perlu unlock, lihat bagian 14.
 Setelah waktu selesai: buka **Hasil akhir**, lalu backup lagi.
+
+### 7.6 Minify HTML/CSS/JS & watermark (Stage 20)
+
+Di production, browser menerima HTML, CSS, dan JS yang **sudah diperkecil**,
+sedangkan kode sumber di repo tetap asli. Di view-source, tepat setelah
+`<!DOCTYPE html>`, muncul banner **FAJAR / © SMP 1 DAWE 2026**. Banner yang
+sama ada di baris pertama setiap file `*.min.css` / `*.min.js`.
+
+- **Saklar ON/OFF**: `app/Config/Minify.php`. `$enabled` adalah saklar utama;
+  `$html`, `$css`, `$js` untuk mematikan satu jenis bila bermasalah;
+  `$watermark` berisi teks banner (`''` = tanpa watermark). Bisa juga dimatikan
+  sementara lewat `.env`: `minify.enabled = false`.
+- Hanya aktif bila `CI_ENVIRONMENT = production`. Di development, DevTools
+  menampilkan kode asli.
+- CSS/JS disajikan sebagai `app.min.css`, `home.min.js`, dan seterusnya di
+  folder yang sama. File ini dibuat otomatis saat sumbernya berubah dan tidak
+  masuk git. Buat ulang semuanya (sekaligus melihat ukurannya):
+  `php spark osis:minify`. Hapus semuanya: `php spark osis:minify --clean`.
+- `php spark osis:check` memberi PERINGATAN bila ada file `.min` usang yang
+  tidak dapat dibuat karena folder aset tidak dapat ditulis.
+
+Rincian aturan & verifikasi: [`STAGE20-NOTES.md`](docs/catatan-tahap/STAGE20-NOTES.md).
 
 ## 8. Admin
 
@@ -859,8 +884,8 @@ composer install
 composer test                 (atau vendor\bin\phpunit --no-coverage)
 ```
 
-Hasil terakhir (Stage 19): **484 test, 4.591 assertion, lulus** pada PHP
-8.3.6 dengan MariaDB 10.11.14 (Stage 18: 468 test, Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
+Hasil terakhir (Stage 20): **499 test, 4.660 assertion, lulus** pada PHP
+8.3.6 dengan MariaDB 10.11.14 (Stage 19: 484 test, Stage 18: 468 test, Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
 8.0.46; Stage 5 dan 6 tidak mengubah schema maupun query. Test paralel (race
 condition) memakai `pcntl_fork` sehingga di-skip di Windows. Rincian dan uji
 browser: [`STAGE4-NOTES.md`](docs/catatan-tahap/STAGE4-NOTES.md) bagian 9,
@@ -876,7 +901,7 @@ beserta ringkasan tiap dokumen: [`docs/README.md`](docs/README.md).
 |---|---|
 | [`docs/spesifikasi/`](docs/spesifikasi) | `00-MASTER-PROJECT.md` (spesifikasi utama, source of truth) dan brief Stage 1–5 (`01`–`05`) |
 | [`docs/desain/`](docs/desain) | Identitas visual SMP 1 DAWE, Stage 6 (`06`–`10`): arah visual, tipografi, spesifikasi aset, prompt gambar, sistem gerak |
-| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE19-NOTES.md`) |
+| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE20-NOTES.md`) |
 
 ## 21. Beranda imersif & aset visual
 

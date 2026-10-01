@@ -3,6 +3,7 @@
 namespace Config;
 
 use App\Filters\AdminAuthFilter;
+use App\Filters\MinifyHtmlFilter;
 use App\Filters\PostSizeFilter;
 use App\Filters\SecurityHeadersFilter;
 use App\Filters\StudentAuthFilter;
@@ -44,6 +45,7 @@ class Filters extends BaseFilters
         'postsize'      => PostSizeFilter::class,
         'appheaders'    => SecurityHeadersFilter::class,
         'visitors'      => VisitorFilter::class,
+        'minifyhtml'    => MinifyHtmlFilter::class,
     ];
 
     /**
@@ -72,7 +74,9 @@ class Filters extends BaseFilters
      * (Stage 4) menambah Permissions-Policy, COOP/CORP, no-store, dan
      * menghapus X-Powered-By; CSP diatur Config\ContentSecurityPolicy.
      * "visitors" (Stage 19) mencatat halaman HTML yang dibuka untuk halaman
-     * Pengunjung online (Config\Visitors).
+     * Pengunjung online (Config\Visitors). "minifyhtml" (Stage 20, paling
+     * akhir) memperkecil HTML + watermark view-source, hanya di production
+     * (saklar di Config\Minify).
      *
      * @var array{
      *     before: array<string, array{except: list<string>|string}>|list<string>,
@@ -89,6 +93,7 @@ class Filters extends BaseFilters
             'secureheaders',
             'appheaders',
             'visitors',
+            'minifyhtml',
         ],
     ];
 

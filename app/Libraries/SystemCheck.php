@@ -5,6 +5,7 @@ namespace App\Libraries;
 use App\Models\ElectionModel;
 use CodeIgniter\Database\BaseConnection;
 use Config\Database;
+use Config\Minify;
 use Throwable;
 
 /**
@@ -123,6 +124,21 @@ final class SystemCheck
         );
 
         $this->add($app->CSPEnabled ? self::OK : self::WARN, 'Content-Security-Policy', $app->CSPEnabled ? 'aktif' : 'nonaktif (app.CSPEnabled = false)');
+
+        // Stage 20: *.min.css / *.min.js dibuat otomatis saat production; bila
+        // folder aset tidak dapat ditulis, file usang tidak pernah diperkecil.
+        if (! config(Minify::class)->enabled) {
+            $this->add(self::OK, 'Minify HTML/CSS/JS', 'nonaktif (Config\\Minify::$enabled = false): browser menerima kode asli');
+        } else {
+            $stuck = (new AssetMinifier(null, 'production'))->unbuildable();
+            $this->add(
+                $stuck === [] ? self::OK : self::WARN,
+                'Minify HTML/CSS/JS',
+                $stuck !== []
+                    ? count($stuck) . ' file *.min.* belum dibuat / usang dan folder aset tidak dapat ditulis PHP: jalankan php spark osis:minify'
+                    : (ENVIRONMENT === 'production' ? 'aktif' : 'siap; aktif otomatis saat CI_ENVIRONMENT = production'),
+            );
+        }
 
         if (str_starts_with($baseURL, 'https://')) {
             $secure = (bool) config('Cookie')->secure;

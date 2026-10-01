@@ -1,5 +1,6 @@
 <?php
 
+use App\Libraries\AssetMinifier;
 use CodeIgniter\I18n\Time;
 
 /**
@@ -70,19 +71,30 @@ if (! function_exists('asset_url')) {
      * (hemat Wi-Fi sekolah saat ratusan pemilih membuka halaman bersamaan);
      * penanda versi berubah otomatis setiap file diperbarui sehingga browser
      * tidak memakai CSS/JS lama setelah aplikasi di-update.
+     *
+     * Stage 20: di production (Config\Minify) CSS/JS disajikan sebagai
+     * *.min.css / *.min.js di folder yang sama (dibuat otomatis oleh
+     * App\Libraries\AssetMinifier); penanda versi = waktu ubah file yang
+     * benar-benar disajikan.
      */
     function asset_url(string $path): string
     {
-        static $versions = [];
+        static $assets = [];
+        static $minifier = null;
 
         $path = ltrim($path, '/');
 
-        if (! array_key_exists($path, $versions)) {
-            $file            = FCPATH . str_replace('/', DIRECTORY_SEPARATOR, $path);
-            $versions[$path] = is_file($file) ? (string) filemtime($file) : null;
+        if (! array_key_exists($path, $assets)) {
+            $minifier ??= new AssetMinifier();
+            $served = $minifier->assetPath($path);
+            $file   = FCPATH . str_replace('/', DIRECTORY_SEPARATOR, $served);
+
+            $assets[$path] = [$served, is_file($file) ? (string) filemtime($file) : null];
         }
 
-        return base_url($path) . ($versions[$path] === null ? '' : '?v=' . $versions[$path]);
+        [$served, $version] = $assets[$path];
+
+        return base_url($served) . ($version === null ? '' : '?v=' . $version);
     }
 }
 
