@@ -82,6 +82,7 @@ final class VisitorTracker
         'admin/siswa'         => 'Admin: Siswa',
         'admin/guru'          => 'Admin: Guru',
         'admin/jadwal'        => 'Admin: Jadwal pemilihan',
+        'admin/halaman-utama' => 'Admin: Teks halaman utama',
         'admin/buka-kunci'    => 'Admin: Unlock hak suara',
         'admin/riwayat'       => 'Admin: Audit log',
         'admin/akun'          => 'Admin: Akun admin',

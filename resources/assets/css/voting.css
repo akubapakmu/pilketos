@@ -19,6 +19,9 @@
    .steps), Sekilas paslon (sekilas-paslon, .lineup: kartu bertumpuk/grid
    maks. 3, tombol profil bermotif), bilik suara (bilik-suara, .ballot +
    countdown terminal). Journey timeline & carousel dihapus.
+   Stage 24: Sekilas paslon tanpa jumlah poin misi, tombol profil berlatar
+   SVG abstrak; bilik suara dengan menu melayang (.booth-nav, Kembali +
+   Dasbor) pengganti navigasi situs, tanpa countdown, kepala rata tengah.
 
    Aturan: tanpa gradient, tanpa emoji. Warna hanya dari token netral app.css
    dan --accent / --accent-ink / --accent-text milik tiap pasangan.
@@ -239,104 +242,11 @@
   to { opacity: 1; transform: none; }
 }
 
-/* -- panel terminal: countdown "Ditutup dalam" rata tengah, lebar penuh.
-   Stage 9: tanpa bilah judul & baris perintah; tiga titik jendela melayang
-   di pojok kiri atas (tidak menambah tinggi panel) -- */
-.term {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  border-radius: var(--radius-lg);
-  background: var(--ink);
-  color: var(--paper);
-  font-family: var(--font-mono);
-  text-align: center;
-}
-
-.term__dots {
-  position: absolute;
-  top: 12px;
-  left: 14px;
-  display: flex;
-  gap: 6px;
-}
-
-.term__dots span {
-  width: 8px;
-  height: 8px;
-  border: 1px solid var(--ink-muted);
-  border-radius: 50%;
-}
-
-.term__body {
-  display: grid;
-  justify-items: center;
-  gap: var(--space-2);
-  padding: var(--space-5) var(--space-4) var(--space-4);
-}
-
-.term__meta {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  max-width: none;
-  font-size: 0.75rem;
-  color: var(--ink-muted);
-}
-
-.term__cursor {
-  width: 0.6em;
-  height: 1.15em;
-  background: var(--paper);
-  animation: term-cursor 1.1s steps(1, end) infinite;
-}
-
+/* caret berkedip (pembuka .steps__caret). Stage 24: panel terminal bilik
+   suara (.term) dihapus bersama countdown-nya. */
 @keyframes term-cursor {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
-}
-
-/* HP: angka cukup satu baris (03 hari 12:45:30 muat di layar 320 px) */
-.term .countdown--terminal {
-  --term-size: clamp(1.5rem, 8vw, 2.25rem);
-  display: grid;
-  justify-items: center;
-  gap: var(--space-1);
-  width: 100%;
-}
-
-.term .countdown__label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-}
-
-.term .countdown__units {
-  flex-wrap: nowrap;
-  justify-content: center;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.term .countdown__progress {
-  width: 100%;
-  margin-top: var(--space-2);
-  background: var(--ink-line);
-}
-
-.term .countdown__progress-fill { background: var(--paper); }
-
-@media (min-width: 720px) {
-  .term__body { gap: var(--space-3); padding: var(--space-6); }
-  .term .countdown--terminal { --term-size: clamp(2.5rem, 6vw, 3.75rem); gap: var(--space-2); }
-  .term .countdown__progress { margin-top: var(--space-3); }
-}
-
-@media (max-width: 719px) {
-  .term__body { gap: 6px; padding: 14px var(--space-3) var(--space-3); }
-  .term .countdown__progress { margin-top: 6px; }
 }
 
 /* -- Sekilas paslon (Stage 7; Stage 22: halaman sendiri GET sekilas-paslon).
@@ -456,15 +366,12 @@
   line-height: 1.4;
 }
 
-.pair-card__meta {
-  font-weight: 600;
-  color: var(--gray-700);
-}
-
 .pair-card .portraits--sm .portrait__initials { font-size: clamp(1.6rem, 7vw, 2.25rem); }
 
-/* tombol "Profil Lengkap Paslon 0X": selebar kartu, teks rata tengah, motif
-   SVG unik tiap paslon (mask) berwarna --accent-ink di atas aksen */
+/* tombol "Profil Lengkap Paslon 0X": selebar kartu, teks rata tengah.
+   Stage 24: latar SVG abstrak unik tiap paslon (satu komposisi, bukan pola
+   berulang; img/abstract/, CandidateTheme::MOTIFS) sebagai mask berwarna
+   --accent-ink di atas aksen */
 .pair-card__profile {
   position: relative;
   isolation: isolate;
@@ -492,10 +399,12 @@
   z-index: -1;
   background: var(--accent-ink);
   opacity: 0.2;
-  -webkit-mask-repeat: repeat;
-  mask-repeat: repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   -webkit-mask-position: center;
   mask-position: center;
+  -webkit-mask-size: cover;
+  mask-size: cover;
   transition: opacity 0.25s var(--ease);
 }
 
@@ -511,74 +420,54 @@
   outline-offset: 3px;
 }
 
-.pair-card__profile--diagonal::before {
-  -webkit-mask-image: url('../img/patterns/px-diagonal.svg');
-  mask-image: url('../img/patterns/px-diagonal.svg');
-  -webkit-mask-size: 16px 16px;
-  mask-size: 16px 16px;
+.pair-card__profile--orbit::before {
+  -webkit-mask-image: url('../img/abstract/orbit.svg');
+  mask-image: url('../img/abstract/orbit.svg');
 }
 
-.pair-card__profile--dots::before {
-  -webkit-mask-image: url('../img/patterns/px-dots.svg');
-  mask-image: url('../img/patterns/px-dots.svg');
-  -webkit-mask-size: 20px 20px;
-  mask-size: 20px 20px;
+.pair-card__profile--tide::before {
+  -webkit-mask-image: url('../img/abstract/tide.svg');
+  mask-image: url('../img/abstract/tide.svg');
 }
 
-.pair-card__profile--waves::before {
-  -webkit-mask-image: url('../img/patterns/px-waves.svg');
-  mask-image: url('../img/patterns/px-waves.svg');
-  -webkit-mask-size: 40px 16px;
-  mask-size: 40px 16px;
+.pair-card__profile--arc::before {
+  -webkit-mask-image: url('../img/abstract/arc.svg');
+  mask-image: url('../img/abstract/arc.svg');
 }
 
-.pair-card__profile--plus::before {
-  -webkit-mask-image: url('../img/patterns/px-plus.svg');
-  mask-image: url('../img/patterns/px-plus.svg');
-  -webkit-mask-size: 28px 28px;
-  mask-size: 28px 28px;
+.pair-card__profile--petal::before {
+  -webkit-mask-image: url('../img/abstract/petal.svg');
+  mask-image: url('../img/abstract/petal.svg');
 }
 
-.pair-card__profile--zigzag::before {
-  -webkit-mask-image: url('../img/patterns/px-zigzag.svg');
-  mask-image: url('../img/patterns/px-zigzag.svg');
-  -webkit-mask-size: 24px 14px;
-  mask-size: 24px 14px;
+.pair-card__profile--shard::before {
+  -webkit-mask-image: url('../img/abstract/shard.svg');
+  mask-image: url('../img/abstract/shard.svg');
 }
 
-.pair-card__profile--rings::before {
-  -webkit-mask-image: url('../img/patterns/px-rings.svg');
-  mask-image: url('../img/patterns/px-rings.svg');
-  -webkit-mask-size: 32px 32px;
-  mask-size: 32px 32px;
+.pair-card__profile--ripple::before {
+  -webkit-mask-image: url('../img/abstract/ripple.svg');
+  mask-image: url('../img/abstract/ripple.svg');
 }
 
-.pair-card__profile--triangles::before {
-  -webkit-mask-image: url('../img/patterns/px-triangles.svg');
-  mask-image: url('../img/patterns/px-triangles.svg');
-  -webkit-mask-size: 28px 28px;
-  mask-size: 28px 28px;
+.pair-card__profile--stream::before {
+  -webkit-mask-image: url('../img/abstract/stream.svg');
+  mask-image: url('../img/abstract/stream.svg');
 }
 
-.pair-card__profile--grid::before {
-  -webkit-mask-image: url('../img/patterns/px-grid.svg');
-  mask-image: url('../img/patterns/px-grid.svg');
-  -webkit-mask-size: 18px 18px;
-  mask-size: 18px 18px;
+.pair-card__profile--cluster::before {
+  -webkit-mask-image: url('../img/abstract/cluster.svg');
+  mask-image: url('../img/abstract/cluster.svg');
 }
 
-.pair-card__profile--checker::before {
-  -webkit-mask-image: url('../img/patterns/px-checker.svg');
-  mask-image: url('../img/patterns/px-checker.svg');
-  -webkit-mask-size: 20px 20px;
-  mask-size: 20px 20px;
+.pair-card__profile--ribbon::before {
+  -webkit-mask-image: url('../img/abstract/ribbon.svg');
+  mask-image: url('../img/abstract/ribbon.svg');
 }
 
-.pair-card__profile--cross::before {
-  -webkit-mask-image: url('../img/patterns/px-cross.svg');
-  mask-image: url('../img/patterns/px-cross.svg');
-  -webkit-mask-size: 22px 22px;
-  mask-size: 22px 22px;
+.pair-card__profile--hills::before {
+  -webkit-mask-image: url('../img/abstract/hills.svg');
+  mask-image: url('../img/abstract/hills.svg');
 }
 
 @media (min-width: 720px) {
@@ -673,61 +562,84 @@
 
 .ballot {
   position: relative;
-  min-height: calc(100vh - 65px);
-  min-height: calc(100svh - 65px);
+  min-height: calc(100vh - 60px);
+  min-height: calc(100svh - 60px);
   padding-top: var(--space-5);
   background: var(--ink);
   color: var(--paper);
-  scroll-margin-top: 56px;
+  scroll-margin-top: 60px;
 }
 
 .ballot--closed { padding-bottom: var(--space-7); }
 
-/* Stage 22: kepala surat suara + countdown terminal (desktop berdampingan) */
-.ballot__top {
-  display: grid;
-  gap: var(--space-5);
+/* -- Stage 24: menu melayang bilik suara (partials/booth_nav), pengganti
+   navigasi situs: kiri panah + "Kembali", kanan ikon Dasbor. Menempel di
+   atas dengan latar tinta yang sama dengan bilik suara, jadi ikon tampak
+   melayang di atas bilik dan isi yang tergulir lewat di bawahnya. Ikon tanpa
+   garis tepi & latar; .container 1360 px sama dengan surat suara, jadi di
+   desktop ikon tepat di tepi isi bilik suara. Di bawah paku (z-index 60). */
+.booth-nav {
+  --container-w: 1360px;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--ink);
+  color: var(--paper);
 }
 
-.ballot__head { max-width: 640px; }
+.booth-nav__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 60px;
+}
 
-.ballot__back {
+.booth-nav__back,
+.booth-nav__home {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
   min-height: 44px;
-  margin-bottom: var(--space-2);
-  color: var(--ink-muted);
-  font-size: 0.875rem;
+  color: var(--paper);
+  font-size: 0.9375rem;
   font-weight: 600;
   text-decoration: none;
+  transition: opacity 0.15s var(--ease);
 }
 
-.ballot__back:hover { color: var(--paper); }
-.ballot__back .icon { width: 18px; height: 18px; }
-.ballot__back:focus-visible { outline-color: var(--paper); }
-
-/* panel terminal di atas latar gelap bilik suara */
-.ballot__term {
-  align-self: end;
-  background: var(--ink-2);
-  box-shadow: inset 0 0 0 1px var(--ink-line);
+.booth-nav__home {
+  justify-content: flex-end;
+  min-width: 44px;
 }
 
-/* kolom sempit: angka countdown satu baris tanpa meluap */
-.ballot__term .countdown--terminal { --term-size: clamp(1.5rem, 7.4vw, 2.5rem); }
+.booth-nav .icon { width: 22px; height: 22px; }
 
-@media (min-width: 960px) {
-  .ballot__term .countdown--terminal { --term-size: clamp(1.75rem, 2.6vw, 2.5rem); }
+.booth-nav__back:hover,
+.booth-nav__home:hover { opacity: 0.72; }
 
-  .ballot__top {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 480px);
-    align-items: end;
-    gap: var(--space-7);
-  }
+.booth-nav a:focus-visible { outline-color: var(--paper); }
+
+/* halaman bilik suara berlatar tinta: menu, pesan flash (mis. coblosan
+   ditolak), dan surat suara menyatu; footer tetap kertas. Pesan flash
+   sekolom dengan surat suara. */
+body:has(> .booth-nav) { background: var(--ink); }
+body:has(> .booth-nav) .site-footer { background: var(--paper); }
+
+.booth-nav + .flash-stack {
+  --container-w: 1360px;
+  padding-top: var(--space-2);
+}
+
+/* Stage 24: kepala surat suara rata tengah (HP & desktop), tanpa countdown */
+.ballot__head {
+  max-width: 680px;
+  margin-inline: auto;
+  text-align: center;
 }
 
 .ballot__kicker {
+  margin-inline: auto;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -744,11 +656,17 @@
 
 .ballot__hint {
   display: block;
-  margin-top: var(--space-3);
+  margin: var(--space-3) auto 0;
   color: #D8D5CC;
+  font-style: italic;
 }
 
-.ballot__hint .icon { margin-right: var(--space-1); }
+.ballot__hint .icon { display: inline-block; margin-right: var(--space-1); vertical-align: -0.15em; }
+
+/* HP: cukup "Bilik suara digital" (tanpa "· Siswa/Guru") */
+@media (max-width: 719px) {
+  .ballot__kicker-role { display: none; }
+}
 
 .ballot__sheet {
   margin-top: var(--space-5);
@@ -761,13 +679,14 @@
 .ballot__sheet-title {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--space-1) var(--space-3);
+  justify-content: center;
+  gap: var(--space-1) var(--space-5);
   max-width: none;
   padding: var(--space-1) var(--space-1) var(--space-3);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.1em;
+  text-align: center;
   text-transform: uppercase;
 }
 

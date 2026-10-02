@@ -4,18 +4,24 @@
  * paslon.css (.px-pick). Dimuat sebagai modul hanya saat pemilih masih dapat
  * mencoblos; three.js r186 disimpan lokal (CSP script-src 'self').
  *
- * Adegan: tombol bulat (keycap) berwarna kertas di atas dudukan gelap,
- * tulisan "Pilih Paslon 0X" di permukaannya, dan tangan sarung tangan putih
- * bergaris tepi gelap yang berulang kali menekan tombol: tombol turun lalu
- * memantul, riak cahaya melebar dari tepinya. Seperti penutup lainnya: tanpa
- * warna aksen.
+ * Stage 24: animasi "klik ala tombol Subscribe" menggantikan tangan yang
+ * menekan. Adegan: tombol bulat (keycap) berwarna kertas di atas dudukan
+ * gelap dengan tulisan "Pilih Paslon 0X" tepat di tengahnya. Kursor panah
+ * putih bergaris tepi gelap meluncur masuk dari kanan bawah, berhenti di
+ * sisi kanan tombol (tidak menutupi tulisan), lalu mengklik: kursor mengecil
+ * sesaat, keycap turun dan memantul, cincin klik melebar dari titik klik,
+ * garis "klik" memercik di ujung kursor, riak cahaya dari tepi tombol;
+ * kursor lalu keluar dan siklus diulang. Kursor digambar di atas tombol
+ * (lapisan kedua, seperti kursor layar), bayangannya jatuh di keycap.
+ * Seperti penutup lainnya: tanpa warna aksen.
  *
- * - Hover/fokus: tangan menekan lebih cepat, adegan miring mengikuti pointer.
- * - Klik/Enter: satu tekanan cepat lalu pindah ke bilik suara (href tautan);
- *   Ctrl/Cmd/Shift/klik tengah dibiarkan ke browser (tab baru).
+ * - Pointer sungguhan di atas tombol / fokus keyboard: kursor tiruan
+ *   menyingkir, tombol menyala dan adegan miring mengikuti pointer.
+ * - Klik/Enter: tombol tertekan di titik klik lalu pindah ke bilik suara
+ *   (href tautan); Ctrl/Cmd/Shift/klik tengah dibiarkan ke browser (tab baru).
  * - Render berhenti saat tombol tidak terlihat atau tab tersembunyi; konteks
  *   WebGL dilepas saat halaman ditinggal (pagehide).
- * - prefers-reduced-motion: satu frame diam (jari di atas tombol).
+ * - prefers-reduced-motion: satu frame diam (kursor di atas tombol).
  * - Tanpa WebGL / gagal dibuat: .is-3d tidak dipasang, tombol 2D tetap tampil.
  * Tautan <a> tetap elemen sebenarnya (nama aksesibel = teks tombol 2D).
  */
@@ -23,9 +29,10 @@ import * as THREE from '../vendor/three-0.186.1/three.module.js';
 
 const INK = 0x15141a;
 const PAPER = 0xf6f4ee;
-const TRAVEL = 0.2; // jarak turun keycap saat ditekan
-const PERIOD = 2.6; // detik per siklus tekan (diam)
-const PERIOD_HOT = 1.45; // detik per siklus saat hover/fokus
+const TRAVEL = 0.15; // jarak turun keycap saat diklik
+const PERIOD = 3.2; // detik per siklus kursor: masuk, klik, diam, keluar
+const CLICK = 0.4; // fase saat kursor mengklik
+const STILL = 0.62; // fase frame diam (gerak dikurangi): kursor di atas tombol
 
 const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -76,12 +83,12 @@ function frame(width, depth, radius, thickness) {
 }
 
 /* ------------------------------------------------------------------ */
-/* material                                                           */
+/* material & tekstur                                                 */
 /* ------------------------------------------------------------------ */
 
 /** Garis tepi kartun: sisi belakang yang digembungkan sepanjang normal. */
 function outlineMaterial(width) {
-  const material = new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide });
+  const material = new THREE.MeshBasicMaterial({ color: INK, side: THREE.BackSide, transparent: true });
   material.onBeforeCompile = (shader) => {
     shader.vertexShader = shader.vertexShader.replace(
       '#include <begin_vertex>',
@@ -114,7 +121,7 @@ function environment(renderer) {
   return target;
 }
 
-/** Tulisan tombol pada kanvas 2D (dipakai sebagai tekstur permukaan keycap). */
+/** Tulisan tombol pada kanvas 2D (tekstur permukaan keycap), rata tengah. */
 function labelTexture(text, maxAnisotropy) {
   const canvas = document.createElement('canvas');
   canvas.width = 1600;
@@ -126,11 +133,11 @@ function labelTexture(text, maxAnisotropy) {
   const draw = () => {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    let size = canvas.height * 0.44;
+    let size = canvas.height * 0.46;
     const font = (px) => '800 ' + px + 'px "Plus Jakarta Sans", system-ui, sans-serif';
     ctx.font = font(size);
     const width = ctx.measureText(text).width;
-    const max = canvas.width * 0.94;
+    const max = canvas.width * 0.96;
     if (width > max) {
       size *= max / width;
       ctx.font = font(size);
@@ -149,57 +156,111 @@ function labelTexture(text, maxAnisotropy) {
   return texture;
 }
 
+/** Bayangan lembut bulat (kanvas), untuk dudukan dan kursor. */
+function softShadow(strength) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  const shade = ctx.createRadialGradient(64, 64, 4, 64, 64, 64);
+  shade.addColorStop(0, 'rgba(0,0,0,' + strength + ')');
+  shade.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = shade;
+  ctx.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(canvas);
+}
+
 /* ------------------------------------------------------------------ */
-/* tangan: sarung tangan kartun, telunjuk menunjuk ke bawah            */
+/* kursor: panah klasik, putih bergaris tepi gelap                     */
 /* ------------------------------------------------------------------ */
 
-function buildHand() {
-  const glove = new THREE.MeshStandardMaterial({ color: 0xfbfbfd, roughness: 0.48, metalness: 0, envMapIntensity: 0.9 });
-  const stitch = new THREE.MeshBasicMaterial({ color: INK });
-  const outline = outlineMaterial(0.028);
-  const hand = new THREE.Group();
+/** Titik panah kursor (piksel, ujung di 0,0, sumbu y ke bawah). */
+const ARROW = [[0, 0], [0, 17], [4.2, 13.2], [7, 19.6], [9.8, 18.4], [7.1, 12.1], [12.4, 12.1]];
 
-  const part = (geometry, x, y, z, rx = 0, ry = 0, rz = 0, material = glove, withOutline = true) => {
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.set(x, y, z);
-    mesh.rotation.set(rx, ry, rz);
-    mesh.castShadow = true;
-    hand.add(mesh);
-    if (withOutline) {
-      const edge = new THREE.Mesh(geometry, outline);
-      edge.position.copy(mesh.position);
-      edge.rotation.copy(mesh.rotation);
-      hand.add(edge);
+function buildCursor() {
+  const shape = new THREE.Shape();
+  ARROW.forEach(([x, y], i) => {
+    if (i === 0) {
+      shape.moveTo(x, -y);
+    } else {
+      shape.lineTo(x, -y);
     }
-    return mesh;
+  });
+  shape.closePath();
+
+  const geometry = new THREE.ExtrudeGeometry(shape, {
+    depth: 1.2,
+    bevelEnabled: true,
+    bevelThickness: 0.45,
+    bevelSize: 0.4,
+    bevelSegments: 3,
+    curveSegments: 1
+  });
+  geometry.translate(0, 0, -0.6);
+  geometry.scale(0.046, 0.046, 0.046);
+
+  const body = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xfbfbfd, roughness: 0.42, metalness: 0, envMapIntensity: 0.9, transparent: true }));
+  const edge = new THREE.Mesh(geometry, outlineMaterial(0.04));
+  body.renderOrder = 2;
+
+  // tiga garis "klik" memercik dari ujung kursor (atas, kiri atas, kiri)
+  const sparkMaterial = new THREE.MeshBasicMaterial({ color: INK, transparent: true, opacity: 0, depthTest: false, toneMapped: false });
+  const sparks = new THREE.Group();
+  [1.62, 2.3, 2.98].forEach((angle) => {
+    const spark = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.05), sparkMaterial);
+    spark.rotation.z = angle;
+    spark.userData.dir = new THREE.Vector2(Math.cos(angle), Math.sin(angle));
+    sparks.add(spark);
+  });
+
+  const group = new THREE.Group();
+  group.add(edge, body, sparks);
+  return { group, body, edge, sparks, sparkMaterial };
+}
+
+/* ------------------------------------------------------------------ */
+/* irama kursor                                                       */
+/* ------------------------------------------------------------------ */
+
+const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const clamp01 = (t) => Math.min(1, Math.max(0, t));
+const span = (p, a, b) => clamp01((p - a) / (b - a));
+
+/**
+ * Pose kursor untuk fase 0..1: posisi relatif titik klik (x, y, z), skala,
+ * dan opasitas. Masuk 0-0.3, mendekat 0.3-0.38, klik 0.38-0.5, diam,
+ * keluar 0.76-1.
+ */
+function cursorPose(p, from, to) {
+  if (p < 0.3) {
+    const t = ease(span(p, 0, 0.3));
+    return {
+      x: from.x + (0 - from.x) * t,
+      y: from.y + (0.16 - from.y) * t + Math.sin(t * Math.PI) * 0.18,
+      z: from.z + (0 - from.z) * t,
+      scale: 1,
+      alpha: span(p, 0, 0.1)
+    };
+  }
+  if (p < 0.38) {
+    const t = ease(span(p, 0.3, 0.38));
+    return { x: 0, y: 0.16 * (1 - t), z: 0, scale: 1, alpha: 1 };
+  }
+  if (p < 0.5) {
+    const t = span(p, 0.38, 0.5);
+    const squeeze = Math.sin(clamp01((t - 0.15) / 0.6) * Math.PI);
+    return { x: 0, y: 0, z: 0, scale: 1 - squeeze * 0.16, alpha: 1 };
+  }
+  if (p < 0.76) {
+    return { x: 0, y: 0, z: 0, scale: 1, alpha: 1 };
+  }
+  const t = ease(span(p, 0.76, 1));
+  return {
+    x: to.x * t,
+    y: to.y * t,
+    z: to.z * t,
+    scale: 1,
+    alpha: 1 - span(p, 0.86, 1)
   };
-
-  // telapak (lempeng bulat tegak), punggung tangan menghadap kamera (+z)
-  const palm = slab(0.96, 0.46, 0.2, 0.86, 0.1);
-  part(palm, 0.04, 0.02, 0);
-  // telunjuk lurus ke bawah; ujungnya di titik asal grup tangan (lihat pivot)
-  part(new THREE.CapsuleGeometry(0.155, 0.92, 8, 16), -0.27, -0.5, 0.02);
-  // tiga jari tertekuk: buku-buku jari di dasar telapak, mengarah ke dalam
-  [[0.04, 0.155], [0.31, 0.15], [0.55, 0.13]].forEach(([x, r], i) => {
-    part(new THREE.CapsuleGeometry(r, 0.26, 6, 14), x, 0.02 - i * 0.02, 0.1, Math.PI / 2 + 0.25, 0, 0);
-  });
-  // ibu jari dilipat ke depan telapak, sisi telunjuk
-  part(new THREE.CapsuleGeometry(0.14, 0.42, 6, 14), -0.44, 0.38, 0.12, 0.35, 0, 0.75);
-  // manset sarung tangan
-  const cuff = new THREE.CylinderGeometry(0.56, 0.6, 0.3, 28, 1);
-  cuff.scale(1, 1, 0.62);
-  part(cuff, 0.06, 1.12, 0);
-  // jahitan klasik di punggung sarung tangan
-  [-0.18, 0.06, 0.3].forEach((x) => {
-    part(new THREE.CapsuleGeometry(0.018, 0.34, 3, 6), x, 0.6, 0.335, 0, 0, 0, stitch, false);
-  });
-
-  // pivot di ujung telunjuk: grup luar diletakkan tepat di titik tekan
-  const pivot = new THREE.Group();
-  hand.position.set(0.27, 1.115, -0.02);
-  pivot.add(hand);
-  pivot.scale.setScalar(0.86);
-  return pivot;
 }
 
 /* ------------------------------------------------------------------ */
@@ -227,28 +288,37 @@ function mount(link) {
   renderer.toneMappingExposure = 1.05;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
+  renderer.autoClear = false;
 
   const scene = new THREE.Scene();
   const envTarget = environment(renderer);
   scene.environment = envTarget.texture;
 
-  const camera = new THREE.PerspectiveCamera(30, 2, 0.1, 60);
-  const lookAt = new THREE.Vector3(0.25, 1.75, 0);
+  // lapisan kedua: kursor selalu di atas tombol, seperti kursor layar
+  const overlay = new THREE.Scene();
+  overlay.environment = envTarget.texture;
+
+  const camera = new THREE.PerspectiveCamera(13, 2.4, 0.1, 80);
+  const lookAt = new THREE.Vector3(0.1, 0.24, 0.12);
 
   // cahaya: langit/tanah lembut, cahaya utama berbayang, cahaya tepi dari belakang
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x2a2930, 0.55));
-  const key = new THREE.DirectionalLight(0xffffff, 2.1);
-  key.position.set(-3.2, 7, 4.5);
-  key.castShadow = true;
-  key.shadow.mapSize.set(1024, 1024);
-  key.shadow.radius = 4;
-  key.shadow.bias = -0.0004;
-  key.shadow.normalBias = 0.02;
-  Object.assign(key.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 20 });
-  scene.add(key);
-  const rim = new THREE.DirectionalLight(0xffffff, 1.4);
-  rim.position.set(3, 3.5, -6);
-  scene.add(rim);
+  [scene, overlay].forEach((target, i) => {
+    target.add(new THREE.HemisphereLight(0xffffff, 0x2a2930, 0.55));
+    const key = new THREE.DirectionalLight(0xffffff, 2.1);
+    key.position.set(-3.2, 7, 4.5);
+    if (i === 0) {
+      key.castShadow = true;
+      key.shadow.mapSize.set(1024, 1024);
+      key.shadow.radius = 4;
+      key.shadow.bias = -0.0004;
+      key.shadow.normalBias = 0.02;
+      Object.assign(key.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 20 });
+    }
+    target.add(key);
+    const rim = new THREE.DirectionalLight(0xffffff, 1.4);
+    rim.position.set(3, 3.5, -6);
+    target.add(rim);
+  });
 
   // dudukan gelap + keycap kertas
   const button = new THREE.Group();
@@ -274,13 +344,35 @@ function mount(link) {
   capGroup.add(cap);
   const capTop = cap.geometry.boundingBox.max.y;
 
+  // tulisan tepat di tengah permukaan keycap
   const text = new THREE.Mesh(
-    new THREE.PlaneGeometry(3.3, 0.92),
+    new THREE.PlaneGeometry(3.4, 0.935),
     new THREE.MeshBasicMaterial({ map: labelTexture(label, renderer.capabilities.getMaxAnisotropy()), transparent: true, depthWrite: false, toneMapped: false })
   );
   text.rotation.x = -Math.PI / 2;
-  text.position.set(-0.38, capTop + 0.004, 0.02);
+  text.position.set(0, capTop + 0.004, 0);
   capGroup.add(text);
+
+  // titik klik kursor: kanan depan keycap, di bawah tulisan (tidak menutupinya)
+  const target = new THREE.Vector3(1.3, 0, 0.5);
+
+  // bayangan kursor di permukaan keycap
+  const cursorShadow = new THREE.Mesh(
+    new THREE.PlaneGeometry(0.9, 0.9),
+    new THREE.MeshBasicMaterial({ map: softShadow(0.5), transparent: true, opacity: 0, depthWrite: false })
+  );
+  cursorShadow.rotation.x = -Math.PI / 2;
+  cursorShadow.renderOrder = 1;
+  capGroup.add(cursorShadow);
+
+  // cincin klik di permukaan keycap
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.075, 0.115, 48),
+    new THREE.MeshBasicMaterial({ color: INK, transparent: true, opacity: 0, depthWrite: false, toneMapped: false })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.renderOrder = 2;
+  capGroup.add(ring);
 
   // riak cahaya dari tepi keycap saat tertekan
   const ripple = new THREE.Mesh(
@@ -291,60 +383,43 @@ function mount(link) {
   button.add(ripple);
 
   // bayangan lembut di bawah dudukan (menapakkan tombol di latar gelap)
-  const contact = document.createElement('canvas');
-  contact.width = contact.height = 128;
-  const cctx = contact.getContext('2d');
-  const grad = cctx.createRadialGradient(64, 64, 4, 64, 64, 64);
-  grad.addColorStop(0, 'rgba(0,0,0,0.55)');
-  grad.addColorStop(1, 'rgba(0,0,0,0)');
-  cctx.fillStyle = grad;
-  cctx.fillRect(0, 0, 128, 128);
-  const shadowTex = new THREE.CanvasTexture(contact);
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 3.4), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 3.4), new THREE.MeshBasicMaterial({ map: softShadow(0.55), transparent: true, depthWrite: false }));
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.01;
   scene.add(ground);
 
-  // tangan
-  const hand = buildHand();
-  scene.add(hand);
-  const press = new THREE.Vector3(1.48, 0, 0.1); // titik tekan di kanan tulisan
+  // kursor
+  const cursor = buildCursor();
+  overlay.add(cursor.group);
+  const enterFrom = new THREE.Vector3(1.7, 0.75, 1.5); // relatif titik klik
+  const exitTo = new THREE.Vector3(1.5, 0.65, 1.1);
 
   /* ---------- keadaan animasi ---------- */
 
   const state = {
-    phase: reduced ? 0.12 : 0,
+    phase: reduced ? STILL : 0,
     hot: false,
     go: false,
+    show: 1, // pudar kursor tiruan saat pointer sungguhan di atas tombol
     capY: 0,
     capV: 0,
+    pressing: 0,
+    ringT: 1,
     rippleT: 1,
-    pressed: false,
+    sparkT: 1,
+    clicked: false,
     tiltX: 0,
     tiltY: 0,
     aimX: 0,
     aimY: 0
   };
 
-  /** Ketinggian ujung jari di atas permukaan keycap untuk fase 0..1. */
-  function fingerHeight(p) {
-    const hover = 0.62;
-    if (p < 0.36) {
-      return hover + Math.sin(p / 0.36 * Math.PI) * 0.08;
-    }
-    if (p < 0.5) {
-      const t = (p - 0.36) / 0.14;
-      return hover * (1 - t * t * t);
-    }
-    if (p < 0.58) {
-      const t = (p - 0.5) / 0.08;
-      return -TRAVEL * Math.sin(t * Math.PI / 2);
-    }
-    if (p < 0.78) {
-      const t = (p - 0.58) / 0.2;
-      return -TRAVEL + (hover + TRAVEL) * (1 - Math.pow(1 - t, 3));
-    }
-    return hover;
+  /** Keycap ditekan di titik (x, z) permukaannya selama `hold` detik. */
+  function press(x, z, hold) {
+    state.pressing = hold;
+    state.ringT = 0;
+    state.rippleT = 0;
+    ring.position.set(x, capTop + 0.006, z);
   }
 
   function layout() {
@@ -355,9 +430,10 @@ function mount(link) {
     }
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
-    // layar sempit: kamera mundur agar tombol & tangan tetap utuh
-    const fit = Math.pow(Math.max(1, 1.6 / camera.aspect), 0.85);
-    camera.position.set(0.25 * fit, 4 + 1.2 * fit, 7.8 * fit);
+    // sudut pandang sempit (perspektif tulisan tidak berlebihan); layar
+    // sempit: kamera mundur agar tombol & jalur kursor tetap utuh
+    const fit = Math.pow(Math.max(1, 2.5 / camera.aspect), 0.9);
+    camera.position.set(0.1, 9.9 * fit, 9.9 * fit);
     camera.updateProjectionMatrix();
   }
 
@@ -365,30 +441,42 @@ function mount(link) {
   let raf = 0;
   let visible = true;
   let shown = false;
+  const tip = new THREE.Vector3();
+  const UP = new THREE.Vector3(0, 1, 0);
+
+  function draw() {
+    renderer.clear();
+    renderer.render(scene, camera);
+    renderer.clearDepth();
+    renderer.render(overlay, camera);
+  }
 
   function frame3d(time) {
     raf = 0;
     const dt = last ? Math.min(0.05, (time - last) / 1000) : 0.016;
     last = time;
 
-    if (!reduced) {
-      const period = state.go ? 0.55 : (state.hot ? PERIOD_HOT : PERIOD);
-      state.phase += dt / period;
+    // siklus kursor tiruan berhenti selama pointer sungguhan di atas tombol
+    if (!reduced && !state.hot) {
+      const before = state.phase;
+      state.phase += dt / PERIOD;
       if (state.phase >= 1) {
         state.phase -= 1;
-        state.pressed = false;
+        state.clicked = false;
+      }
+      if (!state.clicked && before < CLICK && state.phase >= CLICK) {
+        state.clicked = true;
+        state.sparkT = 0;
+        press(target.x, target.z, 0.1);
       }
     }
+    state.show += ((state.hot && !reduced ? 0 : 1) - state.show) * Math.min(1, dt * 12);
 
-    // ujung jari & keycap: jari mendorong keycap, setelah lepas keycap memantul
-    const tip = fingerHeight(state.phase);
-    if (tip < state.capY) {
-      state.capY = Math.max(tip, -TRAVEL);
+    // keycap: turun saat ditekan, lalu memantul (pegas)
+    if (state.pressing > 0) {
+      state.pressing -= dt;
+      state.capY += (-TRAVEL - state.capY) * Math.min(1, dt * 40);
       state.capV = 0;
-      if (!state.pressed && state.capY < -TRAVEL * 0.5) {
-        state.pressed = true;
-        state.rippleT = 0;
-      }
     } else {
       const acc = -260 * state.capY - 11 * state.capV;
       state.capV += acc * dt;
@@ -396,35 +484,74 @@ function mount(link) {
     }
     capGroup.position.y = baseTop - 0.02 + state.capY;
 
-    hand.position.set(press.x, baseTop - 0.02 + capTop + Math.max(tip, state.capY), press.z);
-    const lean = Math.max(0, Math.min(1, (0.62 - tip) / 0.82));
-    hand.rotation.set(-0.16 + lean * 0.12, -0.32, -0.36 + lean * 0.08);
-
-    // riak
-    if (state.rippleT < 1) {
-      state.rippleT = Math.min(1, state.rippleT + dt / 0.7);
-      const e = 1 - Math.pow(1 - state.rippleT, 3);
-      ripple.scale.set(1 + e * 0.16, 1, 1 + e * 0.5);
-      ripple.material.opacity = 0.75 * (1 - state.rippleT);
-    } else {
-      ripple.material.opacity = 0;
-    }
-
-    // sorot saat hover/fokus, adegan miring mengikuti pointer
+    // sorot saat hover/fokus, tombol miring mengikuti pointer
     const glow = state.hot ? 0.07 : 0;
     capMaterial.emissiveIntensity += (glow - capMaterial.emissiveIntensity) * Math.min(1, dt * 8);
     state.tiltX += (state.aimX - state.tiltX) * Math.min(1, dt * 5);
     state.tiltY += (state.aimY - state.tiltY) * Math.min(1, dt * 5);
-    scene.rotation.y = state.tiltX * 0.12;
-    camera.lookAt(lookAt.x, lookAt.y - state.tiltY * 0.25, lookAt.z);
+    button.rotation.y = state.tiltX * 0.1;
+    camera.lookAt(lookAt.x, lookAt.y - state.tiltY * 0.12, lookAt.z);
+    camera.updateMatrixWorld();
 
-    renderer.render(scene, camera);
+    // kursor: pose relatif titik klik, ikut miring bersama tombol, menghadap kamera
+    const pose = cursorPose(state.phase, enterFrom, exitTo);
+    const alpha = pose.alpha * state.show;
+    const surface = capGroup.position.y + capTop;
+    tip.set(target.x + pose.x, surface + 0.02 + pose.y, target.z + pose.z).applyAxisAngle(UP, button.rotation.y);
+    cursor.group.position.copy(tip);
+    cursor.group.quaternion.copy(camera.quaternion);
+    cursor.group.scale.setScalar(pose.scale);
+    cursor.group.visible = alpha > 0.01;
+    cursor.body.material.opacity = alpha;
+    cursor.edge.material.opacity = alpha;
+
+    // bayangan kursor di keycap: makin dekat permukaan makin tegas & kecil
+    const lift = Math.max(0, pose.y);
+    cursorShadow.position.set(target.x + pose.x + 0.32 + lift * 0.5, capTop + 0.005, target.z + pose.z + 0.36 + lift * 0.3);
+    cursorShadow.scale.setScalar(0.8 + lift * 1.2);
+    cursorShadow.material.opacity = alpha * 0.55 * Math.max(0, 1 - lift * 1.6);
+
+    // garis "klik" memercik dari ujung kursor
+    if (state.sparkT < 1) {
+      state.sparkT = Math.min(1, state.sparkT + dt / 0.42);
+      const e = 1 - Math.pow(1 - state.sparkT, 3);
+      cursor.sparkMaterial.opacity = alpha * (1 - state.sparkT);
+      cursor.sparks.children.forEach((spark) => {
+        const reach = 0.2 + e * 0.16;
+        spark.position.set(spark.userData.dir.x * reach, spark.userData.dir.y * reach, 0.05);
+        spark.scale.set(0.6 + e * 0.6, 1, 1);
+      });
+    } else {
+      cursor.sparkMaterial.opacity = 0;
+    }
+
+    // cincin klik di permukaan keycap
+    if (state.ringT < 1) {
+      state.ringT = Math.min(1, state.ringT + dt / 0.6);
+      const e = 1 - Math.pow(1 - state.ringT, 3);
+      ring.scale.set(1 + e * 4.2, 1 + e * 4.2, 1);
+      ring.material.opacity = 0.42 * (1 - state.ringT);
+    } else {
+      ring.material.opacity = 0;
+    }
+
+    // riak cahaya tepi
+    if (state.rippleT < 1) {
+      state.rippleT = Math.min(1, state.rippleT + dt / 0.7);
+      const e = 1 - Math.pow(1 - state.rippleT, 3);
+      ripple.scale.set(1 + e * 0.12, 1, 1 + e * 0.4);
+      ripple.material.opacity = 0.6 * (1 - state.rippleT);
+    } else {
+      ripple.material.opacity = 0;
+    }
+
+    draw();
 
     if (!shown) {
       shown = true;
       link.classList.add('is-3d');
       layout();
-      renderer.render(scene, camera);
+      draw();
     }
 
     if (!reduced && visible && !document.hidden) {
@@ -449,15 +576,26 @@ function mount(link) {
   /* ---------- interaksi ---------- */
 
   const setHot = (hot) => {
+    if (state.hot && !hot) {
+      // pointer pergi: kursor tiruan masuk lagi dari awal siklus
+      state.phase = 0;
+      state.clicked = false;
+    }
     state.hot = hot;
     if (reduced) {
       start();
     }
   };
 
-  link.addEventListener('pointerenter', () => setHot(true));
+  link.addEventListener('pointerenter', (event) => {
+    if (event.pointerType !== 'touch') {
+      setHot(true);
+    }
+  });
   link.addEventListener('pointerleave', () => {
-    setHot(false);
+    if (document.activeElement !== link) {
+      setHot(false);
+    }
     state.aimX = 0;
     state.aimY = 0;
   });
@@ -469,6 +607,9 @@ function mount(link) {
     state.aimY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
   });
 
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+
   link.addEventListener('click', (event) => {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
       return;
@@ -479,13 +620,22 @@ function mount(link) {
       window.location.assign(href);
       return;
     }
-    // satu tekanan cepat (mulai dari jari turun), lalu pindah halaman
-    state.go = true;
-    state.phase = Math.max(state.phase, 0.36);
-    if (state.phase > 0.6) {
-      state.phase = 0.36;
-      state.pressed = false;
+    // tombol tertekan di titik yang diklik (Enter/ketuk tanpa koordinat: tengah)
+    let x = 0;
+    let z = 0;
+    const rect = stage.getBoundingClientRect();
+    if (event.detail > 0 && rect.width > 0) {
+      pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+      raycaster.setFromCamera(pointer, camera);
+      const hit = raycaster.intersectObject(cap, false)[0];
+      if (hit) {
+        const local = capGroup.worldToLocal(hit.point.clone());
+        x = local.x;
+        z = local.z;
+      }
     }
+    state.go = true;
+    press(x, z, 0.14);
     start();
     window.setTimeout(() => window.location.assign(href), 380);
   });
@@ -513,7 +663,7 @@ function mount(link) {
     new ResizeObserver(() => {
       layout();
       if (reduced || !raf) {
-        renderer.render(scene, camera);
+        draw();
       }
     }).observe(stage);
   } else {
@@ -533,16 +683,18 @@ function mount(link) {
     destroy() {
       stop();
       link.classList.remove('is-3d');
-      scene.traverse((o) => {
-        if (o.isMesh) {
-          o.geometry.dispose();
-          (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => {
-            if (m.map) {
-              m.map.dispose();
-            }
-            m.dispose();
-          });
-        }
+      [scene, overlay].forEach((target) => {
+        target.traverse((o) => {
+          if (o.isMesh) {
+            o.geometry.dispose();
+            (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => {
+              if (m.map) {
+                m.map.dispose();
+              }
+              m.dispose();
+            });
+          }
+        });
       });
       envTarget.dispose();
       renderer.dispose();

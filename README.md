@@ -46,9 +46,9 @@ Daftar isi:
 | Bagian | Isi |
 |---|---|
 | Pemilih | Siswa (NISN + kode unik tanggal lahir DDMMYYYY) dan guru (NIP + kode unik), tabel & login terpisah, satu pemilihan yang sama |
-| Beranda publik | lockup PILKETOS 2026 di tengah tanpa tombol masuk; layar pembuka "kabut tersingkap"; hero lereng Muria berlapis; scene layar penuh (roda mouse, trackpad, geser sentuh, keyboard); pintu masuk Siswa/Guru bergambar; perolehan suara (persentase per pasangan + partisipasi) diperbarui tiap 30 detik; panel status terminal dengan countdown jam server; angka pengunjung online (Stage 19) |
+| Beranda publik | lockup PILKETOS 2026 di tengah tanpa tombol masuk; layar pembuka "kabut tersingkap"; hero lereng Muria berlapis; scene layar penuh (roda mouse, trackpad, geser sentuh, keyboard); pintu masuk Siswa/Guru bergambar; perolehan suara (persentase per pasangan + partisipasi) diperbarui tiap 30 detik; panel status terminal dengan countdown jam server; angka pengunjung online (Stage 19); kalimat di tengah hero diketik bergantian, isinya diatur admin (Stage 24) |
 | Pengalaman memilih | halaman kandidat bertema per pasangan, visi-misi interaktif, surat suara dengan paku coblos 3D/2D, konfirmasi, suara terkunci, halaman "pilihan saya" |
-| Admin | dasbor & live count, analitik (jenis pemilih, jenis kelamin, kelas, rombel, detail suara), pasangan calon + unggah tema, data siswa/guru (tambah, ubah, impor Excel), jadwal, unlock, audit log, pengunjung online (perangkat, browser, User-Agent), hasil akhir + confetti |
+| Admin | dasbor & live count, analitik (jenis pemilih, jenis kelamin, kelas, rombel, detail suara), pasangan calon + unggah tema, data siswa/guru (tambah, ubah, impor Excel), jadwal, teks halaman utama, unlock, audit log, pengunjung online (perangkat, browser, User-Agent), hasil akhir + confetti |
 | Integritas | transaction + row lock, unique key satu suara aktif, CHECK & trigger database (suara/audit tidak dapat dihapus atau diubah), hasil dikunci setelah selesai |
 | Jadwal | status UPCOMING / ONGOING / FINISHED dihitung dari `start_at`/`end_at` terhadap jam server (WIB); sejak `end_at` pencoblosan ditolak |
 
@@ -113,11 +113,11 @@ docs/                spesifikasi (00–05), desain (06–10), catatan-tahap (STA
 app/Commands/        admin:create, admin:password, osis:check
 app/Config/          Routes.php, Filters.php, ContentSecurityPolicy.php, App.php, Homepage.php, Visitors.php, ...
 app/Controllers/     Home, VotingController, Student/*, Teacher/*, Admin/*
-app/Database/        Migrations (16 file), Seeds (data contoh development)
+app/Database/        Migrations (17 file), Seeds (data contoh development)
 app/Filters/         AuthFilter + per role, PostSizeFilter, SecurityHeadersFilter, VisitorFilter
 app/Fonts/           Newsreader & Plus Jakarta Sans TTF statis (OFL) khusus PDF hasil akhir
-app/Libraries/       CandidateTheme, CandidateAssets, DeviceInfo, Grade, AdminAccount, SystemCheck, ResultPdf
-app/Models/          9 model tabel
+app/Libraries/       CandidateTheme, CandidateAssets, HeroText, DeviceInfo, Grade, AdminAccount, SystemCheck, ResultPdf
+app/Models/          10 model tabel
 app/Services/        VoteService, UnlockService, AnalyticsService, PublicLiveCount, FinalResult,
                      VisitorTracker, OnlineVisitors, Import/*
 app/Views/           layouts, home (+ partials: splash, dock, pair_photo), student, teacher,
@@ -227,7 +227,7 @@ komputer server harus benar.
 
 ## 6. Database
 
-`php spark migrate` membuat 10 tabel dan menjalankan 16 migration:
+`php spark migrate` membuat 11 tabel dan menjalankan 17 migration:
 
 | Tabel | Isi |
 |---|---|
@@ -240,6 +240,7 @@ komputer server harus benar.
 | `vote_unlock_logs` | unlock: suara yang dibuka, admin, alasan, waktu |
 | `audit_logs` | tindakan admin (unlock, jadwal, pasangan, impor, tambah/ubah/status/hapus pemilih) |
 | `visitors` | Stage 19: satu baris per browser (hash cookie penanda): tamu atau akun yang login, perangkat, OS, browser, User-Agent, Client Hints, IP, bahasa, layar, zona waktu, halaman, waktu aktif. Tanpa foreign key; dihapus otomatis setelah 7 hari tidak aktif |
+| `settings` | Stage 24: pengaturan situs dari panel admin (`name` → `value`); `hero_lines` = kalimat hero beranda, satu per baris (migration mengisi 12 kalimat awal) |
 
 Penjaga integritas (migration `2026-04-01-000001_AddVoteIntegrityGuards`):
 
@@ -536,6 +537,7 @@ kelompok terakhir di bagian bawah sidebar berisi **Akun Admin**,
 | Pasangan calon | tambah/ubah/nonaktifkan/hapus + unggah tema, pratinjau halaman pemilih |
 | Siswa / Guru | daftar (status "Sudah/Belum memilih" + kolom waktu memilih), cari, filter, detail (kode unik tersamar), **tambah & ubah satu per satu** (aturan sama dengan impor), nonaktifkan, hapus data salah impor, impor Excel |
 | Jadwal pemilihan | nama, tahun, mulai, selesai; tutup sekarang; buka sekarang |
+| Teks Halaman Utama | Stage 24: kalimat yang diketik bergantian di tengah hero beranda; satu baris = satu kalimat (maks. 20 kalimat, 80 karakter); kosong = hero tanpa teks; tercatat di audit log |
 | Unlock | cari pemilih, buka hak suara dengan alasan |
 | Audit log | riwayat tindakan admin (hanya-baca) |
 | Pengunjung Online | tamu & pengguna login yang sedang membuka situs, persentase pengguna online dari seluruh akun, perangkat/browser/OS, User-Agent lengkap (Stage 19, bagian 8.2) |
@@ -918,8 +920,8 @@ composer install
 composer test                 (atau vendor\bin\phpunit --no-coverage)
 ```
 
-Hasil terakhir (Stage 23): **541 test, 5.293 assertion, lulus** pada PHP
-8.3.6 dengan MariaDB 10.11.14 (Stage 22: 535 test, Stage 21: 516 test, Stage 20: 499 test, Stage 19: 484 test, Stage 18: 468 test, Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
+Hasil terakhir (Stage 24): **559 test, 5.602 assertion, lulus** pada PHP
+8.3.6 dengan MariaDB 10.11.14 (Stage 23: 541 test, Stage 22: 535 test, Stage 21: 516 test, Stage 20: 499 test, Stage 19: 484 test, Stage 18: 468 test, Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
 8.0.46; Stage 5 dan 6 tidak mengubah schema maupun query. Test paralel (race
 condition) memakai `pcntl_fork` sehingga di-skip di Windows. Rincian dan uji
 browser: [`STAGE4-NOTES.md`](docs/catatan-tahap/STAGE4-NOTES.md) bagian 9,
@@ -935,7 +937,7 @@ beserta ringkasan tiap dokumen: [`docs/README.md`](docs/README.md).
 |---|---|
 | [`docs/spesifikasi/`](docs/spesifikasi) | `00-MASTER-PROJECT.md` (spesifikasi utama, source of truth) dan brief Stage 1–5 (`01`–`05`) |
 | [`docs/desain/`](docs/desain) | Identitas visual SMP 1 DAWE, Stage 6 (`06`–`10`): arah visual, tipografi, spesifikasi aset, prompt gambar, sistem gerak |
-| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE23-NOTES.md`) |
+| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE24-NOTES.md`) |
 
 ## 21. Beranda imersif & aset visual
 
@@ -947,7 +949,7 @@ interaksi. Palet netral "Pagi Muria" + warna aksen masing-masing pasangan.
 
 | Scene | Isi |
 |---|---|
-| 01 Lereng | hanya gambar hero (lereng Muria + atap sekolah; lanskap di desktop, potret di HP), lapisan depan opsional, tombol **Masuk untuk memilih** dan **Lihat perolehan suara**; titik "embun" di sekitar pointer. Stage 18: tanpa teks di atas gambar, tanpa garis kontur & perforasi. Stage 19: pojok kanan bawah (desktop), sebaris dengan tombol masuk: angka kecil "**12** online · **4** login". Tanpa warna/nomor/foto pasangan |
+| 01 Lereng | hanya gambar hero (lereng Muria + atap sekolah; lanskap di desktop, potret di HP), lapisan depan opsional, tombol **Masuk untuk memilih** dan **Lihat perolehan suara**; titik "embun" di sekitar pointer. Stage 18: tanpa garis kontur & perforasi. Stage 24: kalimat dari menu admin **Teks Halaman Utama** diketik bergantian di tengah (jeda 3 detik setelah kalimat terakhir, lalu diulang); ikon Dasbor/Keluar pengguna login tanpa border & latar. Stage 19: pojok kanan bawah (desktop), sebaris dengan tombol masuk: angka kecil "**12** online · **4** login". Tanpa warna/nomor/foto pasangan |
 | 02 Masuk | "Masuk sebagai": portal **SISWA** (`/siswa/masuk`) dan **GURU** (`/guru/masuk`) bergambar |
 | 03 Perolehan suara | judul & pasangan rata tengah (Stage 10: tanpa label status di samping judul); foto pasangan, persentase tepat di bawah foto; baris penutup "Suara masuk" (persentase partisipasi, jumlah pemilih, "Diperbarui [tanggal] [jam]", meter); footer + panah ke atas (kembali ke scene 01). Stage 19: di atas teks footer "ONLINE **8** belum login **4** sudah login" (Stage 21: di HP kata "Online" menjadi ikon biru muda). Stage 21: foto pasangan dapat diklik → foto ukuran penuh dengan tautan **Lihat profil pasangan** bagi siswa/guru/admin yang login |
 

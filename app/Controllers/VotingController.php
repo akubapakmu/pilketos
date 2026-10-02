@@ -77,10 +77,25 @@ abstract class VotingController extends BaseController
      * GET <siswa|guru>/bilik-suara
      * Stage 22: surat suara + paku coblos menjadi halaman sendiri; tujuan
      * tombol "Pilih Paslon 0X" di profil paslon (bilik-suara#coblos-0X).
+     * Stage 24: navigasi situs diganti menu melayang (partials/booth_nav):
+     * "Kembali" ke Sekilas paslon dan ikon Dasbor.
      */
     public function booth()
     {
-        return $this->boothPage('voting/booth', 'Bilik Suara');
+        $type = $this->voterType();
+        $page = $this->boothPage('voting/booth', 'Bilik Suara', [
+            'boothNav' => [
+                'back'  => site_url($type->path('sekilas-paslon')),
+                'home'  => site_url($type->path()),
+                'label' => 'Dasbor ' . $type->label(),
+            ],
+        ]);
+
+        // Data renderer bersifat bersama (Config\View::$saveData): penanda menu
+        // bilik suara tidak boleh terbawa ke render berikutnya (lihat Home::index).
+        service('renderer')->resetData();
+
+        return $page;
     }
 
     /**
@@ -216,7 +231,7 @@ abstract class VotingController extends BaseController
      * Halaman alur memilih (pembuka, Sekilas paslon, bilik suara). Pemilih yang
      * sudah memilih selalu dialihkan ke pilihanku (tidak ada form voting lagi).
      */
-    private function boothPage(string $view, string $title): RedirectResponse|string
+    private function boothPage(string $view, string $title, array $extra = []): RedirectResponse|string
     {
         $type  = $this->voterType();
         $state = service('voting')->ballotState($type, $this->voterId());
@@ -225,7 +240,7 @@ abstract class VotingController extends BaseController
             return redirect()->to($type->path('pilihanku'));
         }
 
-        return view($view, [
+        return view($view, $extra + [
             'title'      => $title,
             'type'       => $type,
             'voter'      => $this->voter(),

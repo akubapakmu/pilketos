@@ -148,6 +148,10 @@ $routes->group('admin', ['filter' => 'adminauth'], static function (RouteCollect
     $routes->post('jadwal/tutup', 'Admin\ElectionController::close');
     $routes->post('jadwal/buka', 'Admin\ElectionController::open');
 
+    // Stage 24: teks hero halaman utama (diketik bergantian, satu baris = satu kalimat)
+    $routes->get('halaman-utama', 'Admin\HomepageController::index');
+    $routes->post('halaman-utama', 'Admin\HomepageController::save');
+
     // Buka kunci hak suara & riwayat (audit log). Segmen jenis pemilih di URL
     // (siswa/guru) dipetakan ke nilai internal VoterType (student/teacher).
     $routes->get('buka-kunci', 'Admin\UnlockController::index');

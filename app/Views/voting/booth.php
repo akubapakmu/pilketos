@@ -14,8 +14,10 @@
  * Isi sama dengan surat suara Stage 2-15: kotak per pasangan, paku coblos
  * (tekan-tahan-geser-lepas, 3D WebGL dengan cadangan 2D), modal konfirmasi
  * + POST JSON ke <siswa|guru>/coblos. Tanpa JavaScript tombol "Coblos" tetap
- * membuka halaman konfirmasi biasa. Countdown terminal (dulu di pembuka bilik
- * suara) kini di kepala surat suara.
+ * membuka halaman konfirmasi biasa. Stage 24: menu melayang (Kembali +
+ * Dasbor, partials/booth_nav lewat $boothNav dari controller) menggantikan
+ * navigasi situs; countdown dihapus (server tetap menolak coblosan di luar
+ * jadwal).
  *
  * @var \App\Services\VoterType $type
  * @var array|null              $election
@@ -41,7 +43,6 @@
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>
-<script src="<?= asset_url('assets/js/countdown.js') ?>" defer></script>
 <?php if ($canVote && $candidates !== []): ?>
   <script src="<?= asset_url('assets/js/ballot.js') ?>" defer></script>
 <?php endif; ?>

@@ -389,7 +389,8 @@ final class PaslonProfileTest extends CIUnitTestCase
         $page->assertSee('<section class="px-close px-close--image" aria-labelledby="px-close-1">');
         $page->assertSee('<img class="px-close__bg" src="' . base_url('uploads/candidates/c01-closing-a.webp') . '" alt="" loading="lazy"');
         $page->assertSee('<h2 class="visually-hidden" id="px-close-1">Penutup profil pasangan 01</h2>');
-        $page->assertSee('<span class="px-finale__role"><span class="visually-hidden">, </span>Calon Wakil Ketua OSIS</span>');
+        // Stage 24: peran di atas nama
+        $page->assertSee('<span class="px-finale__role">Calon Wakil Ketua OSIS<span class="visually-hidden">: </span></span>');
         $page->assertSee('<p class="px-finale__slogan">“Bersama berkarya, bersama berprestasi.”</p>');
 
         // Tanpa gambar: latar netral (tanpa kelas gambar), isi sama.

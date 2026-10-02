@@ -287,6 +287,8 @@ if (! function_exists('icon')) {
             'award'    => '<circle cx="12" cy="9" r="5.5"/><path d="m8.6 13.4-1.6 7.1 5-2.6 5 2.6-1.6-7.1"/>',
             'expand'   => '<path d="M4.5 9V4.5H9"/><path d="M15 4.5h4.5V9"/><path d="M19.5 15v4.5H15"/><path d="M9 19.5H4.5V15"/>',
             'printer'  => '<path d="M7 9V4.5h10V9"/><rect x="4" y="9" width="16" height="7.5" rx="1.5"/><path d="M7 14h10v5.5H7Z"/>',
+            // Stage 24: menu Teks Halaman Utama
+            'type'     => '<path d="M5 7.5V5h14v2.5"/><path d="M12 5v14"/><path d="M9 19h6"/>',
             // Beranda imersif (redesign beranda)
             'arrow-up-right' => '<path d="M7 17 17 7"/><path d="M8.5 7H17v8.5"/>',
             'arrow-up'       => '<path d="M12 19V5"/><path d="m6 11 6-6 6 6"/>',

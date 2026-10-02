@@ -88,29 +88,23 @@ final class StageNineRefinementTest extends CIUnitTestCase
     // bilik suara
     // ------------------------------------------------------------------
 
-    public function testBoothTerminalHasNoTitleBarTextOrCommandLine(): void
+    /**
+     * Stage 9: terminal tanpa bilah judul & baris perintah. Stage 24: panel
+     * terminal & countdown di bilik suara dihapus seluruhnya.
+     */
+    public function testBoothTerminalIsGoneFromTheBallotPage(): void
     {
         $this->scheduleAt('2026-10-01 09:00:00', '2026-10-05 12:00:00');
 
-        // Stage 22: panel terminal di kepala surat suara (halaman bilik-suara).
         $page = $this->withSession($this->student())->get('siswa/bilik-suara');
-        $html = (string) $page->response()->getBody();
 
-        $page->assertDontSee('jam-server &middot; pilketos');
-        $page->assertDontSee('pilketos:~$');
-        $page->assertDontSee('sisa-waktu');
-        $page->assertDontSee('term__bar');
-        $page->assertSee('<span class="term__dots" aria-hidden="true">');
-        $page->assertSee('Ditutup dalam');
-        // Sisa >= 1 hari: "04 hari 03:00:00" tetap satu baris di HP.
-        $page->assertSee('data-unit="days">04<');
+        foreach (['pilketos:~$', 'sisa-waktu', 'term__', 'class="term', 'Ditutup dalam', 'data-countdown'] as $gone) {
+            $page->assertDontSee($gone);
+        }
 
         $css = $this->asset('assets/css/voting.css');
-        $this->assertStringNotContainsString('.term__cmd', $css);
-        $this->assertMatchesRegularExpression('/\.term \.countdown__units \{[^}]*flex-wrap: nowrap;[^}]*white-space: nowrap;/', $css);
-        $this->assertMatchesRegularExpression('/\.term \.countdown--terminal \{\s*--term-size: clamp\(1\.5rem, 8vw, 2\.25rem\);/', $css);
-
-        $this->assertLessThan(strpos($html, 'class="ballot__sheet"'), strpos($html, 'class="term ballot__term"'));
+        $this->assertDoesNotMatchRegularExpression('/^\s*\.term\b[^{}]*\{/m', $css);
+        $this->assertStringNotContainsString('.ballot__term', $css);
     }
 
     /**

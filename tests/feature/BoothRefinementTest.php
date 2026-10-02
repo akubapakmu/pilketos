@@ -146,9 +146,10 @@ final class BoothRefinementTest extends CIUnitTestCase
     /**
      * Stage 22: journey timeline & panel terminal di pembuka diganti pembuka
      * multi-langkah (StageTwentyTwoRefinementTest); countdown terminal pindah
-     * ke kepala surat suara di halaman bilik-suara.
+     * ke kepala surat suara di halaman bilik-suara. Stage 24: countdown di
+     * bilik suara dihapus (StageTwentyFourRefinementTest).
      */
-    public function testBoothIntroStepsAndTerminalCountdownOnTheBallotPage(): void
+    public function testBoothIntroStepsAndNoTerminalCountdownOnTheBallotPage(): void
     {
         $this->scheduleAt('2026-10-01 09:00:00');
 
@@ -162,18 +163,16 @@ final class BoothRefinementTest extends CIUnitTestCase
         $this->assertSame(3, substr_count($html, 'data-step>'));
 
         $booth = $this->withSession($this->student())->get('siswa/bilik-suara');
-        $booth->assertSee('<div class="term ballot__term">');
-        // Stage 9: tanpa bilah judul & baris perintah (StageNineRefinementTest).
-        $booth->assertDontSee('sisa-waktu --tutup');
-        $booth->assertSee('countdown countdown--terminal countdown--ongoing');
-        $booth->assertSee('Ditutup dalam');
+        $booth->assertDontSee('class="term');
+        $booth->assertDontSee('data-countdown');
+        $booth->assertDontSee('Ditutup dalam');
 
         $css = $this->asset('assets/css/voting.css');
         $this->assertMatchesRegularExpression('/\.steps \{[^}]*text-align: center;/', $css);
         // Aturan pembuka lama dihapus (nama kelas boleh tersisa di catatan riwayat).
         $this->assertDoesNotMatchRegularExpression('/^\s*\.(?:booth-intro|booth-open|journey|chapter)\b[^{}]*\{/m', $css);
-        // Surat suara tetap setinggi satu layar (dikurangi navigasi situs).
-        $this->assertMatchesRegularExpression('/\.ballot \{[^}]*min-height: calc\(100svh - 65px\);/', $css);
+        // Surat suara tetap setinggi satu layar (dikurangi menu melayang, Stage 24).
+        $this->assertMatchesRegularExpression('/\.ballot \{[^}]*min-height: calc\(100svh - 60px\);/', $css);
         // Desktop: bagian lebih lebar dari kontainer bawaan (1080px).
         $this->assertStringContainsString(".steps,\n.lineup,\n.ballot { --container-w: 1360px; }", $css);
         $this->assertFileDoesNotExist(FCPATH . 'assets/js/candidates.js');

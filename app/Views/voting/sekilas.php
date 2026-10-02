@@ -20,6 +20,8 @@
  * - tanpa geser otomatis: HP satu kartu per baris (bertumpuk), >= 720 px dua,
  *   >= 1024 px paling banyak tiga per baris (--cols-md dari
  *   CandidateTheme::gridStyle()), baris terakhir rata tengah.
+ * Stage 24: tanpa teks jumlah poin misi; latar tombol profil berupa
+ * komposisi SVG abstrak unik tiap paslon (bukan pola berulang).
  *
  * @var list<array>             $candidates Hasil CandidateTheme::presentAll()
  * @var bool                    $canVote
@@ -48,7 +50,6 @@ use App\Libraries\CandidateTheme;
               <?php if ($c['theme_distinct']): ?>
                 <span><?= esc($c['theme_name']) ?></span>
               <?php endif; ?>
-              <span class="pair-card__meta"><?= count($c['misi']) ?> poin misi</span>
             </p>
             <h2 class="pair-card__names">
               <span><span class="pair-card__role">Ketua</span> <?= esc($c['ketua']) ?></span>
