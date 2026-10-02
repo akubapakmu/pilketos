@@ -37,6 +37,11 @@
    buram; nomor program di kiri sejajar judul; kata karakter di HP selebar
    kartu di bawah; nama penutup maks. dua baris selebar penutup di desktop;
    tombol pilih berupa tombol 3D tangan menekan (pick3d.js, three.js).
+
+   Stage 24: tanpa tautan kembali (.px-back); pita kepala bagian berlatar SVG
+   abstrak (bukan pola berulang); di penutup peran di atas nama, nama
+   membungkus otomatis; tombol pilih = kursor yang mengklik tombol 3D ala
+   tombol Subscribe, tulisan di tengah, ukuran ringkas.
    ========================================================================== */
 
 .paslon {
@@ -88,21 +93,6 @@
 @media (min-width: 1024px) {
   .px-shell--nav { --px-pad-r: calc(var(--px-nav-edge) + var(--px-nav-w) + var(--px-nav-gap)); }
 }
-
-.px-back {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: 44px;
-  margin-bottom: var(--space-2);
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--gray-700);
-  text-decoration: none;
-}
-
-.px-back:hover { color: var(--ink); }
-.px-back .icon { width: 18px; height: 18px; }
 
 /* ==========================================================================
    1. Pembuka: satu gambar khusus + tombol di bawahnya
@@ -593,8 +583,10 @@
 .px-section { padding-top: clamp(48px, 8vw, 88px); }
 
 /* kepala bagian (Stage 21): judul kapital + subjudul rata tengah, tanpa
-   ikon, di atas pita selebar layar berpola khas tiap bagian. Pola = SVG
-   satu warna sebagai mask, diwarnai aksen pasangan dengan opacity rendah. */
+   ikon, di atas pita selebar layar berlatar khas tiap bagian. Stage 24:
+   latar = komposisi SVG abstrak (img/abstract/, satu gambar menutup pita,
+   bukan pola berulang) sebagai mask, diwarnai aksen pasangan, opacity
+   rendah. */
 .px-head {
   position: relative;
   isolation: isolate;
@@ -615,38 +607,36 @@
   left: calc(-1 * var(--px-pad-l, var(--px-gutter)));
   z-index: -1;
   background: var(--accent);
-  opacity: 0.13;
-  -webkit-mask-repeat: repeat;
-  mask-repeat: repeat;
+  opacity: 0.16;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   -webkit-mask-position: center;
   mask-position: center;
+  -webkit-mask-size: cover;
+  mask-size: cover;
 }
 
-/* satu pola per bagian */
+/* satu latar abstrak per bagian: profil = dua lingkaran beririsan (ketua &
+   wakil), visi = lengkung cakrawala, misi = arus, program = bilah tersusun,
+   poster = gugus bulatan, pesan = riak suara, video = gelombang */
 .px-head--profil::before {
-  -webkit-mask-image: url('../img/patterns/px-dots.svg');
-  mask-image: url('../img/patterns/px-dots.svg');
-  -webkit-mask-size: 20px 20px;
-  mask-size: 20px 20px;
+  -webkit-mask-image: url('../img/abstract/orbit.svg');
+  mask-image: url('../img/abstract/orbit.svg');
 }
 
 .px-head--visi::before {
-  -webkit-mask-image: url('../img/patterns/px-plus.svg');
-  mask-image: url('../img/patterns/px-plus.svg');
-  -webkit-mask-size: 28px 28px;
-  mask-size: 28px 28px;
+  -webkit-mask-image: url('../img/abstract/arc.svg');
+  mask-image: url('../img/abstract/arc.svg');
 }
 
 .px-head--misi::before {
-  -webkit-mask-image: url('../img/patterns/px-diagonal.svg');
-  mask-image: url('../img/patterns/px-diagonal.svg');
-  -webkit-mask-size: 16px 16px;
-  mask-size: 16px 16px;
+  -webkit-mask-image: url('../img/abstract/stream.svg');
+  mask-image: url('../img/abstract/stream.svg');
 }
 
 .px-head--misi::after {
-  /* Stage 22: lapisan putih pekat buram di atas pola diagonal (di bawah
-     teks) agar pola tersamar */
+  /* Stage 22: lapisan putih pekat buram di atas latar (di bawah teks) agar
+     latar Misi tersamar */
   content: '';
   position: absolute;
   top: 0;
@@ -660,31 +650,23 @@
 }
 
 .px-head--program::before {
-  -webkit-mask-image: url('../img/patterns/px-waves.svg');
-  mask-image: url('../img/patterns/px-waves.svg');
-  -webkit-mask-size: 40px 16px;
-  mask-size: 40px 16px;
+  -webkit-mask-image: url('../img/abstract/shard.svg');
+  mask-image: url('../img/abstract/shard.svg');
 }
 
 .px-head--poster::before {
-  -webkit-mask-image: url('../img/patterns/px-rings.svg');
-  mask-image: url('../img/patterns/px-rings.svg');
-  -webkit-mask-size: 32px 32px;
-  mask-size: 32px 32px;
+  -webkit-mask-image: url('../img/abstract/cluster.svg');
+  mask-image: url('../img/abstract/cluster.svg');
 }
 
 .px-head--pesan::before {
-  -webkit-mask-image: url('../img/patterns/px-zigzag.svg');
-  mask-image: url('../img/patterns/px-zigzag.svg');
-  -webkit-mask-size: 24px 14px;
-  mask-size: 24px 14px;
+  -webkit-mask-image: url('../img/abstract/ripple.svg');
+  mask-image: url('../img/abstract/ripple.svg');
 }
 
 .px-head--video::before {
-  -webkit-mask-image: url('../img/patterns/px-triangles.svg');
-  mask-image: url('../img/patterns/px-triangles.svg');
-  -webkit-mask-size: 28px 28px;
-  mask-size: 28px 28px;
+  -webkit-mask-image: url('../img/abstract/tide.svg');
+  mask-image: url('../img/abstract/tide.svg');
 }
 
 .px-head__title {
@@ -1296,63 +1278,65 @@
   display: grid;
   max-width: none;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-areas:
+    'role-a . role-b'
+    'name-a x name-b';
   align-items: start;
-  gap: var(--space-3);
+  gap: var(--space-2) var(--space-3);
   width: min(100%, 820px);
 }
 
-.px-finale__person {
-  display: grid;
-  gap: var(--space-1);
-  min-width: 0;
-}
+/* Stage 24: peran di atas nama; baris peran & baris nama sejajar di kedua
+   sisi tanda x (span orang tidak membentuk kotak sendiri) */
+.px-finale__person { display: contents; }
 
-.px-finale__person:first-child { justify-items: end; text-align: right; }
-.px-finale__person:last-child { justify-items: start; text-align: left; }
+.px-finale__person:first-child > * { justify-self: end; text-align: right; }
+.px-finale__person:last-child > * { justify-self: start; text-align: left; }
+.px-finale__person:first-child .px-finale__role { grid-area: role-a; }
+.px-finale__person:first-child strong { grid-area: name-a; }
+.px-finale__person:last-child .px-finale__role { grid-area: role-b; }
+.px-finale__person:last-child strong { grid-area: name-b; }
 
+/* Stage 24: nama membungkus otomatis sesuai lebar kolom (tanpa pemecah
+   baris buatan), baris diseimbangkan */
 .px-finale__person strong {
+  min-width: 0;
   font-size: clamp(1.35rem, 4.2vw, 2.6rem);
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.08;
   letter-spacing: -0.02em;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   text-wrap: balance;
 }
 
-/* Stage 22: nama dibagi maks. dua baris (CandidateTheme::nameLines()).
-   HP: baris boleh membungkus. Desktop: selebar penutup, tiap baris satu
-   baris utuh; ukuran mengikuti lebar kolom (--px-chars = baris terpanjang). */
-.px-finale__line { white-space: normal; }
+.px-finale__role {
+  align-self: end;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.78);
+}
 
 @media (min-width: 1024px) {
   .px-close__inner { max-width: none; }
 
   .px-finale__names {
-    width: 100%;
-    gap: var(--space-5);
+    width: min(100%, 1180px);
+    column-gap: var(--space-6);
   }
 
-  .px-finale__person { container-type: inline-size; }
+  .px-finale__person strong { font-size: clamp(2.6rem, 4.4vw, 4.25rem); }
 
-  .px-finale__person strong {
-    font-size: min(4.5rem, 100cqi / (var(--px-chars, 12) * 0.64));
-    line-height: 1.04;
-    white-space: nowrap;
-  }
-
-  .px-finale__line { display: block; white-space: nowrap; }
+  .px-finale__role { font-size: 0.75rem; }
 
   .px-finale__actions { max-width: 960px; }
 }
 
-.px-finale__role {
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.82);
-}
-
 .px-finale__x {
+  grid-area: x;
+  align-self: center;
   font-size: clamp(1.3rem, 3.6vw, 2.2rem);
   font-weight: 300;
   line-height: 1.15;
@@ -1397,12 +1381,20 @@
 
 @media (max-width: 719px) {
   .px-finale__actions .px-btn { width: 100%; }
+
+  /* peran tetap satu baris di kolom nama yang sempit */
+  .px-finale__role {
+    font-size: 0.625rem;
+    letter-spacing: 0.06em;
+  }
 }
 
-/* -- tombol "Pilih Paslon 0X" (Stage 22): tombol 3D tangan menekan, digambar
-   pick3d.js (three.js) di kanvas transparan. Sebelum/tanpa 3D (tanpa JS,
-   tanpa WebGL, gagal dimuat): tombol 2D timbul berwarna kertas + ikon tangan.
-   Seperti penutup lainnya: tanpa warna aksen. -- */
+/* -- tombol "Pilih Paslon 0X" (Stage 22, Stage 24): tombol 3D yang diklik
+   kursor seperti animasi tombol Subscribe, digambar pick3d.js (three.js) di
+   kanvas transparan; tulisan tepat di tengah tombol. Ringkas: maks. 340 px
+   di HP, 420 px di layar lebar. Sebelum/tanpa 3D (tanpa JS, tanpa WebGL,
+   gagal dimuat): tombol 2D timbul berwarna kertas + ikon kursor yang
+   mengetuk. Seperti penutup lainnya: tanpa warna aksen. -- */
 /* tombol 3D satu baris sendiri, tombol lain di bawahnya */
 .px-finale__actions:has(.px-pick) {
   flex-direction: column;
@@ -1413,7 +1405,7 @@
   position: relative;
   display: grid;
   justify-items: center;
-  width: min(100%, 600px);
+  width: min(100%, 340px);
   color: var(--ink);
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
@@ -1422,44 +1414,47 @@
 .px-pick__stage { display: none; }
 
 .px-pick__face {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-3);
   width: 100%;
-  min-height: 68px;
+  min-height: 58px;
   padding: 0 var(--space-6);
-  border-radius: 18px;
+  border-radius: 14px;
   background: var(--paper);
   color: var(--ink);
-  font-size: 1.125rem;
+  font-size: 1.0625rem;
   font-weight: 800;
   letter-spacing: 0.02em;
-  box-shadow: 0 6px 0 #9C978A, 0 22px 34px -18px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 5px 0 #9C978A, 0 18px 30px -18px rgba(0, 0, 0, 0.85);
   transition: transform 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
 
 .px-pick:hover .px-pick__face {
   transform: translateY(2px);
-  box-shadow: 0 4px 0 #9C978A, 0 18px 28px -18px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 3px 0 #9C978A, 0 14px 24px -18px rgba(0, 0, 0, 0.85);
 }
 
 .px-pick:active .px-pick__face {
-  transform: translateY(6px);
-  box-shadow: 0 0 0 #9C978A, 0 10px 20px -14px rgba(0, 0, 0, 0.85);
+  transform: translateY(5px);
+  box-shadow: 0 0 0 #9C978A, 0 8px 18px -14px rgba(0, 0, 0, 0.85);
 }
 
-.px-pick__hand {
-  flex: 0 0 auto;
-  width: 28px;
-  height: 28px;
+/* ikon kursor di sisi kanan tombol (tulisan tetap di tengah) */
+.px-pick__cursor {
+  position: absolute;
+  right: 18px;
+  bottom: 6px;
+  width: 26px;
+  height: 26px;
 }
 
 /* 3D siap (pick3d.js memasang .is-3d setelah frame pertama) */
 .px-pick.is-3d .px-pick__stage {
   display: block;
   width: 100%;
-  aspect-ratio: 1.2 / 1;
+  aspect-ratio: 2.3 / 1;
 }
 
 .px-pick.is-3d .px-pick__face {
@@ -1486,20 +1481,31 @@
 .px-pick.is-3d:focus-visible .px-pick__stage {
   outline: 2px solid var(--paper);
   outline-offset: 4px;
-  border-radius: 20px;
+  border-radius: 16px;
 }
 
 @media (min-width: 720px) {
-  .px-pick.is-3d .px-pick__stage { aspect-ratio: 1.6 / 1; }
+  .px-pick { width: min(100%, 420px); }
+  .px-pick.is-3d .px-pick__stage { aspect-ratio: 2.5 / 1; }
 }
 
+/* cadangan 2D: kursor masuk, mengetuk, tombol ikut tertekan */
 @media (prefers-reduced-motion: no-preference) {
-  .px-pick:not(.is-3d) .px-pick__hand { animation: px-tap 1.6s var(--ease) infinite; }
+  .px-pick:not(.is-3d) .px-pick__cursor { animation: px-cursor 2.8s var(--ease) infinite; }
+  .px-pick:not(.is-3d):not(:hover):not(:active) .px-pick__face { animation: px-press 2.8s var(--ease) infinite; }
 }
 
-@keyframes px-tap {
-  0%, 60%, 100% { transform: none; }
-  30% { transform: translate(-2px, 3px) scale(0.92); }
+@keyframes px-cursor {
+  0% { opacity: 0; transform: translate(16px, 14px); }
+  22%, 34% { opacity: 1; transform: none; }
+  40% { opacity: 1; transform: scale(0.82); }
+  48%, 78% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translate(16px, 14px); }
+}
+
+@keyframes px-press {
+  0%, 36%, 52%, 100% { transform: none; box-shadow: 0 5px 0 #9C978A, 0 18px 30px -18px rgba(0, 0, 0, 0.85); }
+  42% { transform: translateY(4px); box-shadow: 0 1px 0 #9C978A, 0 10px 20px -14px rgba(0, 0, 0, 0.85); }
 }
 
 .px-close :focus-visible {

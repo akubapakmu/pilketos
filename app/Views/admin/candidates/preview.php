@@ -35,7 +35,6 @@
 
 <?= view('paslon/partials/profile', [
     'c'       => $candidate,
-    'back'    => null,
     'actions' => [
         ['label' => 'Ubah data paslon', 'href' => site_url('admin/paslon/' . $candidate['id'] . '/ubah'), 'icon' => 'edit', 'primary' => true],
         ['label' => 'Daftar pasangan calon', 'href' => site_url('admin/paslon'), 'icon' => 'arrow-left'],

@@ -28,10 +28,16 @@
  * Stage 22: deret nomor paslon di penutup (px-others) diganti bar pemilih
  * paslon .px-switch (desktop: menempel di atas selebar layar, gelap, nomor +
  * nama; HP/tablet: menempel di bawah, "Profil Paslon" + nomor kotak sama
- * lebar); nama di penutup dibagi maks. dua baris (CandidateTheme::nameLines(),
+ * lebar); nama di penutup dibagi maks. dua baris (nameLines(), dihapus Stage 24;
  * desktop selebar penutup tanpa terpotong); tombol pilih ($action['pick3d'])
  * berupa tombol 3D tangan menekan (pick3d.js + three.js, cadangan tombol 2D);
  * kata karakter (px-tags) anak kartu agar di HP tampil selebar kartu di bawah.
+ *
+ * Stage 24: tanpa tautan kembali (px-back) di atas pembuka; di penutup peran
+ * (Calon Ketua/Wakil Ketua OSIS) di atas nama dan nama membungkus otomatis
+ * (tanpa pemecah baris); kepala bagian berlatar SVG abstrak; tombol pilih =
+ * kursor yang mengklik tombol 3D ala tombol Subscribe (pick3d.js), cadangan
+ * 2D berikon kursor.
  *
  * Interaksi (paslon.js, progressive enhancement; tanpa JS semua konten tetap
  * tampil utuh dan tautan tetap berfungsi):
@@ -45,7 +51,6 @@
  * @var array                                                                $c       CandidateTheme::present()
  * @var list<array{label: string, href: string, current: bool, ketua: string, wakil: string}> $others Deret nomor paslon (urut nomor, tampil setara)
  * @var list<array{label: string, href: string, icon?: string, primary?: bool, pick3d?: bool}> $actions Tombol penutup
- * @var array{label: string, href: string}|null                              $back    Tautan kembali di atas pembuka
  */
 use App\Libraries\CandidateTheme;
 
@@ -96,10 +101,6 @@ $head = static fn (string $key, string $title, string $sub = ''): string => '<di
   <?php endif; ?>
 
   <div class="px-shell<?= count($sections) > 1 ? ' px-shell--nav' : '' ?>">
-    <?php if (($back ?? null) !== null): ?>
-      <a class="px-back" href="<?= esc($back['href'], 'attr') ?>"><?= icon('arrow-left') ?> <?= esc($back['label']) ?></a>
-    <?php endif; ?>
-
     <?php /* ------------------------------------------------------- pembuka */ ?>
     <header class="px-cover<?= $c['banner'] !== null ? ' px-cover--image' : '' ?>">
       <?php if ($c['banner'] !== null): ?>
@@ -304,10 +305,9 @@ $head = static fn (string $key, string $title, string $sub = ''): string => '<di
             <?php if ($i++ === 1): ?>
               <span class="px-finale__x" aria-hidden="true">&times;</span><span class="visually-hidden"> dan </span>
             <?php endif; ?>
-            <?php $lines = CandidateTheme::nameLines($p['name']); ?>
             <span class="px-finale__person">
-              <strong style="--px-chars: <?= max(1, ...array_map('mb_strlen', $lines ?: [''])) ?>;"><?php foreach ($lines as $n => $line): ?><?= $n > 0 ? ' ' : '' ?><span class="px-finale__line"><?= esc($line) ?></span><?php endforeach; ?></strong>
-              <span class="px-finale__role"><span class="visually-hidden">, </span><?= esc($p['long']) ?></span>
+              <span class="px-finale__role"><?= esc($p['long']) ?><span class="visually-hidden">: </span></span>
+              <strong><?= esc($p['name']) ?></strong>
             </span>
           <?php endforeach; ?>
         </p>
@@ -319,13 +319,14 @@ $head = static fn (string $key, string $title, string $sub = ''): string => '<di
           <div class="px-finale__actions">
             <?php foreach ($actions as $action): ?>
               <?php if ($action['pick3d'] ?? false): ?>
-                <?php /* Stage 22: tombol 3D tangan menekan (pick3d.js). Tanpa
-                         JS/WebGL tetap tombol 2D bergaya dengan ikon tangan. */ ?>
+                <?php /* Stage 22: tombol 3D (pick3d.js); Stage 24: kursor mengklik
+                         tombol ala tombol Subscribe. Tanpa JS/WebGL tetap tombol
+                         2D bergaya dengan ikon kursor. */ ?>
                 <a class="px-pick" href="<?= esc($action['href'], 'attr') ?>" data-px-pick>
                   <span class="px-pick__stage" aria-hidden="true"><canvas class="px-pick__canvas" data-px-pick-canvas></canvas></span>
                   <span class="px-pick__face">
-                    <svg class="px-pick__hand" viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false"><path d="M9 11.5V5a1.5 1.5 0 0 1 3 0v5.5m0-1a1.5 1.5 0 0 1 3 0v1.5m0-.5a1.5 1.5 0 0 1 3 0v1.5m0-.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-1.5a6 6 0 0 1-4.6-2.15L4.6 16.6a1.6 1.6 0 0 1 2.4-2.1L9 16.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     <span class="px-pick__label"><?= esc($action['label']) ?></span>
+                    <svg class="px-pick__cursor" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" focusable="false"><path d="M5.5 3.5v15.2l4-3.9 2.8 6.2 2.9-1.3-2.8-6.1h5.7Z" fill="#FFFFFF" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
                   </span>
                 </a>
               <?php else: ?>

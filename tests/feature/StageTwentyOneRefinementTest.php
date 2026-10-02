@@ -409,16 +409,17 @@ final class StageTwentyOneRefinementTest extends CIUnitTestCase
         $this->assertStringContainsString('background: var(--accent);', $before);
         $this->assertMatchesRegularExpression('/opacity: 0\.1\d;/', $before);
 
+        // Stage 24: pola berulang diganti latar SVG abstrak (img/abstract/).
         $files = [];
         foreach ($keys as $key) {
             $rule = $this->rule($css, '.px-head--' . $key . '::before');
-            $this->assertMatchesRegularExpression("#mask-image: url\\('\\.\\./img/patterns/(px-[a-z]+\\.svg)'\\);#", $rule, $key);
-            preg_match("#mask-image: url\\('\\.\\./img/patterns/(px-[a-z]+\\.svg)'\\);#", $rule, $m);
+            $this->assertMatchesRegularExpression("#mask-image: url\\('\\.\\./img/abstract/([a-z]+\\.svg)'\\);#", $rule, $key);
+            preg_match("#mask-image: url\\('\\.\\./img/abstract/([a-z]+\\.svg)'\\);#", $rule, $m);
             $files[$key] = $m[1];
-            $this->assertFileExists(FCPATH . 'assets/img/patterns/' . $m[1]);
-            $this->assertStringStartsWith('<svg xmlns="http://www.w3.org/2000/svg"', $this->asset('assets/img/patterns/' . $m[1]));
+            $this->assertFileExists(FCPATH . 'assets/img/abstract/' . $m[1]);
+            $this->assertStringStartsWith('<svg xmlns="http://www.w3.org/2000/svg"', $this->asset('assets/img/abstract/' . $m[1]));
         }
-        $this->assertCount(7, array_unique($files), 'pola berbeda tiap bagian');
+        $this->assertCount(7, array_unique($files), 'latar berbeda tiap bagian');
 
         // Ikon kepala bagian Stage 16 tidak dipakai lagi.
         foreach (['target', 'bulb', 'message', 'video'] as $icon) {

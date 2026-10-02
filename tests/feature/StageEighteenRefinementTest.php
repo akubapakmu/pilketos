@@ -80,8 +80,9 @@ final class StageEighteenRefinementTest extends CIUnitTestCase
         $this->assertStringContainsString('media="(orientation: portrait)" srcset="' . base_url('assets/img/home/hero-mobile.svg'), $hero);
 
         // Satu-satunya teks terlihat = dua tombol (Stage 19: ditambah angka
-        // online di pojok kanan, diuji StageNineteenRefinementTest).
-        $withoutCounter = (string) preg_replace('#<p class="hero-online".*?</p>#s', '', $hero);
+        // online di pojok kanan, diuji StageNineteenRefinementTest; Stage 24:
+        // kalimat hero dari admin yang diketik, diuji StageTwentyFourRefinementTest).
+        $withoutCounter = (string) preg_replace(['#<p class="hero-online".*?</p>#s', '#<div class="hero-type" data-hero-type>.*?</ul>\s*</div>#s'], '', $hero);
         $this->assertSame('Masuk untuk memilih Lihat perolehan suara', $this->visibleText($withoutCounter));
         $this->assertStringContainsString('href="#masuk" data-scene-link>Masuk untuk memilih', $hero);
         $this->assertStringContainsString('href="#perolehan" data-scene-link>Lihat perolehan suara</a>', $hero);

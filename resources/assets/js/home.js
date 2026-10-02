@@ -27,6 +27,8 @@
  * 5. Stage 21: foto pasangan di scene perolehan suara dapat diklik untuk
  *    tampil ukuran penuh (<dialog>) dengan tautan "Lihat profil pasangan"
  *    bagi pengunjung yang login.
+ * 6. Stage 24: kalimat hero dari admin (Teks Halaman Utama) diketik
+ *    bergantian di tengah gambar; jeda 3 detik setelah kalimat terakhir.
  *
  * Semua gerak mengikuti prefers-reduced-motion. Teks dari server hanya
  * lewat textContent. Tanpa JavaScript beranda tetap halaman bergulir biasa.
@@ -779,11 +781,15 @@
       }
     });
     if (document.fonts && document.fonts.load && window.Promise) {
+      var fonts = ['600 16px "Plus Jakarta Sans"', '500 16px "JetBrains Mono"'];
+      // Stage 24: kalimat hero (Newsreader) tidak berganti font saat diketik.
+      if (document.querySelector('[data-hero-type]')) {
+        fonts.push('400 16px "Newsreader"');
+      }
       waits.push(function (next) {
-        Promise.all([
-          document.fonts.load('600 16px "Plus Jakarta Sans"'),
-          document.fonts.load('500 16px "JetBrains Mono"')
-        ]).then(next, next);
+        Promise.all(fonts.map(function (font) {
+          return document.fonts.load(font);
+        })).then(next, next);
       });
     }
 
@@ -1109,6 +1115,237 @@
   };
 
   /* ==========================================================================
+     Stage 24: kalimat hero diketik bergantian (admin > Teks Halaman Utama).
+     Kalimat dibaca dari daftar pembaca layar ([data-hero-type-lines] li,
+     textContent). Tiap kalimat diketik, tampil utuh, lalu dihapus mundur;
+     setelah kalimat terakhir terhapus, jeda 3 detik lalu diulang dari awal.
+
+     Tata letak tidak bergeser: pemenggalan baris diukur sekali dari kalimat
+     utuh (text-wrap: balance di home.css), lalu tiap baris dibekukan menjadi
+     blok tanpa bungkus (.hero-type__line). Huruf yang belum diketik / sudah
+     dihapus tetap ada (transparan), dan caret (span kosong) tidak pernah
+     berpindah baris. Diukur ulang tiap kalimat baru dan saat ukuran layar
+     berubah. Berjalan hanya saat scene hero aktif & tab terlihat. Gerak
+     dikurangi: kalimat utuh berganti tanpa efek ketik.
+     ========================================================================== */
+  function HeroType(el) {
+    this.out = el.querySelector('[data-hero-type-text]');
+    // spasi biasa saja yang dirapatkan: spasi tak terpisah (SMP 1 DAWE) tetap
+    this.lines = toArray(el.querySelectorAll('[data-hero-type-lines] li')).map(function (li) {
+      return li.textContent.replace(/[ \t\r\n]+/g, ' ').trim();
+    }).filter(function (line) {
+      return line !== '';
+    });
+    this.index = 0;
+    this.chars = 0;
+    this.segments = [];
+    this.erasing = false;
+    this.started = false;
+    this.active = false;
+    this.timer = 0;
+    this.step = this.step.bind(this);
+  }
+
+  HeroType.TYPE = 55;    // ms per huruf diketik
+  HeroType.JITTER = 30;  // variasi acak per huruf, agar terasa diketik tangan
+  HeroType.STOP = 240;   // tambahan setelah tanda baca
+  HeroType.HOLD = 2600;  // kalimat utuh terlihat sebelum dihapus
+  HeroType.ERASE = 24;   // ms per huruf dihapus
+  HeroType.GAP = 450;    // terhapus -> kalimat berikutnya
+  HeroType.PAUSE = 3000; // semua kalimat sudah tampil -> diulang dari awal
+  HeroType.START = 700;  // scene hero tampil -> huruf pertama
+  HeroType.STILL = 4200; // gerak dikurangi: lama tiap kalimat utuh
+
+  /** Ganti isi server (kalimat pertama) dengan panggung ketik. */
+  HeroType.prototype.mount = function () {
+    var self = this;
+    var resizeTimer = 0;
+
+    if (!this.out || this.lines.length === 0) {
+      return false;
+    }
+
+    this.caret = document.createElement('span');
+    this.caret.className = 'hero-type__caret';
+    if (reduced) {
+      this.chars = this.lines[0].length;
+    }
+    this.measure();
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        self.halt();
+      } else {
+        self.resume();
+      }
+    });
+    window.addEventListener('resize', function () {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(function () {
+        self.measure();
+      }, 150);
+    });
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () {
+        self.measure();
+      });
+    }
+    return true;
+  };
+
+  /**
+   * Pemenggalan baris kalimat ini: kalimat utuh dipasang sesaat (tanpa
+   * sempat dilukis), posisi tiap huruf dibaca, lalu dirender per baris.
+   * Spasi pemisah di ujung baris tidak ikut ke baris mana pun.
+   */
+  HeroType.prototype.measure = function () {
+    var line = this.lines[this.index];
+    var segments = [];
+    var start = 0;
+    var prevTop = null;
+    var range = document.createRange();
+
+    this.out.textContent = line;
+    var node = this.out.firstChild;
+
+    for (var i = 0; i < line.length; i++) {
+      if (line.charAt(i) === ' ') {
+        continue;
+      }
+      range.setStart(node, i);
+      range.setEnd(node, i + 1);
+      var rect = range.getBoundingClientRect();
+      if (prevTop !== null && rect.height > 0 && rect.top - prevTop > rect.height / 2) {
+        var end = i;
+        while (end > start && line.charAt(end - 1) === ' ') {
+          end--;
+        }
+        segments.push([start, end]);
+        start = i;
+      }
+      prevTop = rect.top;
+    }
+    segments.push([start, line.length]);
+
+    this.segments = segments;
+    this.render();
+  };
+
+  HeroType.prototype.render = function () {
+    var line = this.lines[this.index];
+    var k = this.chars;
+    var out = this.out;
+    var caretAt = 0;
+
+    // Caret di baris terakhir yang sudah mulai diketik.
+    this.segments.forEach(function (seg, j) {
+      if (seg[0] <= k) {
+        caretAt = j;
+      }
+    });
+
+    out.textContent = '';
+    this.segments.forEach(function (seg, j) {
+      var row = document.createElement('span');
+      var cut = Math.max(seg[0], Math.min(k, seg[1]));
+      row.className = 'hero-type__line';
+      row.appendChild(document.createTextNode(line.slice(seg[0], cut)));
+      if (j === caretAt && !reduced) {
+        row.appendChild(this.caret);
+      }
+      if (cut < seg[1]) {
+        var rest = document.createElement('span');
+        rest.className = 'hero-type__rest';
+        rest.textContent = line.slice(cut, seg[1]);
+        row.appendChild(rest);
+      }
+      out.appendChild(row);
+    }, this);
+  };
+
+  HeroType.prototype.setActive = function (active) {
+    this.active = active;
+    if (active) {
+      this.resume();
+    } else {
+      this.halt();
+    }
+  };
+
+  HeroType.prototype.resume = function () {
+    if (this.timer || !this.active || document.hidden) {
+      return;
+    }
+    var delay = this.started ? 400 : (reduced ? HeroType.STILL : HeroType.START);
+    this.started = true;
+    this.timer = window.setTimeout(this.step, delay);
+  };
+
+  HeroType.prototype.halt = function () {
+    window.clearTimeout(this.timer);
+    this.timer = 0;
+    this.out.classList.remove('is-typing');
+  };
+
+  HeroType.prototype.step = function () {
+    this.timer = 0;
+    if (!this.active || document.hidden) {
+      return;
+    }
+    var delay = reduced ? this.stepStill() : this.stepTyping();
+    this.timer = window.setTimeout(this.step, delay);
+  };
+
+  /** Satu huruf diketik atau dihapus; mengembalikan jeda ke langkah berikutnya. */
+  HeroType.prototype.stepTyping = function () {
+    var line = this.lines[this.index];
+
+    if (!this.erasing) {
+      this.chars++;
+      this.render();
+      if (this.chars >= line.length) {
+        this.erasing = true;
+        this.out.classList.remove('is-typing');
+        return HeroType.HOLD;
+      }
+      this.out.classList.add('is-typing');
+      return HeroType.TYPE + Math.round(Math.random() * HeroType.JITTER)
+        + (/[.,:;!?]/.test(line.charAt(this.chars - 1)) ? HeroType.STOP : 0);
+    }
+
+    this.chars--;
+    if (this.chars > 0) {
+      this.out.classList.add('is-typing');
+      this.render();
+      return HeroType.ERASE;
+    }
+
+    // Kalimat terhapus: kalimat berikutnya (transparan) disiapkan di tempat.
+    var last = this.index === this.lines.length - 1;
+    this.index = last ? 0 : this.index + 1;
+    this.erasing = false;
+    this.out.classList.remove('is-typing');
+    this.measure();
+    return last ? HeroType.PAUSE : HeroType.GAP;
+  };
+
+  /** Gerak dikurangi: kalimat utuh berganti, kosong 3 detik setelah terakhir. */
+  HeroType.prototype.stepStill = function () {
+    if (this.chars > 0) {
+      var last = this.index === this.lines.length - 1;
+      this.index = last ? 0 : this.index + 1;
+      this.chars = 0;
+      if (last) {
+        this.measure();
+        return HeroType.PAUSE;
+      }
+    }
+    this.chars = this.lines[this.index].length;
+    this.measure();
+    return HeroType.STILL;
+  };
+
+  /* ==========================================================================
      Canvas hero "embun / lubang coblos" (10-MOTION §6): titik hanya terlihat
      di sekitar pointer (radius 140 px) dan sebagai riak saat diketuk; tidak
      ada bidang titik penuh atau gerak terus-menerus. Diredam di area fokus
@@ -1118,7 +1355,8 @@
   function Field(canvas, scene) {
     this.canvas = canvas;
     this.scene = scene;
-    this.text = scene.querySelector('.hero');
+    // Stage 24: tombol & kalimat hero (bila ada) sama-sama diredam.
+    this.texts = toArray(scene.querySelectorAll('.hero, [data-hero-type-text]'));
     this.ctx = canvas.getContext('2d');
     this.pointer = { x: -1e4, y: -1e4, tx: -1e4, ty: -1e4, on: false, a: 0 };
     this.ripples = [];
@@ -1242,10 +1480,14 @@
     } else {
       zones.push([w * 0.1, h * 0.12, w * 0.9, h * 0.5]);
     }
-    if (this.text) {
+    if (this.texts.length > 0) {
       var c = this.canvas.getBoundingClientRect();
-      var r = this.text.getBoundingClientRect();
-      zones.push([r.left - c.left - 12, r.top - c.top - 12, r.right - c.left + 12, r.bottom - c.top + 12]);
+      this.texts.forEach(function (text) {
+        var r = text.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0) {
+          zones.push([r.left - c.left - 12, r.top - c.top - 12, r.right - c.left + 12, r.bottom - c.top + 12]);
+        }
+      });
     }
     return zones;
   };
@@ -1530,6 +1772,17 @@
       deck.onChange(function (index) {
         field.setActive(index === heroIndex);
       });
+    }
+
+    // Stage 24: kalimat hero diketik hanya saat scene hero aktif.
+    var typeEl = hero ? hero.querySelector('[data-hero-type]') : null;
+    if (typeEl) {
+      var heroType = new HeroType(typeEl);
+      if (heroType.mount()) {
+        deck.onChange(function (index) {
+          heroType.setActive(index === heroIndex);
+        });
+      }
     }
 
     if (hero && finePointer && !reduced) {

@@ -13,10 +13,12 @@
  *
  * Tombol penutup mengikuti keadaan pemilih:
  * - pencoblosan dibuka: "Pilih Paslon 0X" -> kotaknya di surat suara
- *   (Stage 22: tombol 3D tangan menekan, bilik-suara#coblos-0X) +
- *   "Kembali ke daftar paslon" (Stage 22: halaman sekilas-paslon);
+ *   (Stage 22: tombol 3D, bilik-suara#coblos-0X; Stage 24: kursor mengklik
+ *   tombol) + "Kembali ke daftar paslon" (Stage 22: halaman sekilas-paslon);
  * - sudah memilih: "Lihat pilihanku";
  * - belum dibuka / sudah ditutup: "Kembali ke daftar paslon".
+ * Stage 24: tanpa tautan kembali (px-back) di atas pembuka; navigasi situs,
+ * bar pemilih paslon, dan tombol penutup sudah mengarahkan pemilih.
  *
  * @var \App\Services\VoterType $type
  * @var array                   $c       CandidateTheme::present()
@@ -29,16 +31,13 @@ $list  = ['label' => 'Kembali ke daftar paslon', 'href' => site_url($type->path(
 $pick  = ! $voted && $canVote;
 
 if ($voted) {
-    $back    = ['label' => 'Dasbor', 'href' => site_url($type->path())];
     $actions = [['label' => 'Lihat pilihanku', 'href' => site_url($type->path('pilihanku')), 'icon' => 'arrow-right', 'primary' => true]];
 } elseif ($canVote) {
-    $back    = ['label' => 'Semua paslon', 'href' => $list['href']];
     $actions = [
         ['label' => 'Pilih Paslon ' . $c['label'], 'href' => $booth . '#coblos-' . $c['label'], 'primary' => true, 'pick3d' => true],
         $list,
     ];
 } else {
-    $back    = ['label' => 'Semua paslon', 'href' => $list['href']];
     $actions = [$list + ['primary' => true]];
 }
 
@@ -50,7 +49,7 @@ $others = array_map(static fn (array $o): array => [
     'wakil'   => $o['wakil'],
 ], $lineup);
 ?>
-<?= view('paslon/partials/profile', ['c' => $c, 'others' => $others, 'actions' => $actions, 'back' => $back]) ?>
+<?= view('paslon/partials/profile', ['c' => $c, 'others' => $others, 'actions' => $actions]) ?>
 <?= $this->endSection() ?>
 
 <?= $this->section('scripts') ?>

@@ -10,8 +10,8 @@ use CodeIgniter\Model;
  *
  * Dicatat secara proporsional: unlock hak suara, perubahan jadwal,
  * perubahan kandidat, impor siswa/guru, tambah/ubah pemilih lewat form
- * (Stage 11), serta perubahan status/penghapusan pemilih. Login dan tampilan
- * halaman tidak dicatat.
+ * (Stage 11), serta perubahan status/penghapusan pemilih. Stage 24: perubahan
+ * teks hero halaman utama. Login dan tampilan halaman tidak dicatat.
  *
  * Konteks (Stage 3, migration 2026-03-01-000001):
  * - election_id        : election terkait tindakan;
@@ -39,6 +39,7 @@ class AuditLogModel extends Model
     public const TEACHER_UPDATE   = 'TEACHER_UPDATE';
     public const ADMIN_USERNAME   = 'ADMIN_USERNAME';
     public const ADMIN_PASSWORD   = 'ADMIN_PASSWORD';
+    public const HOMEPAGE_TEXT    = 'HOMEPAGE_TEXT';
 
     /**
      * Label tindakan untuk UI (urutan = urutan filter di halaman Audit).
@@ -63,6 +64,7 @@ class AuditLogModel extends Model
         self::TEACHER_DELETE   => 'Hapus data guru',
         self::ADMIN_USERNAME   => 'Ganti nama pengguna admin',
         self::ADMIN_PASSWORD   => 'Ganti kata sandi admin',
+        self::HOMEPAGE_TEXT    => 'Ubah teks halaman utama',
     ];
 
     protected $table         = 'audit_logs';

@@ -14,6 +14,9 @@
  *
  * Stage 19: menu "Pengunjung Online" (admin/pengunjung) di kelompok ketiga.
  *
+ * Stage 24: menu "Teks Halaman Utama" (admin/halaman-utama, teks hero yang
+ * diketik di halaman utama) setelah Jadwal Pemilihan.
+ *
  * @var array  $admin
  * @var string $nav
  */
@@ -31,6 +34,7 @@ $groups = [
     ],
     [
         'election' => ['admin/jadwal', 'calendar', 'Jadwal Pemilihan'],
+        'homepage' => ['admin/halaman-utama', 'type', 'Teks Halaman Utama'],
         'unlock'   => ['admin/buka-kunci', 'unlock', 'Unlock Hak Suara'],
         'audit'    => ['admin/riwayat', 'file', 'Audit Log'],
         'visitors' => ['admin/pengunjung', 'eye', 'Pengunjung Online'],

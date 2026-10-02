@@ -20,6 +20,9 @@ $firstScreen = [
 <?php endif; ?>
 <?php endforeach; ?>
 <link rel="preload" href="<?= base_url('assets/fonts/jetbrains-mono-latin-wght-normal.woff2') ?>" as="font" type="font/woff2" crossorigin>
+<?php if ($heroLines !== []): ?>
+<link rel="preload" href="<?= base_url('assets/fonts/newsreader-latin-wght-normal.woff2') ?>" as="font" type="font/woff2" crossorigin>
+<?php endif; ?>
 <link rel="stylesheet" href="<?= asset_url('assets/css/home.css') ?>">
 <?= $this->endSection() ?>
 
@@ -55,6 +58,11 @@ $firstScreen = [
  * Stage 21: foto pasangan dapat diklik -> foto ukuran penuh (pair_view) dengan
  * tautan "Lihat profil pasangan" bila pengunjung login (pair['profile']).
  *
+ * Stage 24: kalimat dari admin (Teks Halaman Utama, App\Libraries\HeroText)
+ * diketik bergantian di tengah hero (.hero-type, home.js HeroType). Tanpa
+ * JavaScript kalimat pertama tampil diam; pembaca layar membaca daftar utuh.
+ *
+ * @var list<string>     $heroLines  Kalimat hero; [] = hero tanpa teks
  * @var array|null       $live       PublicLiveCount::build() + pairs; null = live count publik mati
  * @var array|null       $online     OnlineVisitors::publicCounts() (+ pengunjung ini); null = dimatikan
  * @var \Config\Homepage $home
@@ -94,6 +102,19 @@ $entries = [
     </div>
     <canvas class="field" data-field aria-hidden="true"></canvas>
     <div class="scene__inner" data-scene-scroll>
+      <?php if ($heroLines !== []): ?>
+        <?php /* Stage 24: kalimat diketik bergantian di tengah gambar. Teks yang
+                 terlihat aria-hidden (berubah tiap huruf); daftar utuh untuk
+                 pembaca layar sekaligus sumber home.js (textContent). */ ?>
+        <div class="hero-type" data-hero-type>
+          <p class="hero-type__text" aria-hidden="true" data-reveal data-hero-type-text><?= esc($heroLines[0]) ?></p>
+          <ul class="visually-hidden" data-hero-type-lines>
+            <?php foreach ($heroLines as $line): ?>
+              <li><?= esc($line) ?></li>
+            <?php endforeach; ?>
+          </ul>
+        </div>
+      <?php endif; ?>
       <div class="hero-bar">
         <div class="hero">
           <?php /* Stage 18: tanpa teks terlihat di atas gambar; judul tetap ada

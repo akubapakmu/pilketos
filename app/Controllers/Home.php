@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Libraries\CandidateTheme;
+use App\Libraries\HeroText;
 use App\Models\CandidateModel;
 use App\Models\ElectionModel;
 use App\Services\PublicLiveCount;
@@ -16,7 +17,8 @@ use Throwable;
  * layar penuh (hero, pintu masuk Siswa/Guru, perolehan suara), panel status
  * bergaya terminal, dan live count publik. Stage 6 (STAGE6-NOTES.md): hero
  * berlapis lereng Muria dan warna identitas sekolah yang dijaga netral
- * terhadap warna aksen pasangan calon.
+ * terhadap warna aksen pasangan calon. Stage 24 (STAGE24-NOTES.md): kalimat
+ * hero dari admin diketik bergantian di tengah gambar.
  */
 class Home extends BaseController
 {
@@ -56,6 +58,8 @@ class Home extends BaseController
 
         $html = view('home/index', [
             'online'     => $this->onlineCounts(),
+            // Stage 24: kalimat hero yang diketik bergantian (admin/halaman-utama).
+            'heroLines'  => array_map(HeroText::display(...), HeroText::lines()),
             'election'   => $election,
             // Parijoto hanya dipakai bila tidak mirip warna pasangan mana pun.
             'identity'   => self::identityAccent($config, array_column($themes, 'accent')),

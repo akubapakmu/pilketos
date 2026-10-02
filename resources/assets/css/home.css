@@ -18,6 +18,8 @@
      dimatikan oleh prefers-reduced-motion (app.css + bawah file).
    - Stage 21: foto pasangan ukuran penuh (.pair__zoom, .pair-view), dock HP
      satu baris tanpa jadwal, ikon "online" biru muda di footer HP.
+   - Stage 24: kalimat hero dari admin diketik bergantian di tengah gambar
+     (.hero-type, home.js HeroType); Dasbor & Keluar tanpa garis tepi/latar.
    ========================================================================== */
 
 @font-face {
@@ -117,14 +119,22 @@ html.is-immersive {
 
 .site-nav--immersive .brandmark { --brand-h: 30px; }
 
+/* Stage 24: Dasbor & Keluar (pengguna login) tanpa garis tepi dan latar, HP
+   maupun desktop: ikon/teks langsung di atas gambar, rapat ke tepi gutter.
+   Target sentuh tetap 44 px (app.css). */
 .site-nav--immersive .site-nav__action {
-  border-color: var(--night-line-2);
-  background: rgba(16, 19, 18, 0.6);
+  padding-inline: 0;
+  border: 0;
+  background: none;
+  transition: opacity var(--motion-ui) var(--ease-out);
 }
 
+.site-nav--immersive .site-nav__start .site-nav__action { justify-content: flex-start; }
+.site-nav--immersive .site-nav__end .site-nav__action { justify-content: flex-end; }
+
 .site-nav--immersive .site-nav__action:hover {
-  border-color: var(--on-night);
-  background: rgba(242, 241, 236, 0.08);
+  background: none;
+  opacity: 0.72;
 }
 
 /* lockup navigasi disembunyikan selama layar pembuka: lockup pembuka
@@ -543,7 +553,65 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   pointer-events: none;
 }
 
-/* 5. CTA saja (Stage 18: tanpa kicker, judul terlihat, baris pendukung, dan
+/* 5. Stage 24: kalimat dari admin (Teks Halaman Utama) diketik bergantian
+   di tengah gambar (home.js HeroType). Blok mengisi ruang di atas baris
+   tombol dan memusatkan kalimat di sana; paralaks 4 px. Pemenggalan baris
+   diukur dari kalimat utuh (balance) lalu dibekukan per baris; huruf yang
+   belum diketik / sudah dihapus tetap mengisi tempat (transparan) sehingga
+   baris tidak bergeser. Newsreader seperti judul section, tanpa blur. */
+.hero-type {
+  display: grid;
+  flex: 1 1 auto;
+  place-items: center;
+  width: 100%;
+  min-height: 0;
+  padding-block: clamp(12px, 4vh, 48px);
+  pointer-events: none;
+  transform: translate3d(calc(var(--mx, 0) * -4px), calc(var(--my, 0) * -4px), 0);
+}
+
+.hero-type__text {
+  max-width: min(100%, 15em);
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 4.6vw, 4.75rem);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.015em;
+  text-align: center;
+  text-wrap: balance;
+  color: var(--on-night);
+}
+
+/* baris hasil ukur (home.js): dibekukan selama kalimat diketik */
+.hero-type__line {
+  display: block;
+  white-space: nowrap;
+}
+
+.hero-type__rest { color: transparent; }
+
+.hero-type__caret { position: relative; }
+
+.hero-type__caret::after {
+  content: '';
+  position: absolute;
+  top: 0.08em;
+  left: -0.025em;
+  width: 0.05em;
+  min-width: 2px;
+  height: 0.98em;
+  background: currentColor;
+  animation: cursor 1.1s steps(1, end) infinite;
+}
+
+/* caret diam (tidak berkedip) selama huruf diketik atau dihapus */
+.hero-type__text.is-typing .hero-type__caret::after { animation: none; }
+
+/* gambar sedikit lebih redup bila ada kalimat: teks tetap terbaca di atas
+   foto hero yang terang (lapisan solid) */
+.scene--hero:has(.hero-type) .hero-bg__shade { background: rgba(16, 19, 18, 0.34); }
+
+/* 6. CTA (Stage 18: tanpa kicker, judul terlihat, baris pendukung, dan
    perforasi): sepertiga bawah-kiri, paralaks 3 px */
 .scene--hero .scene__inner { justify-content: flex-end; }
 
@@ -1811,6 +1879,9 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   /* lapisan depan boleh hilang di HP tegak bila membuat sesak */
   .hero-bg__fore { display: none; }
 
+  /* Stage 24: kalimat hero di HP tegak (2-3 baris di tengah layar) */
+  .hero-type__text { font-size: clamp(1.875rem, 8.4vw, 2.75rem); }
+
   /* Stage 19: angka online di hero hanya untuk desktop */
   .hero-online { display: none; }
 
@@ -1981,6 +2052,10 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   .site-nav--immersive .site-nav__row { min-height: 48px; }
   .site-nav--immersive .brandmark { --brand-h: 24px; }
 
+  /* Stage 24: kalimat hero lebih kecil di layar pendek */
+  .hero-type { padding-block: 8px; }
+  .hero-type__text { font-size: clamp(1.5rem, 6.5vh, 2.25rem); }
+
   /* CTA sebaris, tanpa tombol "lanjut" antar-scene */
   .hero { max-width: min(560px, 60vw); }
   .scene-next { display: none; }
@@ -2031,6 +2106,7 @@ html.is-immersive:not(.has-scenes) { scroll-snap-type: y mandatory; }
   .has-scenes .scene.is-active,
   .has-scenes .scene .scene__inner,
   .hero,
+  .hero-type,
   .hero-bg__photo,
   .hero-bg__img,
   .hero-bg__fore,

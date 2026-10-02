@@ -108,7 +108,9 @@ final class StageTwentyTwoRefinementTest extends CIUnitTestCase
             $booth = $this->body($this->withSession($session)->get($role . '/bilik-suara'));
             $this->assertStringContainsString('<h1 class="ballot__title" id="ballot-title">Surat Suara</h1>', $booth);
             $this->assertStringContainsString('data-submit-url="' . $this->url($role . '/coblos') . '"', $booth);
-            $this->assertStringContainsString('<a class="ballot__back" href="' . $this->url($role . '/sekilas-paslon') . '">', $booth);
+            // Stage 24: kembali lewat menu melayang (ballot__back dihapus).
+            $this->assertStringContainsString('<a class="booth-nav__back" href="' . $this->url($role . '/sekilas-paslon') . '">', $booth);
+            $this->assertStringNotContainsString('ballot__back', $booth);
         }
     }
 
@@ -236,7 +238,8 @@ final class StageTwentyTwoRefinementTest extends CIUnitTestCase
 
         $html = $this->body($this->withSession(self::STUDENT)->get('siswa/sekilas-paslon'));
 
-        foreach (['01' => 'diagonal', '02' => 'dots', '03' => 'waves'] as $label => $motif) {
+        // Stage 24: latar abstrak (orbit, tide, arc, ...) pengganti pola berulang.
+        foreach (['01' => 'orbit', '02' => 'tide', '03' => 'arc'] as $label => $motif) {
             $this->assertStringContainsString(
                 '<a class="pair-card__profile pair-card__profile--' . $motif . '" href="' . $this->url('siswa/paslon/' . $label) . '">' . "\n"
                 . '              <span class="pair-card__profile-text">Profil Lengkap Paslon ' . $label . '</span>',
@@ -259,8 +262,9 @@ final class StageTwentyTwoRefinementTest extends CIUnitTestCase
 
         $css = $this->asset('assets/css/voting.css');
         foreach (CandidateTheme::MOTIFS as $motif) {
-            $this->assertFileExists(FCPATH . 'assets/img/patterns/px-' . $motif . '.svg');
-            $this->assertStringContainsString("mask-image: url('../img/patterns/px-" . $motif . ".svg');", $this->rule($css, '.pair-card__profile--' . $motif . '::before'));
+            // Stage 24: satu komposisi abstrak per paslon (img/abstract/).
+            $this->assertFileExists(FCPATH . 'assets/img/abstract/' . $motif . '.svg');
+            $this->assertStringContainsString("mask-image: url('../img/abstract/" . $motif . ".svg');", $this->rule($css, '.pair-card__profile--' . $motif . '::before'));
         }
         $this->assertStringContainsString('background: var(--accent);', $this->rule($css, '.pair-card__profile'));
         $this->assertStringContainsString('background: var(--accent-ink);', $this->rule($css, '.pair-card__profile::before'));
@@ -287,18 +291,22 @@ final class StageTwentyTwoRefinementTest extends CIUnitTestCase
     // bilik suara
     // ------------------------------------------------------------------
 
-    public function testBallotPageKeepsTheNailConfirmationAndCountdown(): void
+    /**
+     * Stage 24: countdown di kepala surat suara dihapus
+     * (StageTwentyFourRefinementTest); paku & konfirmasi tetap.
+     */
+    public function testBallotPageKeepsTheNailAndConfirmation(): void
     {
         $this->scheduleAt('2026-10-01 09:00:00');
 
         $html = $this->body($this->withSession(self::STUDENT)->get('siswa/bilik-suara'));
 
         $this->assertSame(1, substr_count($html, '<h1'));
-        $this->assertStringContainsString('<div class="term ballot__term">', $html);
+        $this->assertStringNotContainsString('class="term', $html);
         $this->assertStringContainsString('id="coblos-02"', $html);
         $this->assertStringContainsString('id="vote-confirm"', $html);
         $this->assertStringContainsString('data-nail3d', $html);
-        $this->assertStringContainsString('assets/js/countdown.js', $html);
+        $this->assertStringNotContainsString('assets/js/countdown.js', $html);
         $this->assertStringContainsString('assets/js/ballot.js', $html);
         $this->assertStringNotContainsString('pair-card', $html);
 
@@ -318,7 +326,8 @@ final class StageTwentyTwoRefinementTest extends CIUnitTestCase
 
         $html = $this->body($this->withSession(self::STUDENT)->get('siswa/paslon/02'));
 
-        $this->assertStringContainsString('<a class="px-back" href="' . $this->url('siswa/sekilas-paslon') . '">', $html);
+        // Stage 24: tanpa tautan kembali di atas pembuka (px-back).
+        $this->assertStringNotContainsString('px-back', $html);
         $this->assertStringContainsString('<a class="px-btn" href="' . $this->url('siswa/sekilas-paslon') . '">' . "\n" . '                  Kembali ke daftar paslon', $html);
         $this->assertStringContainsString('<a class="px-pick" href="' . esc(site_url('siswa/bilik-suara') . '#coblos-02', 'attr') . '" data-px-pick>', $html);
         $this->assertStringContainsString('<canvas class="px-pick__canvas" data-px-pick-canvas></canvas>', $html);
@@ -388,25 +397,8 @@ final class StageTwentyTwoRefinementTest extends CIUnitTestCase
         $this->assertStringNotContainsString('px-switch', $html);
     }
 
-    public function testClosingNamesBreakIntoAtMostTwoBalancedLines(): void
-    {
-        $this->assertSame(['Arka', 'Wibisana'], CandidateTheme::nameLines('Arka Wibisana'));
-        $this->assertSame(['Muhammad', 'Rizky Pratama'], CandidateTheme::nameLines('Muhammad  Rizky Pratama'));
-        $this->assertSame(['Siti Nur Aini', 'Rahmawati'], CandidateTheme::nameLines('Siti Nur Aini Rahmawati'));
-        $this->assertSame(['Budi'], CandidateTheme::nameLines(' Budi '));
-        $this->assertSame([], CandidateTheme::nameLines(''));
-
-        $this->db->table('candidates')->where('nomor_urut', 1)->update(['nama_wakil' => 'Naya Kirana Putri']);
-        $html = $this->body($this->withSession(self::STUDENT)->get('siswa/paslon/01'));
-
-        $this->assertStringContainsString('<strong style="--px-chars: 8;"><span class="px-finale__line">Arka</span> <span class="px-finale__line">Wibisana</span></strong>', $html);
-        $this->assertStringContainsString('<strong style="--px-chars: 11;"><span class="px-finale__line">Naya Kirana</span> <span class="px-finale__line">Putri</span></strong>', $html);
-
-        $css = $this->asset('assets/css/paslon.css');
-        $this->assertMatchesRegularExpression('/\.px-finale__person \{ container-type: inline-size; \}/', $css);
-        $this->assertMatchesRegularExpression('/\.px-finale__person strong \{[^}]*font-size: min\(4\.5rem, 100cqi \/ \(var\(--px-chars, 12\) \* 0\.64\)\);[^}]*white-space: nowrap;/', $css);
-        $this->assertStringContainsString('.px-finale__line { display: block; white-space: nowrap; }', $css);
-    }
+    // Stage 24: pemecah baris nama penutup (CandidateTheme::nameLines()) dihapus;
+    // nama membungkus otomatis dengan peran di atasnya (StageTwentyFourRefinementTest).
 
     public function testSectionHeadsProgramsAndTagsFollowTheNewLayout(): void
     {

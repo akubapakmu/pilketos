@@ -10,6 +10,9 @@
  *                             sessionStorage "osis2026.skipIntro" (non-sensitif)
  *                             dibaca & dihapus di sini sebelum render pertama.
  * @var string|null $bodyClass
+ * @var array|null  $boothNav  Stage 24: bilik suara memakai menu melayang
+ *                             (partials/booth_nav: Kembali + Dasbor) sebagai
+ *                             pengganti navigasi situs.
  */
 $immersive = (bool) ($immersive ?? false);
 ?>
@@ -34,7 +37,7 @@ try { if (window.sessionStorage.getItem('osis2026.skipIntro') === '1') { window.
 <body class="<?= esc($bodyClass ?? '', 'attr') ?>">
 <a class="skip-link" href="#main">Langsung ke konten</a>
 <?= $this->renderSection('overlay') ?>
-<?= $this->include('partials/header') ?>
+<?= $this->include(isset($boothNav) ? 'partials/booth_nav' : 'partials/header') ?>
 <?= $this->include('partials/flash') ?>
 <main id="main" tabindex="-1">
 <?= $this->renderSection('content') ?>
