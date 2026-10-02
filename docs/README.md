@@ -6,7 +6,7 @@ Dokumentasi pendukung aplikasi Pemilihan Ketua & Wakil Ketua OSIS SMP 1 DAWE
 
 ```
 docs/
-├── spesifikasi/     brief & spesifikasi per tahap (00–05)
+├── spesifikasi/     brief & spesifikasi per tahap (00–05) + rencana Stage 25–26 (11)
 ├── desain/          identitas visual, tipografi, aset, gerak (06–10)
 └── catatan-tahap/   catatan implementasi & handoff tiap tahap (STAGE1–21)
 ```
@@ -25,6 +25,7 @@ keputusan, dan hasil test).
 | [`03-ADMIN-IMPORT-ANALYTICS.md`](spesifikasi/03-ADMIN-IMPORT-ANALYTICS.md) | Stage 3: panel admin, impor, tema, analitik, live count, unlock |
 | [`04-FINAL-INTEGRATION-TESTING-DEPLOYMENT.md`](spesifikasi/04-FINAL-INTEGRATION-TESTING-DEPLOYMENT.md) | Stage 4: integrasi akhir, keamanan, hasil akhir, deployment |
 | [`05-HOMEPAGE-REDESIGN.md`](spesifikasi/05-HOMEPAGE-REDESIGN.md) | Stage 5: redesign beranda |
+| [`11-ADMIN-HERO-TEXT-LIVING-ELECTION-WALL.md`](spesifikasi/11-ADMIN-HERO-TEXT-LIVING-ELECTION-WALL.md) | Rencana dua tahap, tiap tahap di chat baru. Stage 25: tambah data pemilih (langsung/impor) hanya sebelum jadwal dimulai, rekap pengunjung + grafik + ekspor PDF, teks halaman utama (font Fontsource, ukuran desktop/HP, ulang, nonaktif, efek mengetik & tulisan tangan dengan huruf 3D troika-three-text), reset total, perapian halaman pemilih. Stage 26: avatar pemilih (unggah foto / DiceBear) & Living Election Wall |
 
 ## Desain
 

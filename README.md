@@ -935,7 +935,7 @@ beserta ringkasan tiap dokumen: [`docs/README.md`](docs/README.md).
 
 | Folder | Isi |
 |---|---|
-| [`docs/spesifikasi/`](docs/spesifikasi) | `00-MASTER-PROJECT.md` (spesifikasi utama, source of truth) dan brief Stage 1–5 (`01`–`05`) |
+| [`docs/spesifikasi/`](docs/spesifikasi) | `00-MASTER-PROJECT.md` (spesifikasi utama, source of truth), brief Stage 1–5 (`01`–`05`), dan rencana dua tahap Stage 25–26 (`11`) |
 | [`docs/desain/`](docs/desain) | Identitas visual SMP 1 DAWE, Stage 6 (`06`–`10`): arah visual, tipografi, spesifikasi aset, prompt gambar, sistem gerak |
 | [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE24-NOTES.md`) |
 
