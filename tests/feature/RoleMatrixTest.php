@@ -35,10 +35,12 @@ final class RoleMatrixTest extends CIUnitTestCase
      * hitung-suara (redesign beranda): hanya persentase per pasangan + partisipasi.
      * kunjungan/detak (Stage 19): detak pengunjung online, balasan hanya angka
      * ringkas tamu & pengguna login. kunjungan/online (Stage 21): angka yang
-     * sama, dibaca beranda tiap detik (GET, tanpa tulis).
+     * sama, dibaca beranda tiap detik (GET, tanpa tulis). partisipasi &
+     * partisipasi/status (Stage 26): Living Election Wall, hanya nama, avatar,
+     * dan sudah/belum berpartisipasi (tanpa NISN/NIP, waktu, pilihan).
      */
     private const PUBLIC_ROUTES = [
-        'GET'  => ['/', 'jam-server', 'hitung-suara', 'kunjungan/online', 'siswa/masuk', 'guru/masuk', 'admin/masuk'],
+        'GET'  => ['/', 'jam-server', 'hitung-suara', 'kunjungan/online', 'partisipasi', 'partisipasi/status', 'siswa/masuk', 'guru/masuk', 'admin/masuk'],
         'POST' => ['kunjungan/detak', 'siswa/masuk', 'guru/masuk', 'admin/masuk'],
     ];
 

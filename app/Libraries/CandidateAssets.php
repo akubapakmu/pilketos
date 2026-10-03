@@ -21,26 +21,19 @@ use GdImage;
  * Nama file SELALU dibuat server (acak), nama asli tidak pernah dipakai.
  * Folder public/uploads/candidates dilindungi public/uploads/.htaccess
  * (Stage 1: tanpa eksekusi skrip, tanpa daftar isi folder).
+ *
+ * Stage 26: deteksi isi, decode, orientasi EXIF, dan perkiraan memori dipakai
+ * bersama avatar pemilih lewat ImageProcessor; pesan & aturan slot tetap di sini.
  */
 final class CandidateAssets
 {
     /**
      * MIME yang diterima => ekstensi yang cocok.
      */
-    public const MIME_EXTENSIONS = [
-        'image/jpeg' => ['jpg', 'jpeg'],
-        'image/png'  => ['png'],
-        'image/webp' => ['webp'],
-    ];
+    public const MIME_EXTENSIONS = ImageProcessor::MIME_EXTENSIONS;
 
-    private const IMAGE_TYPES = [
-        IMAGETYPE_JPEG => 'image/jpeg',
-        IMAGETYPE_PNG  => 'image/png',
-        IMAGETYPE_WEBP => 'image/webp',
-    ];
-
-    public const MAX_SIDE   = 8000;
-    public const MAX_PIXELS = 40_000_000;
+    public const MAX_SIDE   = ImageProcessor::MAX_SIDE;
+    public const MAX_PIXELS = ImageProcessor::MAX_PIXELS;
 
     private const MB = 1024 * 1024;
 
@@ -132,7 +125,7 @@ final class CandidateAssets
      */
     public static function outputExtension(string $sourceMime): string
     {
-        if (function_exists('imagewebp') && (imagetypes() & IMG_WEBP) !== 0) {
+        if (ImageProcessor::webp()) {
             return 'webp';
         }
 
@@ -201,7 +194,7 @@ final class CandidateAssets
             throw new CandidateAssetException($label . ' harus berupa JPG, PNG, atau WebP.');
         }
 
-        $mime = (string) (new \finfo(FILEINFO_MIME_TYPE))->file($path);
+        $mime = ImageProcessor::detectMime($path);
 
         if (! isset(self::MIME_EXTENSIONS[$mime])) {
             throw new CandidateAssetException($label . ' bukan gambar JPG/PNG/WebP (isi file terdeteksi ' . $mime . ').');
@@ -211,13 +204,8 @@ final class CandidateAssets
             throw new CandidateAssetException(sprintf('Ekstensi .%s tidak sesuai isi %s (%s).', $extension, strtolower($label), $mime));
         }
 
-        $info = @getimagesize($path);
-
-        if ($info === false || (self::IMAGE_TYPES[$info[2]] ?? null) !== $mime) {
-            throw new CandidateAssetException($label . ' rusak atau tidak dapat dibaca sebagai gambar.');
-        }
-
-        [$width, $height] = $info;
+        [$width, $height] = ImageProcessor::dimensions($path, $mime)
+            ?? throw new CandidateAssetException($label . ' rusak atau tidak dapat dibaca sebagai gambar.');
 
         if ($width < $config['min'][0] || $height < $config['min'][1]) {
             throw new CandidateAssetException(sprintf(
@@ -236,7 +224,7 @@ final class CandidateAssets
 
         $this->ensureMemory($width, $height, $config['edge'], $label);
 
-        $image = $this->decode($path, $mime);
+        $image = ImageProcessor::decode($path, $mime);
 
         if (! $image instanceof GdImage) {
             throw new CandidateAssetException($label . ' rusak atau tidak dapat dibaca sebagai gambar.');
@@ -244,7 +232,7 @@ final class CandidateAssets
 
         // GdImage dibebaskan otomatis saat tidak dipakai lagi (PHP 8+);
         // imagedestroy() sengaja tidak dipakai (deprecated sejak PHP 8.5).
-        $image = $this->orient($image, $path, $mime);
+        $image = ImageProcessor::orient($image, $path, $mime);
 
         if (($config['landscape'] ?? false) && imagesx($image) <= imagesy($image)) {
             throw new CandidateAssetException(sprintf(
@@ -282,11 +270,7 @@ final class CandidateAssets
 
     public static function formatBytes(int $bytes): string
     {
-        if ($bytes >= self::MB) {
-            return rtrim(rtrim(number_format($bytes / self::MB, 1, ',', '.'), '0'), ',') . ' MB';
-        }
-
-        return max(1, (int) round($bytes / 1024)) . ' KB';
+        return ImageProcessor::formatBytes($bytes);
     }
 
     /**
@@ -294,73 +278,7 @@ final class CandidateAssets
      */
     public static function iniBytes(string $value): int
     {
-        $value = trim($value);
-
-        if ($value === '' || $value === '-1') {
-            return 0;
-        }
-
-        $number = (int) $value;
-
-        return match (strtolower(substr($value, -1))) {
-            'g'     => $number * 1024 * self::MB,
-            'm'     => $number * self::MB,
-            'k'     => $number * 1024,
-            default => $number,
-        };
-    }
-
-    private function decode(string $path, string $mime): GdImage|false
-    {
-        @ini_set('gd.jpeg_ignore_warning', '1');
-
-        return match ($mime) {
-            'image/jpeg' => @imagecreatefromjpeg($path),
-            'image/png'  => @imagecreatefrompng($path),
-            'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($path) : false,
-            default      => false,
-        };
-    }
-
-    /**
-     * Terapkan orientasi EXIF foto HP (setelah encode ulang EXIF hilang,
-     * jadi rotasi harus dilakukan pada pikselnya).
-     */
-    private function orient(GdImage $image, string $path, string $mime): GdImage
-    {
-        if ($mime !== 'image/jpeg' || ! function_exists('exif_read_data')) {
-            return $image;
-        }
-
-        $exif        = @exif_read_data($path);
-        $orientation = is_array($exif) ? (int) ($exif['Orientation'] ?? 1) : 1;
-
-        $steps = match ($orientation) {
-            2       => [null, IMG_FLIP_HORIZONTAL],
-            3       => [180, null],
-            4       => [null, IMG_FLIP_VERTICAL],
-            5       => [270, IMG_FLIP_HORIZONTAL],
-            6       => [270, null],
-            7       => [90, IMG_FLIP_HORIZONTAL],
-            8       => [90, null],
-            default => [null, null],
-        };
-
-        [$angle, $flip] = $steps;
-
-        if ($angle !== null) {
-            $rotated = imagerotate($image, $angle, 0);
-
-            if ($rotated instanceof GdImage) {
-                $image = $rotated;
-            }
-        }
-
-        if ($flip !== null) {
-            imageflip($image, $flip);
-        }
-
-        return $image;
+        return ImageProcessor::iniBytes($value);
     }
 
     private function downscale(GdImage $image, int $edge): GdImage
@@ -411,29 +329,14 @@ final class CandidateAssets
     }
 
     /**
-     * Perkiraan memori GD (4 byte/piksel sumber + hasil, ditambah cadangan).
-     * Bila memory_limit terlalu kecil, dinaikkan sementara bila diizinkan;
-     * bila tidak bisa, gambar ditolak dengan pesan jelas (bukan fatal error).
+     * Memori GD tidak cukup walau memory_limit sudah dicoba dinaikkan:
+     * gambar ditolak dengan pesan jelas (bukan fatal error).
      */
     private function ensureMemory(int $width, int $height, int $edge, string $label): void
     {
-        $limit = self::iniBytes((string) ini_get('memory_limit'));
+        $scale = min(1, $edge / max($width, $height));
 
-        if ($limit <= 0) {
-            return;
-        }
-
-        $scale  = min(1, $edge / max($width, $height));
-        $needed = (int) (($width * $height + $width * $scale * $height * $scale) * 4 * 1.8) + 16 * self::MB;
-        $usage  = memory_get_usage(true);
-
-        if ($usage + $needed <= $limit) {
-            return;
-        }
-
-        $target = (int) ceil(($usage + $needed) / self::MB) + 16;
-
-        if (@ini_set('memory_limit', $target . 'M') === false || self::iniBytes((string) ini_get('memory_limit')) < $usage + $needed) {
+        if (! ImageProcessor::reserveMemory($width, $height, (int) ($width * $scale * $height * $scale))) {
             throw new CandidateAssetException(sprintf(
                 '%s beresolusi terlalu tinggi untuk diproses server (%d × %d px). Perkecil gambar lalu unggah ulang.',
                 $label,

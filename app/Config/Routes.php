@@ -29,6 +29,12 @@ $routes->post('kunjungan/detak', 'PresenceController::heartbeat');
 // Stage 21: angka online yang sama, dibaca beranda tiap detik (GET, hanya baca).
 $routes->get('kunjungan/online', 'PresenceController::online');
 
+// Stage 26: Living Election Wall. Hanya nama, avatar, dan sudah/belum
+// berpartisipasi per rombel & guru; tanpa NISN/NIP, waktu, maupun pilihan.
+// 404 bila Config\Homepage::$electionWall = false.
+$routes->get('partisipasi', 'WallController::index');
+$routes->get('partisipasi/status', 'WallController::status');
+
 $routes->get('siswa/masuk', 'Student\AuthController::loginForm');
 $routes->post('siswa/masuk', 'Student\AuthController::attemptLogin');
 
@@ -54,6 +60,10 @@ $routes->group('siswa', ['filter' => 'studentauth'], static function (RouteColle
     // Stage 15: profil lengkap paslon aktif (nomor urut, contoh siswa/paslon/01)
     $routes->get('paslon/(:num)', 'Student\VoteController::candidate/$1');
     $routes->get('pilihanku', 'Student\VoteController::myVote');
+    // Stage 26: avatar Living Election Wall (unggah foto / avatar acak / bawaan)
+    $routes->post('avatar', 'Student\AvatarController::upload');
+    $routes->post('avatar/acak', 'Student\AvatarController::random');
+    $routes->post('avatar/hapus', 'Student\AvatarController::remove');
     $routes->post('keluar', 'Student\AuthController::logout');
 });
 
@@ -73,6 +83,10 @@ $routes->group('guru', ['filter' => 'teacherauth'], static function (RouteCollec
     // Stage 15: profil lengkap paslon aktif (nomor urut, contoh guru/paslon/01)
     $routes->get('paslon/(:num)', 'Teacher\VoteController::candidate/$1');
     $routes->get('pilihanku', 'Teacher\VoteController::myVote');
+    // Stage 26: avatar Living Election Wall (unggah foto / avatar acak / bawaan)
+    $routes->post('avatar', 'Teacher\AvatarController::upload');
+    $routes->post('avatar/acak', 'Teacher\AvatarController::random');
+    $routes->post('avatar/hapus', 'Teacher\AvatarController::remove');
     $routes->post('keluar', 'Teacher\AuthController::logout');
 });
 
@@ -124,6 +138,8 @@ $routes->group('admin', ['filter' => 'adminauth'], static function (RouteCollect
     $routes->get('siswa/(:num)', 'Admin\StudentController::show/$1');
     $routes->post('siswa/(:num)/status', 'Admin\StudentController::status/$1');
     $routes->post('siswa/(:num)/hapus', 'Admin\StudentController::delete/$1');
+    // Stage 26: moderasi foto avatar Living Election Wall
+    $routes->post('siswa/(:num)/avatar/hapus', 'Admin\StudentController::removeAvatar/$1');
 
     // Guru: daftar, tambah/ubah (Stage 11), impor Excel
     $routes->get('guru', 'Admin\TeacherController::index');
@@ -141,6 +157,8 @@ $routes->group('admin', ['filter' => 'adminauth'], static function (RouteCollect
     $routes->get('guru/(:num)', 'Admin\TeacherController::show/$1');
     $routes->post('guru/(:num)/status', 'Admin\TeacherController::status/$1');
     $routes->post('guru/(:num)/hapus', 'Admin\TeacherController::delete/$1');
+    // Stage 26: moderasi foto avatar Living Election Wall
+    $routes->post('guru/(:num)/avatar/hapus', 'Admin\TeacherController::removeAvatar/$1');
 
     // Jadwal pemilihan (status dihitung dari jadwal & jam server)
     $routes->get('jadwal', 'Admin\ElectionController::index');

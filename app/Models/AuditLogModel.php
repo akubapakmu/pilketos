@@ -11,7 +11,9 @@ use CodeIgniter\Model;
  * Dicatat secara proporsional: unlock hak suara, perubahan jadwal,
  * perubahan kandidat, impor siswa/guru, tambah/ubah pemilih lewat form
  * (Stage 11), serta perubahan status/penghapusan pemilih. Stage 24: perubahan
- * teks hero halaman utama. Login dan tampilan halaman tidak dicatat.
+ * teks hero halaman utama. Stage 26: penghapusan foto avatar pemilih oleh
+ * admin (moderasi Living Election Wall). Login dan tampilan halaman tidak
+ * dicatat.
  *
  * Konteks (Stage 3, migration 2026-03-01-000001):
  * - election_id        : election terkait tindakan;
@@ -40,6 +42,7 @@ class AuditLogModel extends Model
     public const ADMIN_USERNAME   = 'ADMIN_USERNAME';
     public const ADMIN_PASSWORD   = 'ADMIN_PASSWORD';
     public const HOMEPAGE_TEXT    = 'HOMEPAGE_TEXT';
+    public const AVATAR_REMOVE    = 'AVATAR_REMOVE';
 
     /**
      * Label tindakan untuk UI (urutan = urutan filter di halaman Audit).
@@ -65,6 +68,7 @@ class AuditLogModel extends Model
         self::ADMIN_USERNAME   => 'Ganti nama pengguna admin',
         self::ADMIN_PASSWORD   => 'Ganti kata sandi admin',
         self::HOMEPAGE_TEXT    => 'Ubah teks halaman utama',
+        self::AVATAR_REMOVE    => 'Hapus foto avatar pemilih',
     ];
 
     protected $table         = 'audit_logs';

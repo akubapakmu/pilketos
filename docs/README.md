@@ -8,7 +8,7 @@ Dokumentasi pendukung aplikasi Pemilihan Ketua & Wakil Ketua OSIS SMP 1 DAWE
 docs/
 ├── spesifikasi/     brief & spesifikasi per tahap (00–05) + rencana Stage 25–26 (11)
 ├── desain/          identitas visual, tipografi, aset, gerak (06–10)
-└── catatan-tahap/   catatan implementasi & handoff tiap tahap (STAGE1–21)
+└── catatan-tahap/   catatan implementasi & handoff tiap tahap (STAGE1–26)
 ```
 
 Dokumen di `spesifikasi/` dan `desain/` adalah **rencana** (apa yang harus
@@ -68,6 +68,7 @@ catatan tahap.
 | [`STAGE22-NOTES.md`](catatan-tahap/STAGE22-NOTES.md) | Stage 22: bilik suara dipecah menjadi halaman berurutan: pembuka multi-langkah bergaya mengetik (`coblos`: Kenali Calonmu → Pilih Pasanganmu → Cek Lagi Pilihanmu → Selanjutnya), **Sekilas paslon** (`sekilas-paslon`, tombol "Profil Lengkap Paslon 0X" bermotif unik, HP bertumpuk, desktop maks. 3 per baris), **bilik suara** (`bilik-suara`, surat suara + countdown); profil paslon: tombol 3D tangan menekan "Pilih Paslon 0X" (three.js r186 lokal), bar pemilih paslon menempel (desktop atas, HP bawah), nama penutup maks. dua baris, judul kepala bagian lebih besar & subjudul miring, pola Misi disamarkan, nomor program di kiri, kata karakter HP selebar kartu |
 | [`STAGE23-NOTES.md`](catatan-tahap/STAGE23-NOTES.md) | Stage 23: CSS/JS selalu dikirim ter-minify tanpa komentar + watermark di semua environment; kode sumber rapi berkomentar dipindah ke `resources/assets/{css,js}` (tidak dapat dibuka browser), hasil build bernama sama di `public/assets` ikut di-commit (server tanpa library minify / folder writable tetap aman); `php spark osis:minify` membangun ulang, `osis:check` memeriksa isi; HTML tetap ter-minify hanya di production |
 | [`STAGE24-NOTES.md`](catatan-tahap/STAGE24-NOTES.md) | Stage 24: kalimat hero beranda diketik bergantian (jeda 3 detik lalu diulang) dari menu admin baru **Teks Halaman Utama** (tabel `settings`), ikon navigasi beranda tanpa border/latar; Sekilas paslon tanpa jumlah misi, pola SVG diganti latar abstrak; profil paslon tanpa `px-back`, peran di atas nama, nama membungkus otomatis, tombol 3D kursor mengklik dengan tulisan di tengah; bilik suara dengan menu melayang (Kembali + ikon dasbor), tanpa countdown, kepala rata tengah |
+| [`STAGE26-NOTES.md`](catatan-tahap/STAGE26-NOTES.md) | Stage 26 (Tahap 2 rencana `11`): avatar pemilih — unggah foto (dipotong bulat di browser, server encode ulang 320 × 320 WebP, maks. 10 perubahan per 10 menit) atau avatar acak DiceBear 9.4.2 (Adventurer, Avataaars, Big Smile; vendor lokal), avatar bawaan deterministik (HMAC); **Living Election Wall** `/partisipasi` (galeri publik per rombel & guru yang menandai siapa yang sudah berpartisipasi tanpa NISN/NIP, waktu, maupun pilihan; cari, filter Kelas, urutkan, buka/tutup, pembaruan langsung 20 detik); tautan wall di footer scene perolehan suara; moderasi foto avatar oleh admin. Reset total yang ikut menghapus avatar (4.6) menunggu Stage 25 di-merge |
 
 Catatan tahap adalah arsip: isinya menggambarkan kondisi proyek saat tahap itu
 selesai, termasuk letak file saat itu (sebelum dokumen dipindah ke `docs/`).

@@ -13,7 +13,9 @@
  * @var bool                       $deletable
  * @var array|null                 $election
  * @var bool                       $resultsLocked Stage 4: pemilihan selesai, aksi akun dikunci
+ * @var array                      $avatar    Stage 26: VoterAvatars::present() (Living Election Wall)
  */
+use App\Libraries\AvatarIdentity;
 use App\Libraries\CandidateTheme;
 use App\Services\VoterType;
 
@@ -86,6 +88,38 @@ $active    = (int) $voter['status_aktif'] === 1;
       <?php endif; ?>
     </section>
   </div>
+
+  <section class="panel" aria-labelledby="avatar-title">
+    <header class="panel__head">
+      <h2 class="panel__title" id="avatar-title">Avatar Living Election Wall</h2>
+      <?= view('admin/partials/note', ['id' => 'avatar-note', 'text' => 'Avatar tampil di halaman publik Living Election Wall bersama nama pemilih, tanpa NISN/NIP, waktu, maupun pilihan.']) ?>
+    </header>
+    <div class="voter-avatar">
+      <?= view('partials/avatar', ['avatar' => $avatar, 'class' => 'avatar--lg', 'eager' => true]) ?>
+      <div class="voter-avatar__text">
+        <p class="voter-avatar__kind">
+          <?php if ($avatar['photo'] !== null): ?>
+            Foto unggahan pemilih
+          <?php elseif ($avatar['custom']): ?>
+            Avatar pilihan pemilih &middot; <?= esc(AvatarIdentity::STYLES[$avatar['style']]) ?>
+          <?php else: ?>
+            Avatar bawaan &middot; <?= esc(AvatarIdentity::STYLES[$avatar['style']]) ?>
+          <?php endif; ?>
+        </p>
+        <?php if ($avatar['photo'] !== null): ?>
+          <form action="<?= site_url($type->adminPath($voter['id'] . '/avatar/hapus')) ?>" method="post"
+                data-confirm="<?= esc('Hapus foto avatar ' . $voter['name'] . '? Pemilih kembali memakai avatar bawaan dan dapat mengunggah foto lain.', 'attr') ?>"
+                data-confirm-button="Hapus foto" data-confirm-danger>
+            <?= csrf_field() ?>
+            <button type="submit" class="btn btn--ghost-danger"><?= icon('trash') ?> Hapus foto avatar</button>
+            <p class="field-hint">Untuk foto yang tidak pantas. Tercatat di audit log.</p>
+          </form>
+        <?php else: ?>
+          <p class="field-hint">Pemilih dapat mengunggah foto atau mengacak avatar dari dasbornya.</p>
+        <?php endif; ?>
+      </div>
+    </div>
+  </section>
 
   <section class="panel" aria-labelledby="history-title">
     <header class="panel__head">
@@ -181,4 +215,12 @@ $active    = (int) $voter['status_aktif'] === 1;
 
 <?= $this->section('crumbs') ?>
 <?= view('admin/partials/crumbs', ['trail' => [[$type->label(), $type->adminPath()], ['Detail']]]) ?>
+<?= $this->endSection() ?>
+
+<?= $this->section('head') ?>
+<link rel="stylesheet" href="<?= asset_url('assets/css/avatar.css') ?>">
+<?= $this->endSection() ?>
+
+<?= $this->section('scripts') ?>
+<script type="module" src="<?= asset_url('assets/js/avatar-art.js') ?>"></script>
 <?= $this->endSection() ?>

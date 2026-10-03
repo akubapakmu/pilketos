@@ -13,8 +13,12 @@
  * @var array|null  $boothNav  Stage 24: bilik suara memakai menu melayang
  *                             (partials/booth_nav: Kembali + Dasbor) sebagai
  *                             pengganti navigasi situs.
+ * @var array|null  $wallNav   Stage 26: Living Election Wall (latar gelap)
+ *                             memakai header sticky partials/wall_nav
+ *                             (Kembali + logo + Dasbor/Masuk).
  */
 $immersive = (bool) ($immersive ?? false);
+$darkPage  = $immersive || isset($wallNav);
 ?>
 <!DOCTYPE html>
 <html lang="id" class="no-js<?= $immersive ? ' is-immersive' : '' ?>">
@@ -22,7 +26,7 @@ $immersive = (bool) ($immersive ?? false);
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1<?= $immersive ? ', viewport-fit=cover' : '' ?>">
 <meta name="description" content="Pemilihan Ketua &amp; Wakil Ketua OSIS SMP 1 DAWE 2026">
-<meta name="theme-color" content="<?= $immersive ? '#101312' : '#FAF9F6' ?>">
+<meta name="theme-color" content="<?= $darkPage ? '#101312' : '#FAF9F6' ?>">
 <?= csrf_meta() ?>
 <title><?= isset($title) ? esc($title) . ' — Pemilihan OSIS SMP 1 DAWE' : 'Pemilihan Ketua &amp; Wakil Ketua OSIS SMP 1 DAWE 2026' ?></title>
 <script <?= csp_script_nonce() ?>>document.documentElement.className = document.documentElement.className.replace('no-js', 'js');<?php if ($immersive): ?>
@@ -37,7 +41,7 @@ try { if (window.sessionStorage.getItem('osis2026.skipIntro') === '1') { window.
 <body class="<?= esc($bodyClass ?? '', 'attr') ?>">
 <a class="skip-link" href="#main">Langsung ke konten</a>
 <?= $this->renderSection('overlay') ?>
-<?= $this->include(isset($boothNav) ? 'partials/booth_nav' : 'partials/header') ?>
+<?= $this->include(isset($boothNav) ? 'partials/booth_nav' : (isset($wallNav) ? 'partials/wall_nav' : 'partials/header')) ?>
 <?= $this->include('partials/flash') ?>
 <main id="main" tabindex="-1">
 <?= $this->renderSection('content') ?>

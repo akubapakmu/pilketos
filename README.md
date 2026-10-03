@@ -12,7 +12,9 @@ Beranda publik tampil seperti aplikasi dengan identitas visual "Surat Suara
 dari Lereng Muria": layar pembuka berkabut yang tersingkap menjadi pagi di
 lereng Muria, tiga scene layar penuh yang berpindah satu per satu (lereng,
 pintu masuk **Siswa/Guru**, perolehan suara langsung), dan panel status
-bergaya terminal dengan countdown jam server (bagian 21).
+bergaya terminal dengan countdown jam server (bagian 21). Dari scene
+perolehan suara, **Living Election Wall** menampilkan siapa saja yang sudah
+berpartisipasi (nama + avatar, tanpa pilihan; bagian 22).
 
 Dokumen ini adalah panduan pemakaian dan deployment. Spesifikasi, identitas
 visual, dan riwayat implementasi per tahap ada di folder [`docs/`](docs/README.md)
@@ -39,16 +41,18 @@ Daftar isi:
 [18 Troubleshooting](#18-troubleshooting) ·
 [19 Test](#19-test-otomatis) ·
 [20 Dokumen](#20-dokumen-proyek) ·
-[21 Beranda](#21-beranda-imersif--aset-visual)
+[21 Beranda](#21-beranda-imersif--aset-visual) ·
+[22 Living Election Wall](#22-living-election-wall)
 
 ## 1. Ringkasan
 
 | Bagian | Isi |
 |---|---|
 | Pemilih | Siswa (NISN + kode unik tanggal lahir DDMMYYYY) dan guru (NIP + kode unik), tabel & login terpisah, satu pemilihan yang sama |
-| Beranda publik | lockup PILKETOS 2026 di tengah tanpa tombol masuk; layar pembuka "kabut tersingkap"; hero lereng Muria berlapis; scene layar penuh (roda mouse, trackpad, geser sentuh, keyboard); pintu masuk Siswa/Guru bergambar; perolehan suara (persentase per pasangan + partisipasi) diperbarui tiap 30 detik; panel status terminal dengan countdown jam server; angka pengunjung online (Stage 19); kalimat di tengah hero diketik bergantian, isinya diatur admin (Stage 24) |
-| Pengalaman memilih | halaman kandidat bertema per pasangan, visi-misi interaktif, surat suara dengan paku coblos 3D/2D, konfirmasi, suara terkunci, halaman "pilihan saya" |
-| Admin | dasbor & live count, analitik (jenis pemilih, jenis kelamin, kelas, rombel, detail suara), pasangan calon + unggah tema, data siswa/guru (tambah, ubah, impor Excel), jadwal, teks halaman utama, unlock, audit log, pengunjung online (perangkat, browser, User-Agent), hasil akhir + confetti |
+| Beranda publik | lockup PILKETOS 2026 di tengah tanpa tombol masuk; layar pembuka "kabut tersingkap"; hero lereng Muria berlapis; scene layar penuh (roda mouse, trackpad, geser sentuh, keyboard); pintu masuk Siswa/Guru bergambar; perolehan suara (persentase per pasangan + partisipasi) diperbarui tiap 30 detik; panel status terminal dengan countdown jam server; angka pengunjung online (Stage 19); kalimat di tengah hero diketik bergantian, isinya diatur admin (Stage 24); tautan **Living Election Wall** (Stage 26) |
+| Pengalaman memilih | halaman kandidat bertema per pasangan, visi-misi interaktif, surat suara dengan paku coblos 3D/2D, konfirmasi, suara terkunci, halaman "pilihan saya"; avatar pemilih (unggah foto atau avatar acak, Stage 26) |
+| Living Election Wall | Stage 26: `/partisipasi`, galeri publik nama + avatar per rombel & guru yang menandai siapa yang sudah berpartisipasi (tanpa NISN/NIP, waktu, pilihan), diperbarui tiap 20 detik (bagian 22) |
+| Admin | dasbor & live count, analitik (jenis pemilih, jenis kelamin, kelas, rombel, detail suara), pasangan calon + unggah tema, data siswa/guru (tambah, ubah, impor Excel), jadwal, teks halaman utama, unlock, audit log, pengunjung online (perangkat, browser, User-Agent), hasil akhir + confetti, moderasi foto avatar (Stage 26) |
 | Integritas | transaction + row lock, unique key satu suara aktif, CHECK & trigger database (suara/audit tidak dapat dihapus atau diubah), hasil dikunci setelah selesai |
 | Jadwal | status UPCOMING / ONGOING / FINISHED dihitung dari `start_at`/`end_at` terhadap jam server (WIB); sejak `end_at` pencoblosan ditolak |
 
@@ -70,13 +74,16 @@ CodeIgniter 4.7
   Filter role   : studentauth / teacherauth / adminauth (401 JSON untuk AJAX)
   Controller    : Home (beranda + live count publik), Student\*, Teacher\*, VotingController,
                   ElectionController (jam), PresenceController (detak pengunjung),
+                  AvatarController (avatar pemilih), WallController (Living Election Wall),
                   Admin\* (Dashboard, LiveCount, Analytics, Result, Candidate, Student,
                   Teacher, Import, Election, Unlock, Audit, Account, Visitor)
   Service       : VoteService (castVote), UnlockService, AnalyticsService (satu definisi
                   angka), PublicLiveCount (proyeksi publik), FinalResult, VoterDirectory,
-                  VisitorTracker & OnlineVisitors (pengunjung online), Import\* (PhpSpreadsheet)
+                  VisitorTracker & OnlineVisitors (pengunjung online), ParticipationWall
+                  (Living Election Wall), Import\* (PhpSpreadsheet)
   Library       : CandidateTheme, CandidateAssets (encode ulang gambar), DeviceInfo,
-                  Grade, AdminAccount, SystemCheck, ResultPdf (PDF hasil akhir, dompdf)
+                  Grade, AdminAccount, SystemCheck, ResultPdf (PDF hasil akhir, dompdf),
+                  ImageProcessor, VoterAvatars & AvatarIdentity (avatar pemilih)
   Model         : Admin, Student, Teacher, Candidate, Election, StudentVote, TeacherVote,
                   VoteUnlockLog, AuditLog (+ tabel visitors lewat query builder)
   v
@@ -109,20 +116,21 @@ NO_ACTIVE_VOTE --coblos--> LOCKED --unlock admin (alasan)--> NO_ACTIVE_VOTE (bar
 Struktur folder utama:
 
 ```
-docs/                spesifikasi (00–05), desain (06–10), catatan-tahap (STAGE1–19)
+docs/                spesifikasi (00–05, 11), desain (06–10), catatan-tahap (STAGE1–26)
 app/Commands/        admin:create, admin:password, osis:check
 app/Config/          Routes.php, Filters.php, ContentSecurityPolicy.php, App.php, Homepage.php, Visitors.php, ...
 app/Controllers/     Home, VotingController, Student/*, Teacher/*, Admin/*
-app/Database/        Migrations (17 file), Seeds (data contoh development)
+app/Database/        Migrations (18 file), Seeds (data contoh development)
 app/Filters/         AuthFilter + per role, PostSizeFilter, SecurityHeadersFilter, VisitorFilter
 app/Fonts/           Newsreader & Plus Jakarta Sans TTF statis (OFL) khusus PDF hasil akhir
-app/Libraries/       CandidateTheme, CandidateAssets, HeroText, DeviceInfo, Grade, AdminAccount, SystemCheck, ResultPdf
+app/Libraries/       CandidateTheme, CandidateAssets, ImageProcessor, VoterAvatars, AvatarIdentity, HeroText, DeviceInfo, Grade, AdminAccount, SystemCheck, ResultPdf
 app/Models/          10 model tabel
 app/Services/        VoteService, UnlockService, AnalyticsService, PublicLiveCount, FinalResult,
-                     VisitorTracker, OnlineVisitors, Import/*
+                     VisitorTracker, OnlineVisitors, ParticipationWall, Import/*
 app/Views/           layouts, home (+ partials: splash, dock, pair_photo), student, teacher,
-                     voting, admin/**, errors
-public/              index.php, .htaccess, assets/{css,js,fonts,img}, uploads/candidates/
+                     voting, wall (Living Election Wall), admin/**, errors
+public/              index.php, .htaccess, assets/{css,js,fonts,img,vendor}, uploads/candidates/,
+                     uploads/avatars/ (foto avatar pemilih, Stage 26)
                      (assets/css & assets/js: hasil build ter-minify + watermark, Stage 23)
                      (img/brand: lockup acara + logo SMP 1 DAWE, img/home: latar hero & layar
                      pembuka, kontur, perforasi, ilustrasi pintu masuk; img/auth: foto login
@@ -191,7 +199,8 @@ seperti `/student/login` sudah tidak ada dan menjawab 404):
 | Siswa | `/siswa/masuk`, `/siswa` (dasbor), `/siswa/coblos` (pembuka langkah memilih), `/siswa/sekilas-paslon` (Sekilas paslon), `/siswa/paslon/01` (profil paslon), `/siswa/bilik-suara` (surat suara), `/siswa/pilihanku` |
 | Guru | `/guru/masuk`, `/guru`, `/guru/coblos`, `/guru/sekilas-paslon`, `/guru/paslon/01`, `/guru/bilik-suara`, `/guru/pilihanku` |
 | Admin | `/admin/masuk`, `/admin` (dasbor), `/admin/analitik` (+ `/jenis-pemilih`, `/jenis-kelamin`, `/kelas`, `/rombel`), `/admin/analitik/suara`, `/admin/hasil`, `/admin/paslon`, `/admin/siswa`, `/admin/siswa/tambah`, `/admin/guru`, `/admin/guru/tambah`, `/admin/siswa/impor`, `/admin/guru/impor`, `/admin/jadwal`, `/admin/buka-kunci`, `/admin/riwayat` |
-| JSON (dipakai halaman) | `/jam-server` (countdown), `/hitung-suara` (beranda), `/admin/hitung-suara` (dasbor admin) |
+| Publik (Stage 26) | `/partisipasi` (Living Election Wall) |
+| JSON (dipakai halaman) | `/jam-server` (countdown), `/hitung-suara` (beranda), `/partisipasi/status` (wall), `/admin/hitung-suara` (dasbor admin) |
 
 Peta lengkap lama -> baru: [`STAGE7-NOTES.md`](docs/catatan-tahap/STAGE7-NOTES.md).
 
@@ -213,6 +222,9 @@ Salin dari `.env.example`:
 | `app.CSPEnabled` | (bawaan `true`) | Content-Security-Policy; boleh `false` sementara hanya untuk diagnosis |
 | `homepage.publicLiveCount` | (bawaan `true`) | `false` = beranda tanpa angka perolehan suara, `GET hitung-suara` 404 (bagian 21) |
 | `homepage.livePollSeconds`, `homepage.liveCacheSeconds` | `30`, `5` | irama pembaruan perolehan suara di beranda (min 10; 0 = mati) dan cache angka publik |
+| `homepage.electionWall` | (bawaan `true`) | Stage 26: `false` = Living Election Wall mati (`/partisipasi` & `/partisipasi/status` 404, tautan footer & kartu avatar dasbor hilang; bagian 22) |
+| `homepage.wallPollSeconds`, `homepage.wallCacheSeconds` | `20`, `5` | irama pembaruan langsung wall (min 10; 0 = mati) dan cache data partisipasi |
+| `encryption.key` | (kosong) | opsional; bila diisi dipakai sebagai kunci rahasia avatar bawaan, bila kosong kunci acak dibuat otomatis di `writable/avatar.key` (bagian 9) |
 | `homepage.logoOnDark`, `logoOnLight`, `schoolEmblem`, `heroDesktop`, `heroMobile`, `heroForeground`, `introDesktop`, `introMobile`, `entryStudent`, `entryTeacher` | path di `public/` | mengganti lockup, memasang lambang resmi sekolah, latar hero & layar pembuka, lapisan depan, ilustrasi pintu masuk (bagian 21) |
 | `homepage.identityAccent` | (bawaan `'#A8628F'`, parijoto) | warna bilah muat layar pembuka; otomatis netral bila mirip warna pasangan mana pun; `null` = selalu netral |
 | `homepage.adminLogoMobile`, `homepage.adminLogoMobileHeight`, `homepage.adminLogoMobileAlt` | (bawaan `logo-admin-mobile.svg`, `34`, `'PILKETOS Panel Admin: Beranda'`) | logo header panel admin di HP (Stage 19, bagian 8); tinggi tampil 24–48 px |
@@ -227,13 +239,13 @@ komputer server harus benar.
 
 ## 6. Database
 
-`php spark migrate` membuat 11 tabel dan menjalankan 17 migration:
+`php spark migrate` membuat 11 tabel dan menjalankan 18 migration:
 
 | Tabel | Isi |
 |---|---|
 | `admins` | admin panel (sandi `password_hash`) |
-| `students` | NISN (unik, teks), nama, jenis kelamin L/P, kelas, nomor absen, kode unik, `status_aktif` |
-| `teachers` | NIP (unik, teks), nama, kode unik, `status_aktif` |
+| `students` | NISN (unik, teks), nama, jenis kelamin L/P, kelas, nomor absen, kode unik, `status_aktif`; Stage 26: `avatar_file`, `avatar_style`, `avatar_seed`, `avatar_updated_at` (avatar Living Election Wall, hanya ditulis layanan avatar) |
+| `teachers` | NIP (unik, teks), nama, kode unik, `status_aktif`; Stage 26: kolom avatar yang sama |
 | `candidates` | nomor urut (unik), ketua, wakil, visi, misi, foto, tema (nama, aksen, asset JSON: foto berdua, gambar pembuka, poster, latar penutup; Stage 16 tanpa layout & latar panggung), profil & kampanye (slogan, bio, karakter, program, pesan, ID video YouTube; Stage 15), `status_aktif` |
 | `elections` | nama, tahun, `start_at`, `end_at`, status, `batas_pasangan` (2–10, bawaan 3; Stage 15) |
 | `student_votes`, `teacher_votes` | election, pemilih, pasangan, `status` LOCKED/UNLOCKED, waktu, perangkat, browser |
@@ -303,7 +315,7 @@ php spark admin:create --username panitia --name "Panitia Pemilihan OSIS"
 php spark osis:check
 ```
 
-- `migrate` membuat tabel + trigger (14 migration).
+- `migrate` membuat tabel + trigger (18 migration).
 - `admin:create` membuat admin production dan **menampilkan kata sandi acak
   satu kali**; simpan di tempat aman. Ganti/lupa: `php spark admin:password panitia`.
 - **Jangan** menjalankan `php spark db:seed DatabaseSeeder` di database hari
@@ -316,7 +328,8 @@ php spark osis:check
   sama; di Linux, `php.ini` CLI dan Apache terpisah.
 
 Folder yang harus dapat ditulis PHP: `writable/` (cache, logs, session,
-uploads) dan `public/uploads/candidates/` (di Windows biasanya sudah).
+uploads) serta `public/uploads/candidates/` dan `public/uploads/avatars/`
+(Stage 26; di Windows biasanya sudah).
 CSS/JS di `public/assets/` sudah ter-minify dan ikut di-commit (bagian 7.6),
 jadi folder itu tidak perlu dapat ditulis dan server tidak butuh library minify.
 
@@ -427,8 +440,9 @@ server {
     }
 
     # Pengganti public/uploads/.htaccess: hanya gambar bernama aman, PHP tidak pernah jalan
+    # (foto kandidat + foto avatar pemilih Stage 26)
     location ^~ /uploads/ {
-        location ~* "^/uploads/candidates/[a-z0-9][a-z0-9._-]*\.(jpe?g|png|webp)$" {
+        location ~* "^/uploads/(candidates|avatars)/[a-z0-9][a-z0-9._-]*\.(jpe?g|png|webp)$" {
             expires 7d;
             add_header X-Content-Type-Options "nosniff" always;
             add_header Content-Security-Policy "default-src 'none'; img-src 'self'; style-src 'none'; sandbox" always;
@@ -535,7 +549,7 @@ kelompok terakhir di bagian bawah sidebar berisi **Akun Admin**,
 | Analitik | deretan pil (Total, Pemilih, Jenis Kelamin, Kelas, Rombel, Detail Suara); isi bagian dimuat tanpa memuat ulang halaman. Detail suara: tabel siswa & guru terpisah (cari, filter, paginasi masing-masing) |
 | Hasil akhir | hanya aktif saat pemilihan selesai (bagian 16) |
 | Pasangan calon | tambah/ubah/nonaktifkan/hapus + unggah tema, pratinjau halaman pemilih |
-| Siswa / Guru | daftar (status "Sudah/Belum memilih" + kolom waktu memilih), cari, filter, detail (kode unik tersamar), **tambah & ubah satu per satu** (aturan sama dengan impor), nonaktifkan, hapus data salah impor, impor Excel |
+| Siswa / Guru | daftar (status "Sudah/Belum memilih" + kolom waktu memilih), cari, filter, detail (kode unik tersamar), **tambah & ubah satu per satu** (aturan sama dengan impor), nonaktifkan, hapus data salah impor, impor Excel; Stage 26: detail menampilkan avatar Living Election Wall + **Hapus foto avatar** (bagian 8.3) |
 | Jadwal pemilihan | nama, tahun, mulai, selesai; tutup sekarang; buka sekarang |
 | Teks Halaman Utama | Stage 24: kalimat yang diketik bergantian di tengah hero beranda; satu baris = satu kalimat (maks. 20 kalimat, 80 karakter); kosong = hero tanpa teks; tercatat di audit log |
 | Unlock | cari pemilih, buka hak suara dengan alasan |
@@ -629,6 +643,16 @@ kerahasiaan pilihan, halaman pemilih dicatat tanpa nomor paslon
 ringkas di beranda (bagian 21). Pengaturan: `app/Config/Visitors.php`
 (bagian 5).
 
+### 8.3 Moderasi avatar (Stage 26)
+
+Detail pemilih (`/admin/siswa/{id}`, `/admin/guru/{id}`) memuat panel
+**Avatar Living Election Wall**: avatar pemilih dan jenisnya (foto unggahan /
+avatar pilihan / avatar bawaan). Foto yang tidak pantas dihapus dengan
+**Hapus foto avatar** (konfirmasi bahaya): pemilih kembali ke avatar bawaan
+dan dapat mengunggah foto lain; tercatat di audit log sebagai **Hapus foto
+avatar pemilih**. Tidak dikunci setelah pemilihan selesai (avatar tidak
+memengaruhi hasil). Menghapus data pemilih ikut menghapus file fotonya.
+
 ## 9. Siswa
 
 1. Buka alamat aplikasi, gulir/geser ke bagian **Masuk sebagai**, pilih
@@ -642,6 +666,20 @@ ringkas di beranda (bagian 21). Pengaturan: `app/Config/Visitors.php`
 4. Setelah memilih: pilihan terkunci; login ulang hanya menampilkan pilihan
    sendiri ("Kamu memilih Pasangan 0X"; guru: "Anda"). Tekan **Selesai &
    keluar** di komputer bersama.
+5. **Avatar** (Stage 26, kartu di bawah Jadwal pemilihan; di HP di bawah
+   kartu status): avatar ini tampil di **Living Election Wall** (bagian 22),
+   yang hanya menandai partisipasi, tidak pernah pilihan.
+   - **Unggah foto**: JPG/PNG/WebP (HEIC bila browser dapat membukanya), file
+     asli maks. 15 MB; foto dipotong bulat di browser (geser, perbesar 1–3×,
+     panah & +/- di keyboard), dikompres, lalu server menyimpan ulang
+     320 × 320 WebP tanpa metadata (lokasi GPS ikut terhapus). Tanpa
+     JavaScript: pilih file lalu **Kirim foto** (maks. 2 MB, dipotong persegi
+     di tengah).
+   - **Acak avatar**: pratinjau avatar kartun DiceBear baru, lalu **Pakai
+     avatar ini** (atau **Batal**).
+   - **Hapus foto**: kembali ke avatar bawaan.
+   - Belum memilih apa pun: avatar bawaan yang selalu sama untuk akun ini.
+   - Paling banyak 10 perubahan per 10 menit; tidak dikunci jadwal.
 
 Sesi pemilih berakhir otomatis setelah 15 menit tanpa aktivitas.
 
@@ -650,7 +688,9 @@ Sesi pemilih berakhir otomatis setelah 15 menit tanpa aktivitas.
 Sama dengan siswa: pilih **GURU** di bagian **Masuk sebagai** (atau buka
 `/guru/masuk`) dengan NIP > **Lanjut** > kode unik (dua tahap, Stage 9). Guru
 adalah pemilih biasa: tidak memiliki akses admin maupun analitik. Suara guru
-dan siswa disimpan di tabel terpisah dan dihitung bersama pada hasil.
+dan siswa disimpan di tabel terpisah dan dihitung bersama pada hasil. Kartu
+avatar (Stage 26) sama dengan siswa (bagian 9 butir 5); di Living Election
+Wall guru berada di bagian **Guru** tersendiri.
 
 ## 11. Kelola pasangan calon
 
@@ -864,8 +904,11 @@ Backup database (termasuk trigger), dari Laragon Terminal:
 mysqldump -u root --single-transaction --routines --triggers smp1dawe_osis_2026 > backup-osis-2026-YYYYMMDD-HHMM.sql
 ```
 
-Salin juga `public/uploads/candidates/` (foto & tema) dan `.env` (simpan
-terpisah, berisi kredensial). Waktu yang disarankan: setelah data & pasangan
+Salin juga `public/uploads/candidates/` (foto & tema),
+`public/uploads/avatars/` (foto avatar pemilih, Stage 26),
+`writable/avatar.key` (kunci avatar bawaan; tanpa file ini avatar bawaan
+berganti rupa setelah pemulihan), dan `.env` (simpan terpisah, berisi
+kredensial). Waktu yang disarankan: setelah data & pasangan
 siap, sebelum pemilihan mulai, beberapa kali selama pemilihan
 (`--single-transaction` tidak mengunci pencoblosan), dan segera setelah
 selesai.
@@ -910,6 +953,10 @@ memakai database baru.
 | Logo/ilustrasi pengganti tidak tampil | path relatif ke `public/` (mis. `assets/img/home/siswa.webp`), bukan `public/uploads/`; format svg/webp/jpg/png/avif (bagian 21) |
 | Pengunjung online kosong / angka online tidak tampil | tabel `visitors` belum dibuat: `php spark migrate`; atau `visitors.enabled` / `visitors.publicCounter` = `false`. Pengunjung yang menutup tab hilang dari daftar setelah 3 menit (disengaja) |
 | Kolom perangkat hanya "HP / Android" tanpa model | Client Hints hanya dikirim lewat HTTPS/localhost; lewat `http://IP-LAN` model HP dari User-Agent saja (bagian 15) |
+| `/partisipasi` 404, tautan Living Election Wall / kartu avatar tidak ada | `homepage.electionWall = false` (disengaja) atau `php spark migrate` belum dijalankan setelah update (bagian 22) |
+| Unggah foto avatar ditolak | hanya JPG/PNG/WebP, sisi terpendek min. 128 px; tanpa JavaScript file maks. 2 MB (dengan JavaScript foto dikompres otomatis); HEIC hanya bila browser dapat membukanya; lebih dari 10 perubahan per 10 menit harus menunggu |
+| Avatar di wall berupa inisial | JavaScript mati / modul avatar gagal dimuat (avatar kartun digambar browser); foto unggahan tetap tampil |
+| Avatar bawaan berubah setelah pindah server | `writable/avatar.key` tidak ikut disalin (bagian 17), atau `encryption.key` diganti |
 
 ## 19. Test otomatis
 
@@ -920,8 +967,8 @@ composer install
 composer test                 (atau vendor\bin\phpunit --no-coverage)
 ```
 
-Hasil terakhir (Stage 24): **559 test, 5.602 assertion, lulus** pada PHP
-8.3.6 dengan MariaDB 10.11.14 (Stage 23: 541 test, Stage 22: 535 test, Stage 21: 516 test, Stage 20: 499 test, Stage 19: 484 test, Stage 18: 468 test, Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
+Hasil terakhir (Stage 26): **596 test, 6.061 assertion, lulus** pada PHP
+8.3.6 dengan MariaDB 10.11.14 (Stage 24: 559 test, Stage 23: 541 test, Stage 22: 535 test, Stage 21: 516 test, Stage 20: 499 test, Stage 19: 484 test, Stage 18: 468 test, Stage 17: 465 test, Stage 16: 454 test, Stage 15: 444 test, Stage 13: 403 test, Stage 12: 383 test, Stage 11: 374 test, Stage 10: 348 test, Stage 9: 340 test, Stage 8: 331 test, Stage 7: 323 test). Stage 4 (289 test) juga lulus di MySQL
 8.0.46; Stage 5 dan 6 tidak mengubah schema maupun query. Test paralel (race
 condition) memakai `pcntl_fork` sehingga di-skip di Windows. Rincian dan uji
 browser: [`STAGE4-NOTES.md`](docs/catatan-tahap/STAGE4-NOTES.md) bagian 9,
@@ -937,7 +984,7 @@ beserta ringkasan tiap dokumen: [`docs/README.md`](docs/README.md).
 |---|---|
 | [`docs/spesifikasi/`](docs/spesifikasi) | `00-MASTER-PROJECT.md` (spesifikasi utama, source of truth), brief Stage 1–5 (`01`–`05`), dan rencana dua tahap Stage 25–26 (`11`) |
 | [`docs/desain/`](docs/desain) | Identitas visual SMP 1 DAWE, Stage 6 (`06`–`10`): arah visual, tipografi, spesifikasi aset, prompt gambar, sistem gerak |
-| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE24-NOTES.md`) |
+| [`docs/catatan-tahap/`](docs/catatan-tahap) | Catatan implementasi & handoff tiap tahap (`STAGE1-NOTES.md` s.d. `STAGE26-NOTES.md`) |
 
 ## 21. Beranda imersif & aset visual
 
@@ -951,7 +998,7 @@ interaksi. Palet netral "Pagi Muria" + warna aksen masing-masing pasangan.
 |---|---|
 | 01 Lereng | hanya gambar hero (lereng Muria + atap sekolah; lanskap di desktop, potret di HP), lapisan depan opsional, tombol **Masuk untuk memilih** dan **Lihat perolehan suara**; titik "embun" di sekitar pointer. Stage 18: tanpa garis kontur & perforasi. Stage 24: kalimat dari menu admin **Teks Halaman Utama** diketik bergantian di tengah (jeda 3 detik setelah kalimat terakhir, lalu diulang); ikon Dasbor/Keluar pengguna login tanpa border & latar. Stage 19: pojok kanan bawah (desktop), sebaris dengan tombol masuk: angka kecil "**12** online · **4** login". Tanpa warna/nomor/foto pasangan |
 | 02 Masuk | "Masuk sebagai": portal **SISWA** (`/siswa/masuk`) dan **GURU** (`/guru/masuk`) bergambar |
-| 03 Perolehan suara | judul & pasangan rata tengah (Stage 10: tanpa label status di samping judul); foto pasangan, persentase tepat di bawah foto; baris penutup "Suara masuk" (persentase partisipasi, jumlah pemilih, "Diperbarui [tanggal] [jam]", meter); footer + panah ke atas (kembali ke scene 01). Stage 19: di atas teks footer "ONLINE **8** belum login **4** sudah login" (Stage 21: di HP kata "Online" menjadi ikon biru muda). Stage 21: foto pasangan dapat diklik → foto ukuran penuh dengan tautan **Lihat profil pasangan** bagi siswa/guru/admin yang login |
+| 03 Perolehan suara | judul & pasangan rata tengah (Stage 10: tanpa label status di samping judul); foto pasangan, persentase tepat di bawah foto; baris penutup "Suara masuk" (persentase partisipasi, jumlah pemilih, "Diperbarui [tanggal] [jam]", meter); footer + panah ke atas (kembali ke scene 01). Stage 19: di atas teks footer "ONLINE **8** belum login **4** sudah login" (Stage 21: di HP kata "Online" menjadi ikon biru muda). Stage 21: foto pasangan dapat diklik → foto ukuran penuh dengan tautan **Lihat profil pasangan** bagi siswa/guru/admin yang login. Stage 26: tautan **Living Election Wall** (`/partisipasi`) di desktop sebaris dengan angka online (dipisah garis tipis), di HP tepat di bawahnya; hilang bila `homepage.electionWall = false` (bagian 22) |
 
 - Berpindah scene: roda mouse/trackpad (satu gestur = satu scene), geser
   sentuh, panah/PageUp/PageDown/spasi/Home/End, garis navigasi di kanan
@@ -1020,6 +1067,48 @@ Perolehan suara publik dapat dimatikan: `homepage.publicLiveCount = false`
 [`STAGE19-NOTES.md`](docs/catatan-tahap/STAGE19-NOTES.md) (angka online), dan
 [`STAGE21-NOTES.md`](docs/catatan-tahap/STAGE21-NOTES.md) (angka tiap detik, foto ukuran penuh).
 
+## 22. Living Election Wall
+
+Stage 26: `/partisipasi` (tautan dari scene perolehan suara) adalah galeri
+publik yang menandai **siapa saja yang sudah berpartisipasi**, bukan siapa
+yang dipilih. Halaman gelap tanpa sidebar:
+
+- **Header** menempel di atas: kembali ke perolehan suara, logo PILKETOS,
+  ikon dasbor (siswa/guru/admin) atau **Masuk** untuk tamu.
+- **Blok partisipasi**: "PARTISIPASI PEMILIHAN", angka besar ("218 dari 256
+  siswa"), bar + persen, jumlah sudah/belum berpartisipasi, dan status
+  pemilihan ("Belum dijadwalkan", "Pemilihan dibuka ...", "Berlangsung
+  hingga ...", "Pemilihan selesai ..."). Angka mengikuti filter Kelas
+  (pemilih / siswa / siswa 7A / guru) dan memakai definisi yang sama dengan
+  dasbor admin (pemilih aktif, suara terkunci).
+- **Toolbar** menempel: cari nama (langsung saat mengetik), filter **Kelas**
+  (Semua, Siswa, rombel per Kelas 7/8/9, Guru), **Urutkan** (Nama A–Z, Sudah
+  berpartisipasi, Belum berpartisipasi: yang sudah/belum tampil lebih dulu), **Buka semua / Tutup
+  semua**. Filter tersimpan di alamat (`/partisipasi?kelas=7A&q=putri`), jadi
+  dapat dibagikan; bagian yang ditutup diingat selama tab terbuka.
+- **Bagian per rombel** (urut kelas lalu nama rombel, rombel tanpa jenjang di
+  "Lainnya") dan bagian **Guru**; kartu = avatar bulat + nama. Sudah
+  berpartisipasi: lencana centang; belum: avatar sedikit redup. Tanpa warna
+  pasangan calon.
+- Diperbarui sendiri tiap 20 detik selama pemilihan belum selesai dan tab
+  terlihat (`GET partisipasi/status`); kartu yang baru berpartisipasi
+  mendapat animasi centang singkat. Unlock oleh admin membuat kartu kembali
+  "belum" tanpa animasi.
+- Tanpa JavaScript halaman tetap terbaca (avatar kartun menjadi inisial,
+  filter lewat tombol **Terapkan**); "kurangi gerakan" mematikan semua
+  animasi.
+
+Privasi: wall dan JSON-nya hanya berisi nama, avatar, rombel, dan
+sudah/belum; **tidak pernah** NISN/NIP, jenis kelamin, nomor absen, waktu
+memilih, perangkat, pilihan, maupun urutan siapa yang terakhir memilih.
+Perolehan suara publik di beranda tetap seperti Stage 5 (keputusan pemilik
+proyek); saat pemilih sepi, gabungan wall + perolehan langsung kadang membuat
+pilihan seseorang dapat ditebak. Bila aturan sekolah tidak membolehkan, matikan
+salah satunya: `homepage.publicLiveCount = false` atau
+`homepage.electionWall = false` (bagian 5). Avatar diatur pemilih dari dasbor
+(bagian 9), foto yang tidak pantas dihapus admin (bagian 8.3). Rincian:
+[`STAGE26-NOTES.md`](docs/catatan-tahap/STAGE26-NOTES.md).
+
 ## Lisensi
 
 Framework CodeIgniter: MIT (`LICENSE`).
@@ -1027,3 +1116,7 @@ Deteksi perangkat `matomo/device-detector` (Stage 11, lewat Composer):
 LGPL-3.0-or-later, dipakai sebagai pustaka tanpa diubah.
 Font Plus Jakarta Sans, Newsreader, dan JetBrains Mono: SIL Open Font License
 (`public/assets/fonts/`).
+Avatar DiceBear 9.4.2 (Stage 26, `public/assets/vendor/dicebear-9.4.2/`):
+kode MIT; desain Adventurer (Lisa Wischofsky) dan Big Smile (Ashley Seo)
+CC BY 4.0 (atribusi tampil di kartu avatar dasbor dan halaman wall);
+Avataaars (Pablo Stanley) bebas dipakai untuk keperluan pribadi & komersial.
