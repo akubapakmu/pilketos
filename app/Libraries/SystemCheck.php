@@ -183,6 +183,8 @@ final class SystemCheck
             'writable/session'         => WRITEPATH . 'session',
             'writable/uploads'         => WRITEPATH . 'uploads',
             'public/uploads/candidates' => FCPATH . 'uploads' . DIRECTORY_SEPARATOR . 'candidates',
+            // Stage 26: foto avatar pemilih (Living Election Wall)
+            'public/uploads/avatars'    => FCPATH . 'uploads' . DIRECTORY_SEPARATOR . 'avatars',
         ];
 
         foreach ($folders as $label => $path) {

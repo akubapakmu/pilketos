@@ -3,9 +3,11 @@
 namespace Config;
 
 use App\Libraries\CandidateAssets;
+use App\Libraries\VoterAvatars;
 use App\Services\AnalyticsService;
 use App\Services\Import\ImportStore;
 use App\Services\OnlineVisitors;
+use App\Services\ParticipationWall;
 use App\Services\UnlockService;
 use App\Services\VisitorTracker;
 use App\Services\VoterDirectory;
@@ -147,5 +149,30 @@ class Services extends BaseService
         }
 
         return new OnlineVisitors();
+    }
+
+    /**
+     * Foto & avatar DiceBear pemilih ke public/uploads/avatars (Stage 26).
+     * Test menggantinya dengan folder sementara lewat Services::injectMock().
+     */
+    public static function voterAvatars(bool $getShared = true): VoterAvatars
+    {
+        if ($getShared) {
+            return static::getSharedInstance('voterAvatars');
+        }
+
+        return new VoterAvatars();
+    }
+
+    /**
+     * Data Living Election Wall: partisipasi per rombel & guru (Stage 26).
+     */
+    public static function participationWall(bool $getShared = true): ParticipationWall
+    {
+        if ($getShared) {
+            return static::getSharedInstance('participationWall');
+        }
+
+        return new ParticipationWall();
     }
 }

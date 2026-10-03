@@ -59,6 +59,8 @@ final class VisitorTracker
         'siswa/masuk'         => 'Masuk siswa',
         'guru/masuk'          => 'Masuk guru',
         'admin/masuk'         => 'Masuk admin',
+        // Stage 26: galeri partisipasi publik
+        'partisipasi'         => 'Living Election Wall',
         'siswa'               => 'Dasbor siswa',
         'guru'                => 'Dasbor guru',
         // Stage 22: coblos = pembuka multi-langkah; surat suara di bilik-suara.

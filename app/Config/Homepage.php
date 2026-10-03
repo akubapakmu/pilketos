@@ -130,4 +130,24 @@ class Homepage extends BaseConfig
      * bersamaan tidak masing-masing menghitung ulang ke MySQL. 0 = tanpa cache.
      */
     public int $liveCacheSeconds = 5;
+
+    /**
+     * Stage 26: Living Election Wall (GET partisipasi): galeri publik nama +
+     * avatar pemilih per rombel & guru yang menandai siapa yang SUDAH
+     * berpartisipasi (tanpa NISN/NIP, waktu, maupun pilihan), ditautkan dari
+     * scene perolehan suara beranda. false = halaman & JSON-nya 404 dan
+     * tautannya hilang (.env: homepage.electionWall = false).
+     */
+    public bool $electionWall = true;
+
+    /**
+     * Irama pembaruan langsung wall (detik) saat pemilihan belum dibuka atau
+     * sedang berlangsung. Minimal 10; 0 = tanpa pembaruan otomatis.
+     */
+    public int $wallPollSeconds = 20;
+
+    /**
+     * Cache singkat data partisipasi wall (detik). 0 = tanpa cache.
+     */
+    public int $wallCacheSeconds = 5;
 }

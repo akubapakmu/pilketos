@@ -7,12 +7,16 @@
 /writable/session/*
 /writable/debugbar/*
 /writable/uploads/*
+# Stage 26: kunci rahasia avatar bawaan (dibuat otomatis, jangan di-commit)
+/writable/avatar.key
 !/writable/cache/index.html
 !/writable/logs/index.html
 !/writable/session/index.html
 !/writable/debugbar/index.html
 /public/uploads/candidates/*
 !/public/uploads/candidates/.gitkeep
+/public/uploads/avatars/*
+!/public/uploads/avatars/.gitkeep
 # Sisa Stage 20 (*.min.*) & tulisan terputus. Stage 23: hasil build CSS/JS
 # bernama sama di public/assets ikut di-commit (sumber: resources/assets).
 /public/assets/**/*.min.css

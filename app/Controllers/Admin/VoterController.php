@@ -2,6 +2,9 @@
 
 namespace App\Controllers\Admin;
 
+use App\Libraries\AvatarException;
+use App\Libraries\VoterAvatars;
+use App\Models\AuditLogModel;
 use App\Services\VoterDirectory;
 use App\Services\VoterType;
 use CodeIgniter\Database\Exceptions\DatabaseException;
@@ -20,6 +23,10 @@ use CodeIgniter\I18n\Time;
  * Stage 4: setelah pemilihan selesai, ubah status & hapus pemilih ditolak
  * (AdminController::resultsLocked()) agar hasil akhir tidak berubah. Stage 11:
  * begitu juga tambah & ubah data (jumlah pemilih, rombel, dsb. bagian hasil).
+ *
+ * Stage 26: detail menampilkan avatar Living Election Wall; admin dapat
+ * menghapus foto avatar yang tidak pantas (tidak dikunci: avatar tidak
+ * memengaruhi hasil). Menghapus pemilih ikut menghapus file fotonya.
  */
 abstract class VoterController extends AdminController
 {
@@ -69,6 +76,7 @@ abstract class VoterController extends AdminController
             'history'   => $directory->history($type, (int) $voter['id']),
             'unlocks'   => $directory->unlockLogs($type, (int) $voter['id']),
             'deletable' => $directory->historyCount($type, (int) $voter['id']) === 0,
+            'avatar'    => service('voterAvatars')->present($type, $voter),
         ], $type->voterTable());
     }
 
@@ -190,9 +198,42 @@ abstract class VoterController extends AdminController
                 ->with('error', $label . ' tidak dapat dihapus karena sudah dipakai data suara.');
         }
 
+        service('voterAvatars')->deleteFile($voter['avatar_file'] ?? null);
         $this->audit($type->auditAction('delete'), $label . ' dihapus.');
 
         return redirect()->to($type->adminPath())->with('success', $label . ' dihapus.');
+    }
+
+    /**
+     * POST admin/siswa/{id}/avatar/hapus | admin/guru/{id}/avatar/hapus
+     * Stage 26: moderasi foto avatar Living Election Wall. Pemilih kembali ke
+     * avatar bawaan dan dapat mengunggah foto lain.
+     */
+    public function removeAvatar($id = null)
+    {
+        $type  = $this->voterType();
+        $voter = $this->findOr404($id);
+        $back  = redirect()->to($type->adminPath((string) $voter['id']));
+
+        if (! VoterAvatars::isFileName($voter['avatar_file'] ?? null)) {
+            return $back->with('error', $voter['name'] . ' tidak memakai foto avatar.');
+        }
+
+        try {
+            service('voterAvatars')->reset($type, (int) $voter['id']);
+        } catch (AvatarException $e) {
+            return $back->with('error', $e->getMessage());
+        }
+
+        $this->audit(AuditLogModel::AVATAR_REMOVE, sprintf(
+            'Foto avatar %s %s (%s %s) dihapus dari Living Election Wall.',
+            strtolower($type->label()),
+            $voter['name'],
+            $type->identifierLabel(),
+            $voter[$type->identifierColumn()],
+        ));
+
+        return $back->with('success', 'Foto avatar ' . $voter['name'] . ' dihapus. Avatar bawaan dipakai lagi.');
     }
 
     private function form(?array $voter, array $values): string

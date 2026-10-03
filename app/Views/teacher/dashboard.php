@@ -24,9 +24,14 @@
         'canVote'   => $canVote,
     ]) ?>
 
-    <aside class="dash-aside" aria-labelledby="schedule-title">
-      <h2 class="dash-aside__title" id="schedule-title">Jadwal pemilihan</h2>
-      <?= $this->include('partials/election_status') ?>
+    <aside class="dash-aside">
+      <section class="dash-aside__panel" aria-labelledby="schedule-title">
+        <h2 class="dash-aside__title" id="schedule-title">Jadwal pemilihan</h2>
+        <?= $this->include('partials/election_status') ?>
+      </section>
+      <?php if ($avatar !== null): ?>
+        <?= view('partials/avatar_card', ['type' => $type, 'avatar' => $avatar, 'voted' => $vote !== null]) ?>
+      <?php endif; ?>
     </aside>
   </div>
 </section>
@@ -35,6 +40,15 @@
 
 <?= $this->endSection() ?>
 
+<?= $this->section('head') ?>
+<?php if ($avatar !== null): ?>
+<link rel="stylesheet" href="<?= asset_url('assets/css/avatar.css') ?>">
+<?php endif; ?>
+<?= $this->endSection() ?>
+
 <?= $this->section('scripts') ?>
 <script src="<?= asset_url('assets/js/countdown.js') ?>" defer></script>
+<?php if ($avatar !== null): ?>
+<script type="module" src="<?= asset_url('assets/js/dashboard-avatar.js') ?>"></script>
+<?php endif; ?>
 <?= $this->endSection() ?>

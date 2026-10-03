@@ -18,7 +18,8 @@ final class BuiltAssetsTest extends CIUnitTestCase
         $minifier = new AssetMinifier();
         $sources  = $minifier->sources();
 
-        $this->assertCount(22, $sources);
+        // Stage 26: + avatar.css, wall.css, avatar-art.js, dashboard-avatar.js, wall.js
+        $this->assertCount(27, $sources);
         $this->assertTrue(AssetMinifier::available(), 'composer install (matthiasmullie/minify)');
         $this->assertSame([], $minifier->outdated(), 'jalankan php spark osis:minify');
 

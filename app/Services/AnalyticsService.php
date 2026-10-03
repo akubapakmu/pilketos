@@ -555,8 +555,9 @@ final class AnalyticsService
 
     /**
      * Urut jenjang (7, 8, 9, lainnya) lalu natural ("7B" sebelum "7C", "7-2" sebelum "7-10").
+     * Stage 26: dipakai juga urutan rombel Living Election Wall (ParticipationWall).
      */
-    private static function compareClass(string $a, string $b): int
+    public static function compareClass(string $a, string $b): int
     {
         $ga = Grade::fromKelas($a) ?? 99;
         $gb = Grade::fromKelas($b) ?? 99;
